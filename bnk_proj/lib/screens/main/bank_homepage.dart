@@ -3,6 +3,7 @@ import 'package:test_main/screens/product/list.dart';
 import '../app_colors.dart';
 import '../../main.dart';
 import '../mypage/transaction_history.dart';
+import '../exchange/forex_insight.dart';
 
 
 
@@ -232,18 +233,30 @@ class _BankHomePageState extends State<BankHomePage> {
               //const SizedBox(height: 10),
 
               /// ✅ 실시간 환율 배너
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18)),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text("오늘의 실시간 환율",
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    Icon(Icons.arrow_forward_ios, size: 18),
-                  ],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ForexInsightScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        "오늘의 실시간 환율",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Icon(Icons.arrow_forward_ios, size: 18),
+                    ],
+                  ),
                 ),
               ),
 
