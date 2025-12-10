@@ -3,6 +3,7 @@ import 'package:test_main/screens/product/list.dart';
 import '../app_colors.dart';
 import '../../main.dart';
 import '../mypage/transaction_history.dart';
+import '../mypage/mypage.dart';
 import '../exchange/forex_insight.dart';
 
 
@@ -128,7 +129,13 @@ class _BankHomePageState extends State<BankHomePage> {
         currentIndex: _currentIndex,
         onTap: (i) {
           if (i == 3) { // 마이페이지 탭
-            return; // _currentIndex 변경 방지
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const MyPageScreen(),
+              ),
+            );
+            return;
           }
 
           setState(() => _currentIndex = i);
