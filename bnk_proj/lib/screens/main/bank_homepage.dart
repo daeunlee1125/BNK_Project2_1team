@@ -714,7 +714,17 @@ class _ServiceList extends StatelessWidget {
             tileColor: Colors.white,
             leading: CircleAvatar(
               backgroundColor: const Color(0xFF4F6280).withOpacity(0.1),
-              child: Icon(service.icon, color: const Color(0xFF4F6280)),
+              child: service.icon is String
+                  ? Image.asset(
+                service.icon as String,
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+              )
+                  : Icon(
+                service.icon as IconData,
+                color: const Color(0xFF4F6280),
+              ),
             ),
             title: Text(
               service.title,
@@ -739,7 +749,7 @@ class ServiceHighlight {
     required this.onTap,
   });
 
-  final IconData icon;
+  final dynamic icon;
   final String title;
   final String description;
   final VoidCallback onTap;
@@ -760,7 +770,7 @@ List<ServiceHighlight> buildAiAndFxServices(BuildContext context) => [
     },
   ),
   ServiceHighlight(
-    icon: Icons.mic_none_outlined,
+    icon: 'images/flobankIcon5_음성비서.png',
     title: 'AI 음성비서',
     description: '시리처럼 말로 송금·조회·추천을 요청해보세요.',
     onTap: () {
