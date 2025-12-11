@@ -34,21 +34,20 @@ class MyPageScreen extends StatelessWidget {
             /// 1) 나의 계좌정보
             const _MyPageSection(
               title: '나의 계좌정보',
-              description: '대표계좌 / 입출금계좌 요약',
+              description: '등록된 계좌 / 대표 계좌',
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                      builder: (_) => const MyAccountInfoScreen(),
+                    builder: (_) => const MyAccountInfoScreen(),
                   ),
                 );
               },
-
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SummaryRow(label: '대표 계좌', value: '123-456-789012'),
+                  _SummaryRow(label: '등록된 계좌', value: '3개'),
                   SizedBox(height: 8),
-                  _SummaryRow(label: '원화 잔액', value: '1,235,000원'),
+                  _SummaryRow(label: '대표 계좌', value: '123-456-789012'),
                 ],
               ),
             ),
@@ -58,12 +57,19 @@ class MyPageScreen extends StatelessWidget {
             const _MyPageSection(
               title: '나의 외화예금',
               description: '보유 중인 외화예금 상품 요약',
-              child: Column(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const MyFxDepositScreen(),
+                  ),
+                );
+              },
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SummaryRow(label: 'USD 예금', value: '3,200 USD'),
+                  _SummaryRow(label: '외화예금 개수', value: '6개'),
                   SizedBox(height: 8),
-                  _SummaryRow(label: 'JPY 예금', value: '150,000 JPY'),
+                  _SummaryRow(label: '대표 통화', value: 'USD'),
                 ],
               ),
             ),
@@ -73,12 +79,19 @@ class MyPageScreen extends StatelessWidget {
             const _MyPageSection(
               title: '보유 외화자산',
               description: '예금/지갑 등 전체 외화자산 합산',
-              child: Column(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const MyFxAssetScreen(),
+                  ),
+                );
+              },
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SummaryRow(label: '총 평가금액', value: '5,430,000원'),
                   SizedBox(height: 8),
-                  _SummaryRow(label: '보유 통화 수', value: '3개'),
+                  _SummaryRow(label: '보유 통화 수', value: '6개'),
                 ],
               ),
             ),
@@ -150,7 +163,7 @@ class _MyPageUserSummary extends StatelessWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  '오늘도 안전하게 FLOBANK와 함께하세요.',
+                  '방가방가.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey,
@@ -271,30 +284,39 @@ class _SummaryRow extends StatelessWidget {
     );
   }
 }
+// 나의 계좌정보 화면 //
 class MyAccountInfoScreen extends StatelessWidget {
   const MyAccountInfoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // TODO: 나중에 API 연동해서 실제 계좌 리스트로 교체
-    final accounts = <_AccountSummary>[
-      const _AccountSummary(
-        name: '원화 입출금 통장',
-        number: '123-456-789012',
-        currency: 'KRW',
-        balance: '1,235,000원',
+    const headerStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: AppColors.pointDustyNavy,
+    );
+
+    const cellStyle = TextStyle(
+      fontSize: 13,
+      color: Colors.black87,
+    );
+
+    // TODO: 나중에 실제 API로 교체
+    final accounts = const <_AccountSummary>[
+      _AccountSummary(
+        name: '급여통장',
+        accountNo: '123-456-789012',
+        balance: '₩ 1,235,000',
       ),
-      const _AccountSummary(
-        name: '외화예금 (USD)',
-        number: '245-111-998877',
-        currency: 'USD',
-        balance: '1,250 USD',
+      _AccountSummary(
+        name: '생활비통장',
+        accountNo: '123-456-789013',
+        balance: '₩ 520,000',
       ),
-      const _AccountSummary(
-        name: '외화예금 (JPY)',
-        number: '987-222-333444',
-        currency: 'JPY',
-        balance: '230,000 JPY',
+      _AccountSummary(
+        name: '적금통장',
+        accountNo: '123-456-789014',
+        balance: '₩ 3,000,000',
       ),
     ];
 
@@ -313,91 +335,554 @@ class MyAccountInfoScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView.separated(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        itemCount: accounts.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final acc = accounts[index];
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 상품명
-                Text(
-                  acc.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.pointDustyNavy,
+        child: Column(
+          children: [
+            // ===== 헤더 =====
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Text('계좌명', style: headerStyle),
                   ),
-                ),
-                const SizedBox(height: 6),
-                // 계좌번호
-                Text(
-                  acc.number,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
+                  Expanded(
+                    flex: 3,
+                    child: Text('계좌번호', style: headerStyle),
                   ),
-                ),
-                const SizedBox(height: 10),
-                // 잔액 + 통화 배지
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      acc.balance,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.pointDustyNavy,
-                      ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text('잔액', style: headerStyle),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 4,
-                        horizontal: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        acc.currency,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Text('이체', style: headerStyle),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // ===== 데이터 행 =====
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: accounts.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              itemBuilder: (context, index) {
+                final acc = accounts[index];
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      // 계좌명
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          acc.name,
+                          style: cellStyle.copyWith(
+                            color: AppColors.pointDustyNavy,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      // 계좌번호
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          acc.accountNo,
+                          style: cellStyle,
+                        ),
+                      ),
+                      // 잔액
+                      Expanded(
+                        flex: 2,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            acc.balance,
+                            style: cellStyle,
+                          ),
+                        ),
+                      ),
+                      // 이체 버튼
+                      Expanded(
+                        flex: 2,
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: _TransferButton(
+                              onTap: () {
+                                // TODO: 이체 화면으로 이동
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
 }
 
+/// 나의 계좌정보 한 줄 데이터
 class _AccountSummary {
-  final String name;
-  final String number;
-  final String currency;
-  final String balance;
+  final String name;       // 계좌명
+  final String accountNo;  // 계좌번호
+  final String balance;    // 잔액 (표시용 문자열)
 
   const _AccountSummary({
     required this.name,
-    required this.number,
-    required this.currency,
+    required this.accountNo,
     required this.balance,
   });
 }
+
+/// 이체 버튼
+class _TransferButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TransferButton({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 28,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          side: const BorderSide(color: Colors.grey),
+          minimumSize: const Size(0, 28),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: const Text(
+          '이체',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+}
+// 나의 외화예금 화면 //
+class MyFxDepositScreen extends StatelessWidget {
+  const MyFxDepositScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: 나중에 실제 API에서 불러오기
+    final fxDeposits = const <_FxDeposit>[
+      _FxDeposit(
+        productName: 'FLOBANK 외화정기예금',
+        accountNo: '8888-72-0014-0001',
+        balance: '₩ 1,000,000',
+      ),
+      _FxDeposit(
+        productName: 'FLOBANK 외화정기예금',
+        accountNo: '8888-72-0015-0001',
+        balance: '\$ 1,000',
+      ),
+      _FxDeposit(
+        productName: 'FLOBANK 외화정기예금',
+        accountNo: '8888-72-0016-0001',
+        balance: '¥ 100,000',
+      ),
+      _FxDeposit(
+        productName: 'FLOBANK 외화정기예금',
+        accountNo: '8888-72-0809-0001',
+        balance: '€ 10,000',
+      ),
+      _FxDeposit(
+        productName: 'FLOBANK 외화정기예금',
+        accountNo: '8888-72-0810-0001',
+        balance: '£ 5,000',
+      ),
+      _FxDeposit(
+        productName: 'FLOBANK 외화 거치식 정기예금',
+        accountNo: '8888-76-0812-0001',
+        balance: '元 30,000',
+      ),
+    ];
+
+    const headerStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: AppColors.pointDustyNavy,
+    );
+
+    const cellStyle = TextStyle(
+      fontSize: 13,
+      color: Colors.black87,
+    );
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundOffWhite,
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundOffWhite,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.pointDustyNavy),
+        centerTitle: true,
+        title: const Text(
+          '나의 외화예금',
+          style: TextStyle(
+            color: AppColors.pointDustyNavy,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // ===== 헤더 영역 =====
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Text('상품명', style: headerStyle),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text('계좌번호', style: headerStyle),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text('잔액', style: headerStyle),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Text('바로가기', style: headerStyle),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // ===== 데이터 행들 =====
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: fxDeposits.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              itemBuilder: (context, index) {
+                final fx = fxDeposits[index];
+
+                return Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      // 상품명
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          fx.productName,
+                          style: cellStyle.copyWith(
+                            color: AppColors.pointDustyNavy,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+
+                      // 계좌번호
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          fx.accountNo,
+                          style: cellStyle,
+                        ),
+                      ),
+
+                      // 잔액
+                      Expanded(
+                        flex: 2,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            fx.balance,
+                            style: cellStyle,
+                          ),
+                        ),
+                      ),
+
+                      // 바로가기 버튼 (조회 / 입금)
+                      Expanded(
+                        flex: 2,
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown, // 공간 안으로 알아서 축소
+                            child: Row(
+                              children: [
+                                _FxActionButton(
+                                  label: '조회',
+                                  onTap: () {
+                                    // TODO
+                                  },
+                                ),
+                                const SizedBox(width: 4),
+                                _FxActionButton(
+                                  label: '입금',
+                                  onTap: () {
+                                    // TODO
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+// 보유 외화자산 상세 화면 //
+class MyFxAssetScreen extends StatelessWidget {
+  const MyFxAssetScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const headerStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: AppColors.pointDustyNavy,
+    );
+
+    const cellStyle = TextStyle(
+      fontSize: 13,
+      color: Colors.black87,
+    );
+
+    // TODO: 나중에 실제 API로 교체
+    final assets = const <_FxAsset>[
+      _FxAsset(currency: 'KRW', amount: '₩ 1,000,000', krwValue: '₩ 1,000,000'),
+      _FxAsset(currency: 'USD', amount: '\$ 1,000', krwValue: '₩ 1,300,000'),
+      _FxAsset(currency: 'JPY', amount: '¥ 100,000', krwValue: '₩ 900,000'),
+      _FxAsset(currency: 'EUR', amount: '€ 5,000', krwValue: '₩ 7,000,000'),
+      _FxAsset(currency: 'GBP', amount: '£ 2,000', krwValue: '₩ 3,400,000'),
+      _FxAsset(currency: 'CHN', amount: '元 30,000', krwValue: '₩ 500,000'),
+    ];
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundOffWhite,
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundOffWhite,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.pointDustyNavy),
+        centerTitle: true,
+        title: const Text(
+          '보유 외화자산',
+          style: TextStyle(
+            color: AppColors.pointDustyNavy,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // 헤더
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text('통화', style: headerStyle),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text('보유 수량', style: headerStyle),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text('원화 환산 금액', style: headerStyle),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // 데이터 행
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: assets.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              itemBuilder: (context, index) {
+                final a = assets[index];
+                return Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          a.currency,
+                          style: cellStyle.copyWith(
+                            color: AppColors.pointDustyNavy,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          a.amount,
+                          style: cellStyle,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            a.krwValue,
+                            style: cellStyle,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FxAsset {
+  final String currency;  // 통화 (USD 등)
+  final String amount;    // 보유 수량
+  final String krwValue;  // 원화 환산 금액
+
+  const _FxAsset({
+    required this.currency,
+    required this.amount,
+    required this.krwValue,
+  });
+}
+
+/// 외화예금 한 줄 데이터
+class _FxDeposit {
+  final String productName;
+  final String accountNo;
+  final String balance;
+
+  const _FxDeposit({
+    required this.productName,
+    required this.accountNo,
+    required this.balance,
+  });
+}
+
+/// 조회 / 입금 작은 버튼
+class _FxActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _FxActionButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 28,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          side: const BorderSide(color: Colors.grey),
+          minimumSize: const Size(0, 28),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

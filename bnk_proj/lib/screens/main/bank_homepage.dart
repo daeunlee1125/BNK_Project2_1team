@@ -11,8 +11,7 @@ import '../mypage/mypage.dart';
 import '../exchange/forex_insight.dart';
 
 import 'alarm.dart';
-import '../chat/chat.dart';
-
+import 'package:test_main/screens/main/live_camera.dart';
 
 
 class BankHomePage extends StatefulWidget {
@@ -36,12 +35,7 @@ class _BankHomePageState extends State<BankHomePage> {
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ChatScreen(),
-              ),
-            );
+            print("챗봇 이동");
           },
           child: SizedBox.expand(
             child: Image.asset(
@@ -61,23 +55,38 @@ class _BankHomePageState extends State<BankHomePage> {
           padding: const EdgeInsets.only(left: 12),
           child: CircleAvatar(
             backgroundColor: const Color(0xFF3C4F76),
-            child: const Icon(Icons.pets, color: Colors.white), // 은행 로고 대용
+            child: const Icon(Icons.pets, color: Colors.white),
           ),
         ),
         actions: [
+          // ✅ 1. 스캔 버튼 (누르면 실시간 AR 카메라 화면으로 이동)
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.black87),
+            icon: const Icon(Icons.qr_code_scanner, color: Colors.black87),
             onPressed: () {
-
+              // _openCamera 함수 대신, 바로 페이지 이동 코드를 넣습니다.
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const SearchScreen(),
-                  fullscreenDialog: true, // 아래에서 위로 올라오는 모달 효과 (원치 않으면 false)
+                  builder: (_) => const LiveCameraPage(),
                 ),
               );
             },
           ),
+          // 2. 검색 버튼
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.black87),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SearchScreen(),
+                  fullscreenDialog: true,
+                ),
+              );
+            },
+          ),
+
+          // 3. 알림 버튼
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.black87),
             onPressed: () {
@@ -87,6 +96,8 @@ class _BankHomePageState extends State<BankHomePage> {
               );
             },
           ),
+
+          // 4. 메뉴 버튼
           Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu, color: Colors.black87),
