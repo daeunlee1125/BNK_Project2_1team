@@ -27,97 +27,12 @@ class MyPageScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _MyPageUserSummary(),
-            const SizedBox(height: 24),
-
-            /// 1) 나의 계좌정보
-            const _MyPageSection(
-              title: '나의 계좌정보',
-              description: '등록된 계좌 / 대표 계좌',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const MyAccountInfoScreen(),
-                  ),
-                );
-              },
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SummaryRow(label: '등록된 계좌', value: '3개'),
-                  SizedBox(height: 8),
-                  _SummaryRow(label: '대표 계좌', value: '123-456-789012'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            /// 2) 나의 외화예금
-            const _MyPageSection(
-              title: '나의 외화예금',
-              description: '보유 중인 외화예금 상품 요약',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const MyFxDepositScreen(),
-                  ),
-                );
-              },
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SummaryRow(label: '외화예금 개수', value: '6개'),
-                  SizedBox(height: 8),
-                  _SummaryRow(label: '대표 통화', value: 'USD'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            /// 3) 보유 외화자산
-            const _MyPageSection(
-              title: '보유 외화자산',
-              description: '예금/지갑 등 전체 외화자산 합산',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const MyFxAssetScreen(),
-                  ),
-                );
-              },
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SummaryRow(label: '총 평가금액', value: '5,430,000원'),
-                  SizedBox(height: 8),
-                  _SummaryRow(label: '보유 통화 수', value: '6개'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 4) 상품리뷰작성
-            _MyPageSection(
-              title: '상품 리뷰 작성',
-              description: '만기된 외화상품에 대한 리뷰를 남겨주세요.',
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  DepositReviewWriteScreen.routeName,
-                );
-              },
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SummaryRow(label: '만기된 상품', value: 'FLOBANK 외화 예금'),
-                  SizedBox(height: 8),
-                  _SummaryRow(label: '리뷰 상태', value: '미작성'),
-                ],
-              ),
-            ),
-
+          children: const [
+            _MyPageUserSummary(),
+            SizedBox(height: 16),
+            _MyPageShortcutGrid(),
+            SizedBox(height: 24),
+            // 필요하면 여기 아래에 다른 내용(배너, 추천 카드 등) 추가
           ],
         ),
       ),
@@ -127,46 +42,72 @@ class MyPageScreen extends StatelessWidget {
 
 /// 상단 사용자 요약 카드
 class _MyPageUserSummary extends StatelessWidget {
-  const _MyPageUserSummary();
+  const _MyPageUserSummary({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 8.0),
+      //  left:12, top:0, right:12, bottom:8
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.pointDustyNavy,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Icon(Icons.person, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          // 왼쪽: 홍길동 >
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const MyProfileScreen(),
+                ),
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
                 Text(
-                  '홍길동 고객님',
+                  '홍길동',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.pointDustyNavy,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: Colors.black38,
+                ),
+              ],
+            ),
+          ),
+
+          // 오른쪽: 환경설정
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const MySettingsScreen(),
+                ),
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.settings_outlined,
+                  size: 22,
+                  color: Colors.black54,
+                ),
+                SizedBox(width: 4),
                 Text(
-                  '방가방가.',
+                  '설정',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
                   ),
                 ),
               ],
@@ -178,76 +119,277 @@ class _MyPageUserSummary extends StatelessWidget {
   }
 }
 
+
+
+class _MyPageShortcutGrid extends StatelessWidget {
+  const _MyPageShortcutGrid({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final shortcuts = <_ShortcutItem>[
+      _ShortcutItem(
+        icon: Icons.account_balance_wallet_outlined,
+        label: '내 계좌',
+        hasBadge: true,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const MyAccountInfoScreen(),
+            ),
+          );
+        },
+      ),
+      _ShortcutItem(
+        icon: Icons.savings_outlined,
+        label: '나의 외화예금',
+        hasBadge: false,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const MyFxDepositScreen(),
+            ),
+          );
+        },
+      ),
+      _ShortcutItem(
+        icon: Icons.pie_chart_outline,
+        label: '보유 외화자산',
+        hasBadge: false,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const MyFxAssetScreen(),
+            ),
+          );
+        },
+      ),
+      _ShortcutItem(
+        icon: Icons.rate_review_outlined,
+        label: '상품 리뷰 작성',
+        hasBadge: false,
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            DepositReviewWriteScreen.routeName,
+          );
+        },
+      ),
+      _ShortcutItem(
+        icon: Icons.verified_outlined,
+        label: '내 신용정보',
+        hasBadge: true,
+        onTap: () {},
+      ),
+      _ShortcutItem(
+        icon: Icons.badge_outlined,
+        label: '모바일 신분증',
+        hasBadge: false,
+        onTap: () {},
+      ),
+      _ShortcutItem(
+        icon: Icons.campaign_outlined,
+        label: '공지사항',
+        hasBadge: true,
+        onTap: () {},
+      ),
+      _ShortcutItem(
+        icon: Icons.lock_outline,
+        label: '인증/보안',
+        hasBadge: false,
+        onTap: () {},
+      ),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: shortcuts.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 18,
+        crossAxisSpacing: 18,
+        childAspectRatio: 0.9,
+      ),
+      itemBuilder: (context, index) {
+        final item = shortcuts[index];
+        return _ShortcutIconButton(item: item);
+      },
+    );
+  }
+}
+
+class _ShortcutIconButton extends StatelessWidget {
+  final _ShortcutItem item;
+
+  const _ShortcutIconButton({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: item.onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 둥근 카드 + 아이콘 + 뱃지
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Colors.black.withOpacity(0.06),
+                    width: 1,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    item.icon,
+                    size: 30,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              if (item.hasBadge)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            item.label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.black87,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShortcutItem {
+  final IconData icon;
+  final String label;
+  final bool hasBadge;
+  final VoidCallback? onTap;
+
+  const _ShortcutItem({
+    required this.icon,
+    required this.label,
+    required this.hasBadge,
+    this.onTap,
+  });
+}
+
+
 /// 공통 섹션 카드 (제목 + 설명 + 내용)
 class _MyPageSection extends StatelessWidget {
   final String title;
   final String description;
-  final Widget child;
+  final Widget? child;          // ⬅️ nullable 로 변경
   final VoidCallback? onTap;
 
   const _MyPageSection({
     super.key,
     required this.title,
     required this.description,
-    required this.child,
+    this.child,                 // ⬅️ 선택값
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap, // 나중에 상세페이지 이동에 사용 가능
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// 타이틀 + 화살표
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final contentWidgets = <Widget>[
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.pointDustyNavy,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.pointDustyNavy,
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.pointDustyNavy,
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+          ),
+          if (onTap != null)
+            const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: Colors.black38,
+            ),
+        ],
       ),
+    ];
+
+    if (child != null) {
+      contentWidgets.add(const SizedBox(height: 12));
+      contentWidgets.add(child!);
+    }
+
+    final card = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: contentWidgets,
+      ),
+    );
+
+    if (onTap == null) {
+      return card;
+    }
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: card,
     );
   }
 }
+
 
 /// 라벨/값 한 줄
 class _SummaryRow extends StatelessWidget {
@@ -481,15 +623,16 @@ class _TransferButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          side: const BorderSide(color: Colors.grey),
+          side: const BorderSide(color: Color(0xFF3D5C9B)),
           minimumSize: const Size(0, 28),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor: const Color(0xFF3D5C9B),
         ),
         child: const Text(
           '이체',
           style: TextStyle(
             fontSize: 11,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
       ),
@@ -869,20 +1012,83 @@ class _FxActionButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          side: const BorderSide(color: Colors.grey),
+          side: const BorderSide(color: Color(0xFF3D5C9B)),
           minimumSize: const Size(0, 28),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor: const Color(0xFF3D5C9B),
         ),
         child: Text(
           label,
           style: const TextStyle(
             fontSize: 11,
-            color: Colors.black87,
+            color: Colors.white,
           ),
         ),
       ),
     );
   }
 }
+class MyProfileScreen extends StatelessWidget {
+  const MyProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundOffWhite,
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundOffWhite,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.pointDustyNavy),
+        centerTitle: true,
+        title: const Text(
+          '개인정보',
+          style: TextStyle(
+            color: AppColors.pointDustyNavy,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: const Center(
+        child: Text(
+          '개인정보 화면 (추후 구현 예정)',
+          style: TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+      ),
+    );
+  }
+}
+class MySettingsScreen extends StatelessWidget {
+  const MySettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundOffWhite,
+      appBar: AppBar(
+        backgroundColor: AppColors.backgroundOffWhite,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.pointDustyNavy),
+        centerTitle: true,
+        title: const Text(
+          '환경설정',
+          style: TextStyle(
+            color: AppColors.pointDustyNavy,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: const Center(
+        child: Text(
+          '환경설정 화면 (추후 구현 예정)',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 
