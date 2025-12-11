@@ -174,8 +174,27 @@ class DepositListPage extends StatelessWidget {
                                 ),
                               ),
                             ),
+
+                            // 버튼들과 이미지의 간격을 벌리기 위한 Spacer()
+                            const Spacer(),
+
+                            // 우측 deposit.png 아이콘
+                            SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: Image.asset(
+                                "images/deposit.png",
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.savings,
+                                  size: 50,
+                                  color: AppColors.pointDustyNavy,
+                                ),
+                              ),
+                            ),
                           ],
                         )
+
                       ],
                     ),
                   );
