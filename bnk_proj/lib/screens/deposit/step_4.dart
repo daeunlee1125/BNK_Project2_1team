@@ -55,7 +55,7 @@ class DepositStep4Screen extends StatelessWidget {
             color: Colors.white,
           ),
           child: Image(
-            image: const AssetImage("images/character10.png"),
+            image: const AssetImage("images/character10_without_white.png"),
             fit: BoxFit.contain,
           ),
         ),

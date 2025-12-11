@@ -241,7 +241,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   Widget _buildTabContent() {
     switch (_currentTab) {
       case 0:
-        return _buildProductInfoTab();
+        return buildDummyProductInfoTab();
       case 1:
         return _buildRateInfoTab();
       case 2:
@@ -254,7 +254,43 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   // ============================================================
   // [탭 1] 상품안내
   // ============================================================
-  Widget _buildProductInfoTab() {
+
+  Widget buildDummyProductInfoTab() {
+
+    const String dpstDescript =
+        "・ 1개월 단위로 금리가 올라가는 계단식 금리 구조\n"
+        "・ 일부 출금 가능\n"
+        "・ 거치식 외화 예금 상품";
+
+    const String dpstTarget = "제한 없음";
+    const String dpstType = "거치식 예금";
+
+    const String dpstCurrency = "USD(달러), JPY(엔), EUR(유로)";
+
+    // 가입금액
+    final List<Map<String, dynamic>> limits = [
+      {"cur": "USD", "min": 1000, "max": 50000},
+      {"cur": "JPY", "min": 100000, "max": 5000000},
+      {"cur": "EUR", "min": 1000, "max": 30000},
+    ];
+
+    // 가입기간
+    final List<String> periodList = [
+      "12개월 고정",
+      "24개월 고정",
+    ];
+
+    // 예금자보호 안내
+
+    // 공시승인번호
+    const String delibNo = "2025-0301";
+    const String delibDate = "2025.03.15";
+    const String validFrom = "2025.03.16";
+    const String validTo = "2026.03.15";
+
+    // -----------------------------
+    //  2) 화면 구성
+    // -----------------------------
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -267,44 +303,48 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _detailRow(
-            "특징",
-            "・ 1개월 단위로 금리가 올라가는 계단식 금리 구조\n"
-                "・ 일부 출금도 가능",
-          ),
-          _detailRow("가입 대상", "제한 없음"),
-          _detailRow("예금 유형", "외화거치식예금"),
-          _detailRow(
-            "가입 가능 통화",
-            "USD(미국 달러), JPY(일본 엔), EUR(유럽 유로)",
-          ),
+          // 특징
+          _detailRow("특징", dpstDescript),
+
+          // 가입 대상
+          _detailRow("가입 대상", dpstTarget),
+
+          // 예금 유형
+          _detailRow("예금 유형", dpstType),
+
+          // 가입 가능 통화
+          _detailRow("가입 가능 통화", dpstCurrency),
+
+          // 가입금액
           _detailRow(
             "예금액",
-            "USD 1,000 / JPY 100,000 / EUR 1,000 이상",
+            limits
+                .map((e) =>
+            "${e['cur']} ${_fmt(e['min'])} ~ ${_fmt(e['max'])}")
+                .join("\n"),
           ),
-          _detailRow("예금 가입 기간", "12개월"),
+
+          // 가입기간
+          _detailRow("예금 가입 기간", periodList.join(", ")), // "12개월, 24개월"
+
+          // 일부출금
           _detailRow(
             "일부 출금",
-            "・ 대상 계좌: 가입일로부터 1개월 이상 지난 계좌\n"
-                "・ 가능 횟수: 최대 3회(만기 해지 포함)\n"
-                "・ 최소 출금금액: USD 100, JPY 10,000, EUR 100 이상\n"
-                "※ 통화별 예금액 이상의 잔액이 계좌에 남아있어야 합니다.",
+            "・ 대상 계좌: 가입일로부터 1개월 이상\n"
+                "・ 가능 횟수: 최대 3회\n"
+                "・ 최소 출금금액: USD 100 이상",
           ),
-          _detailRow(
-            "가입할 수 있는 곳",
-            "FLOBANK 웹사이트",
-          ),
-          _detailRow(
-            "이자 받는 방법",
-            "만기 시 한 번에 지급",
-          ),
-          _detailRow(
-            "세제 혜택",
-            "없음",
-          ),
+
+          _detailRow("가입할 수 있는 곳", "FLOBANK 웹사이트 및 모바일 앱"),
+          _detailRow("이자 받는 방법", "만기일시지급식"),
+          _detailRow("세제 혜택", "없음"),
+
           const SizedBox(height: 24),
 
-          // 예금자보호 안내
+          // ------------------------------------------------------
+          // 예금자보호 안내 박스
+          // ------------------------------------------------------
+
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -317,25 +357,24 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 로고 자리
                 SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: 68,
+                  height: 68,
                   child: Image.asset(
-                    "assets/deposit.png", // /images/deposit.png 대응(있으면)
+                    "images/deposit.png",
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.shield,
                       color: AppColors.pointDustyNavy,
-                      size: 32,
+                      size: 50,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
                     "이 예금은 예금자보호법에 따라 원금과 소정의 이자를 합하여 "
-                        "1인당 1억원까지(본 은행의 다른 보호상품과 합산) 보호됩니다.",
+                        "1인당 1억원까지 보호됩니다.",
                     style: TextStyle(
                       fontSize: 13.5,
                       height: 1.6,
@@ -346,11 +385,73 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // ------------------------------------------------------
+          // 공시승인번호 영역
+          // ------------------------------------------------------
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  "공시승인번호",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "이 내용은 법령 및 내부통제기준에 따른 광고관련 절차를 준수하였습니다.",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "준법감시인 심의필 2025-0301 (심의일자: 2025.03.15)",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "유효기일 2025.03.16 ~ 2026.03.15",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
+//////////////////////////////////////////////////////////////
+// 금액 포맷터
+//////////////////////////////////////////////////////////////
+  String _fmt(int value) {
+    return value.toString().replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ",");
+  }
+
+//////////////////////////////////////////////////////////////
+// 디테일 Row 재사용 위젯
+//////////////////////////////////////////////////////////////
   Widget _detailRow(String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -384,9 +485,13 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
     );
   }
 
+
+
+
   // ============================================================
   // [탭 2] 금리안내
   // ============================================================
+
   Widget _buildRateInfoTab() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -529,84 +634,68 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
               ["1개월 초과", "기본금리 × 30% (최저 연 0.20%)"],
             ],
           ),
+
+          const SizedBox(height: 30),
+
+          // ============================================================
+          // 공시승인번호 영역
+          // ============================================================
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  "공시승인번호",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "이 내용은 법령 및 내부통제기준에 따른 광고관련 절차를 준수하였습니다.",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "준법감시인 심의필 2025-0301 (심의일자: 2025.03.15)",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "유효기일 2025.03.16 ~ 2026.03.15",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _simpleRateTable({required List<List<String>> rows}) {
-    return Table(
-      border: TableBorder.all(
-        color: AppColors.mainPaleBlue.withOpacity(0.8),
-      ),
-      columnWidths: const {
-        0: FlexColumnWidth(2),
-        1: FlexColumnWidth(5),
-      },
-      children: [
-        const TableRow(
-          decoration: BoxDecoration(
-            color: AppColors.subIvoryBeige,
-          ),
-          children: [
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text(
-                "예치기간 / 경과기간",
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: AppColors.pointDustyNavy,
-                ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text(
-                "적용금리",
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: AppColors.pointDustyNavy,
-                ),
-              ),
-            ),
-          ],
-        ),
-        ...rows.map(
-              (r) => TableRow(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  r[0],
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  r[1],
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+
+
+
 
   // ============================================================
-  // 🔔 금리 상세 모달
+  //  금리 상세 모달
   // ============================================================
   void _showRateModal(BuildContext context) {
     showDialog(
@@ -1110,6 +1199,79 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   }
 
 
+  Widget _simpleRateTable({required List<List<String>> rows}) {
+    return Table(
+      border: TableBorder.all(
+        color: AppColors.mainPaleBlue.withOpacity(0.8),
+      ),
+      columnWidths: const {
+        0: FlexColumnWidth(2),
+        1: FlexColumnWidth(5),
+      },
+      children: [
+        const TableRow(
+          decoration: BoxDecoration(
+            color: AppColors.subIvoryBeige,
+          ),
+          children: [
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                "예치기간 / 경과기간",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: AppColors.pointDustyNavy,
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text(
+                "적용금리",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: AppColors.pointDustyNavy,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        ...rows.map(
+              (r) => TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  r[0],
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  r[1],
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+
 
 
 
@@ -1117,6 +1279,9 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   // ============================================================
   // [탭 3] 상품약관
   // ============================================================
+  // ============================================================
+// [탭 3] 상품약관
+// ============================================================
   Widget _buildTermsTab() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -1128,6 +1293,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _termsRow("예금거래기본약관"),
           Divider(
@@ -1139,7 +1305,58 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
             height: 1,
             color: AppColors.mainPaleBlue.withOpacity(0.6),
           ),
-          _termsRow("BNK모아드림외화적금 상품 설명서"),
+          _termsRow("FLOBANK 외화 예금 상품 설명서"),
+
+          const SizedBox(height: 28),
+
+          // ------------------------------------------------------
+          // 공시승인번호 영역
+          // ------------------------------------------------------
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  "공시승인번호",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "이 내용은 법령 및 내부통제기준에 따른 광고관련 절차를 준수하였습니다.",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  "준법감시인 심의필 2025-0301 (심의일자: 2025.03.15)",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  "유효기일 2025.03.16 ~ 2026.03.15",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1161,10 +1378,11 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
         color: AppColors.pointDustyNavy,
       ),
       onTap: () {
-        // 실제 PDF/웹뷰 연결 시 여기서 처리
+        // PDF/웹뷰 열기 예정
       },
     );
   }
+
 
   // ------------------------------------------------------------
   // 하단 버튼 : 가입하기 / 목록

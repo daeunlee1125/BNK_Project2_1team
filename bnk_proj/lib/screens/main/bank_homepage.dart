@@ -4,6 +4,8 @@ import 'package:test_main/screens/main/search.dart';
 import '../app_colors.dart';
 import '../../main.dart';
 import '../mypage/transaction_history.dart';
+import '../ai/camera_exchange_screen.dart';
+import '../ai/voice_assistant_screen.dart';
 
 import '../remit/remit_step1.dart';
 
@@ -11,7 +13,7 @@ import '../mypage/mypage.dart';
 import '../exchange/forex_insight.dart';
 
 import 'alarm.dart';
-
+import 'package:test_main/screens/main/live_camera.dart';
 
 
 class BankHomePage extends StatefulWidget {
@@ -55,23 +57,38 @@ class _BankHomePageState extends State<BankHomePage> {
           padding: const EdgeInsets.only(left: 12),
           child: CircleAvatar(
             backgroundColor: const Color(0xFF3C4F76),
-            child: const Icon(Icons.pets, color: Colors.white), // 은행 로고 대용
+            child: const Icon(Icons.pets, color: Colors.white),
           ),
         ),
         actions: [
+          // ✅ 1. 스캔 버튼 (누르면 실시간 AR 카메라 화면으로 이동)
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.black87),
+            icon: const Icon(Icons.qr_code_scanner, color: Colors.black87),
             onPressed: () {
-
+              // _openCamera 함수 대신, 바로 페이지 이동 코드를 넣습니다.
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const SearchScreen(),
-                  fullscreenDialog: true, // 아래에서 위로 올라오는 모달 효과 (원치 않으면 false)
+                  builder: (_) => const LiveCameraPage(),
                 ),
               );
             },
           ),
+          // 2. 검색 버튼
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.black87),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SearchScreen(),
+                  fullscreenDialog: true,
+                ),
+              );
+            },
+          ),
+
+          // 3. 알림 버튼
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.black87),
             onPressed: () {
@@ -81,6 +98,8 @@ class _BankHomePageState extends State<BankHomePage> {
               );
             },
           ),
+
+          // 4. 메뉴 버튼
           Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu, color: Colors.black87),
@@ -139,6 +158,30 @@ class _BankHomePageState extends State<BankHomePage> {
               leading: const Icon(Icons.support_agent),
               title: const Text("고객센터"),
               onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_front_outlined),
+              title: const Text("AI 카메라 환율 변환"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CameraExchangeScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.mic_none_outlined),
+              title: const Text("AI 음성비서"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const VoiceAssistantScreen(),
+                  ),
+                );
+              },
             ),
             const Spacer(),
             ListTile(
@@ -325,7 +368,7 @@ class _BankHomePageState extends State<BankHomePage> {
               const SizedBox(height: 8),
 
               /// ✅ AI & 외환 서비스 리스트
-              _ServiceList(services: aiAndFxServices),
+              _ServiceList(services: buildAiAndFxServices(context)),
             ],
           ),
         ),
@@ -666,14 +709,12 @@ class _ServiceList extends StatelessWidget {
             (service) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: ListTile(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             tileColor: Colors.white,
             leading: CircleAvatar(
-              backgroundColor:
-              const Color(0xFF4F6280).withOpacity(0.1),
-              child: Icon(service.icon,
-                  color: const Color(0xFF4F6280)),
+              backgroundColor: const Color(0xFF4F6280).withOpacity(0.1),
+              child: Icon(service.icon, color: const Color(0xFF4F6280)),
             ),
             title: Text(
               service.title,
@@ -704,26 +745,52 @@ class ServiceHighlight {
   final VoidCallback onTap;
 }
 
-List<ServiceHighlight> get aiAndFxServices => const [
+List<ServiceHighlight> buildAiAndFxServices(BuildContext context) => [
   ServiceHighlight(
+    icon: Icons.photo_camera_front_outlined,
+    title: 'AI 카메라 환율 변환',
+    description: '영수증·가격표를 촬영해 즉시 원화 금액을 받아보세요.',
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CameraExchangeScreen(),
+        ),
+      );
+    },
+  ),
+  ServiceHighlight(
+    icon: Icons.mic_none_outlined,
+    title: 'AI 음성비서',
+    description: '시리처럼 말로 송금·조회·추천을 요청해보세요.',
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const VoiceAssistantScreen(),
+        ),
+      );
+    },
+  ),
+  const ServiceHighlight(
     icon: Icons.smart_toy_outlined,
     title: 'AI 플로봇 상담',
     description: '계좌 조회, 한도 변경, 상품 추천을 AI에게 물어보세요.',
     onTap: _noop,
   ),
-  ServiceHighlight(
+  const ServiceHighlight(
     icon: Icons.language,
     title: '글로벌 송금',
     description: 'SWIFT 코드 기반 해외 송금과 진행 상황 확인.',
     onTap: _noop,
   ),
-  ServiceHighlight(
+  const ServiceHighlight(
     icon: Icons.calendar_month,
     title: '출석 이벤트',
     description: '매일 출석하고 포인트를 받아보세요.',
     onTap: _noop,
   ),
-  ServiceHighlight(
+  const ServiceHighlight(
     icon: Icons.picture_as_pdf,
     title: '약관 요약 뷰어',
     description: 'AI가 금융 약관 핵심만 요약해줍니다.',
