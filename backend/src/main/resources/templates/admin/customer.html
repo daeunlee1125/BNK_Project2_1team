@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko"
+      th:replace="~{admin/admin_template :: admin_template('관리자 - 고객 관리', '고객 관리', ~{::content}, ~{::script})}">
+
+<th:block th:fragment="content">
+
+    <section class="admin-content">
+
+        <style>
+            /* 테이블 스타일 */
+            .customer-table th, .customer-table td {
+                vertical-align: middle;
+                text-align: center;
+            }
+
+            /* 상태 배지 */
+            .status-badge {
+                padding: 5px 10px;
+                border-radius: 12px;
+                font-size: 0.8rem;
+                color: white;
+                display: inline-block;
+            }
+            .status-active { background-color: #28a745; }
+            .status-inactive { background-color: #6c757d; }
+
+            /* 🔹 헤더 영역 커스텀 (제목 왼쪽, 컨트롤 오른쪽 배치) */
+            .board-header {
+                display: flex;
+                justify-content: space-between; /* 양끝 정렬 */
+                align-items: center;
+                margin-bottom: 20px;
+                flex-wrap: wrap; /* 화면 작을 때 줄바꿈 */
+                gap: 10px;
+            }
+
+            .board-header h2 {
+                margin: 0 !important; /* 기존 마진 제거 */
+            }
+
+            /* 🔹 우측 컨트롤 그룹 (검색폼 + 엑셀버튼) */
+            .header-controls {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            /* 인라인 검색 폼 */
+            .search-form-inline {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .search-select-mini {
+                width: 100px;
+                height: 34px;
+                padding: 0 5px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 13px;
+            }
+
+            .search-input-mini {
+                width: 200px;
+                height: 34px;
+                padding: 0 10px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-size: 13px;
+            }
+
+            /* 검색 버튼 미니 사이즈 */
+            .btn-search-mini {
+                height: 34px;
+                padding: 0 12px;
+                border: none;
+                border-radius: 5px;
+                background-color: var(--primary-color, #22304e); /* admin.css 변수 활용 */
+                color: white;
+                font-size: 13px;
+                cursor: pointer;
+                margin-top: 0; /* 기존 버튼 마진 제거 */
+            }
+
+            .btn-search-mini:hover {
+                opacity: 0.9;
+            }
+
+
+        </style>
+
+        <section class="board-admin">
+
+            <section id="customer-list" class="board-section">
+
+                <div class="board-header">
+                    <h2>고객 목록</h2>
+
+                    <div class="header-controls">
+
+                        <form class="search-form-inline">
+                            <select class="search-select-mini">
+                                <option>전체</option>
+                                <option>이름</option>
+                                <option>아이디</option>
+                                <option>전화번호</option>
+                            </select>
+                            <input type="text" class="search-input-mini" placeholder="검색어를 입력하세요">
+                            <button type="submit" class="btn-search-mini">검색</button>
+                        </form>
+
+                    </div>
+                </div>
+
+                <div class="board-table-wrapper">
+                    <table class="board-table customer-table">
+                        <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>고객명</th>
+                            <th>아이디</th>
+                            <th>전화번호</th>
+                            <th>이메일</th>
+                            <th>가입일자</th>
+                            <th>상태</th>
+                            <th>관리</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>김철수</td>
+                            <td>kimcs</td>
+                            <td>010-1111-2222</td>
+                            <td>kim@example.com</td>
+                            <td>2024-12-10</td>
+                            <td><span class="status-badge status-active">활동중</span></td>
+                            <td>
+                                <button class="board-btn-edit">상세</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>이영희</td>
+                            <td>leeyh</td>
+                            <td>010-3333-4444</td>
+                            <td>lee@example.com</td>
+                            <td>2024-12-09</td>
+                            <td><span class="status-badge status-inactive">휴면</span></td>
+                            <td>
+                                <button class="board-btn-edit">상세</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <a href="#" class="page-btn prev">〈</a>
+                    <a href="#" class="page-btn active">1</a>
+                    <a href="#" class="page-btn">2</a>
+                    <a href="#" class="page-btn">3</a>
+                    <a href="#" class="page-btn next">〉</a>
+                </div>
+
+            </section>
+
+        </section>
+    </section>
+
+</th:block>
+
+<th:block th:fragment="script">
+    <script th:src="@{/js/customer.js}"></script>
+    <script>
+        $(document).ready(function() {
+            console.log("고객 관리 페이지 로드 완료");
+        });
+    </script>
+</th:block>
+
+</html>
