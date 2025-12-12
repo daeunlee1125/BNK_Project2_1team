@@ -30,7 +30,6 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen> {
       ),
       body: Column(
         children: [
-          _headerCard(),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -72,51 +71,6 @@ class _VoiceAssistantScreenState extends State<VoiceAssistantScreen> {
             ),
           ),
           _micController(),
-        ],
-      ),
-    );
-  }
-
-  Widget _headerCard() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.pointDustyNavy,
-            AppColors.pointDustyNavy.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.mic, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Text(
-              'BNK AI 음성비서가 당신의 일정을 챙겨드려요.\n음성으로 환율·송금·조회 기능을 빠르게 사용하세요.',
-              style: TextStyle(color: Colors.white, height: 1.4),
-            ),
-          ),
         ],
       ),
     );
