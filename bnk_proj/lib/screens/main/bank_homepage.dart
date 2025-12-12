@@ -67,7 +67,7 @@ class _BankHomePageState extends State<BankHomePage> {
           ),
         ),
         actions: [
-          // ✅ 1. 스캔 버튼 (누르면 실시간 AR 카메라 화면으로 이동)
+          // 1. 스캔 버튼 (누르면 실시간 AR 카메라 화면으로 이동)
           IconButton(
             icon: const Icon(Icons.qr_code_scanner, color: Colors.black87),
             onPressed: () {
