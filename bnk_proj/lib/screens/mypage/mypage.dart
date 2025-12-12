@@ -9,31 +9,81 @@ class MyPageScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundOffWhite,
-      appBar: AppBar(
-        backgroundColor: AppColors.backgroundOffWhite,
-        elevation: 0,
-        leading: const BackButton(color: AppColors.pointDustyNavy),
-        centerTitle: true,
-        title: const Text(
-          '마이페이지',
-          style: TextStyle(
-            color: AppColors.pointDustyNavy,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      backgroundColor: Colors.white,
+      // appBar: AppBar(
+      //   backgroundColor: AppColors.backgroundOffWhite,
+      //   elevation: 0,
+      //   leading: const BackButton(color: AppColors.pointDustyNavy),
+      //   centerTitle: true,
+      //   title: const Text(
+      //     '마이페이지',
+      //     style: TextStyle(
+      //       color: AppColors.pointDustyNavy,
+      //       fontWeight: FontWeight.w700,
+      //     ),
+      //   ),
+      // ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
+            SizedBox(height: 60),
             _MyPageUserSummary(),
-            SizedBox(height: 16),
+            SizedBox(height: 10),
             _MyPageShortcutGrid(),
-            SizedBox(height: 24),
+            SizedBox(height: 34),
             // 필요하면 여기 아래에 다른 내용(배너, 추천 카드 등) 추가
           ],
+        ),
+      ),
+    );
+  }
+}
+/// ✅ Drawer(오른쪽 슬라이드)로 띄울 마이페이지 내용
+class MyPageDrawer extends StatelessWidget {
+  const MyPageDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✅ 닫기 버튼 (오른쪽 상단)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context), // drawer 닫기
+                  ),
+                ],
+              ),
+
+
+              const SizedBox(height: 10),
+
+
+              const _MyPageUserSummary(),
+              const SizedBox(height: 10),
+              const _MyPageShortcutGrid(),
+              SizedBox(
+                width: double.infinity,           // ✅ 가로 꽉
+                child: Image.asset(
+                  'images/character_ant.png',
+                  fit: BoxFit.fitWidth,           // ✅ 가로에 맞춰 꽉
+                ),
+              ),
+
+              const _AllMenuSectionList(),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -217,6 +267,222 @@ class _MyPageShortcutGrid extends StatelessWidget {
     );
   }
 }
+class _AllMenuSectionList extends StatelessWidget {
+  const _AllMenuSectionList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        _MenuSection(
+          title: '외화예금',
+          items: [
+            _MenuItem('외화예금상품'),
+            _MenuItem('외화예금안내'),
+          ],
+        ),
+        _MenuSection(
+          title: '외화송금',
+          items: [
+            _MenuItem('외화송금하기'),
+            _MenuItem('외화송금안내'),
+          ],
+        ),
+        _MenuSection(
+          title: '환전',
+          items: [
+            _MenuItem('환전하기'),
+            _MenuItem('환전 가능 통화'),
+            _MenuItem('환전안내'),
+          ],
+        ),
+        _MenuSection(
+          title: '환율',
+          items: [
+            _MenuItem('환율조회'),
+            _MenuItem('환전계산기'),
+          ],
+        ),
+        _MenuSection(
+          title: '고객센터',
+          items: [
+            _MenuItem('flobank소개'),
+            _MenuItem('QnA'),
+            _MenuItem('FAQ'),
+            _MenuItem('이벤트'),
+            _MenuItem('공지사항'),
+            _MenuItem('뉴스리스트'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MenuItem {
+  final String label;
+  final VoidCallback? onTap;
+  final String? midAsset;
+  const _MenuItem(this.label, {this.onTap, this.midAsset});
+}
+
+class _MenuSection extends StatelessWidget {
+  final String title;
+  final List<_MenuItem> items;
+
+  const _MenuSection({
+    required this.title,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ 타이틀: 작게/연하게
+          Padding(
+            padding: const EdgeInsets.only(left: 2, bottom: 8),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+
+          // ✅ 항목: 개별 둥근 타일로 쭉
+          ...items.map((it) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _MenuRow(
+              label: it.label,
+              onTap: it.onTap ?? () {},
+              leadingIcon: _iconForLabel(it.label),
+              midAsset: it.midAsset,
+              badge: null, // 필요하면 'Beta'/'신규' 넣어
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  static IconData _iconForLabel(String label) {
+    if (label.contains('예금')) return Icons.savings_outlined;
+    if (label.contains('송금')) return Icons.send_outlined;
+    if (label.contains('환전')) return Icons.currency_exchange_outlined;
+    if (label.contains('환율')) return Icons.show_chart_outlined;
+    if (label.contains('계산기')) return Icons.calculate_outlined;
+    if (label.contains('QnA') || label.contains('FAQ')) return Icons.help_outline;
+    if (label.contains('공지')) return Icons.campaign_outlined;
+    if (label.contains('뉴스')) return Icons.article_outlined;
+    if (label.contains('이벤트')) return Icons.celebration_outlined;
+    return Icons.circle_outlined;
+  }
+}
+
+
+class _MenuRow extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final IconData leadingIcon;
+  final String? badge;
+  final String? midAsset;
+
+  const _MenuRow({
+    required this.label,
+    required this.onTap,
+    required this.leadingIcon,
+    this.badge,
+    this.midAsset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,                     // ✅ 흰색
+          borderRadius: BorderRadius.circular(16), // ✅ 둥글게
+        ),
+        child: Row(
+          children: [
+            // ✅ 좌측 아이콘 원형
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF6F7F8),          // 아이콘 배경만 살짝 회색
+                shape: BoxShape.circle,
+              ),
+              child: Icon(leadingIcon, size: 16, color: Colors.black87),
+            ),
+            const SizedBox(width: 12),
+
+            if (midAsset != null) ...[
+              Image.asset(
+                midAsset!,
+                width: 22,
+                height: 22,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 10),
+            ],
+
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+
+            if (badge != null) _BadgeChip(badge!),
+
+            // ✅ chevron(>) 제거
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BadgeChip extends StatelessWidget {
+  final String text;
+  const _BadgeChip(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final isNew = text == '신규';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isNew ? const Color(0xFFFFEBEE) : const Color(0xFFEFF1F3),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: isNew ? const Color(0xFFD32F2F) : Colors.black87,
+        ),
+      ),
+    );
+  }
+}
+
 
 class _ShortcutIconButton extends StatelessWidget {
   final _ShortcutItem item;

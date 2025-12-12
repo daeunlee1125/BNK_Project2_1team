@@ -25,7 +25,7 @@ class BankHomePage extends StatefulWidget {
 }
 
 class _BankHomePageState extends State<BankHomePage> {
-  int _currentIndex = 0;
+  // int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -119,116 +119,36 @@ class _BankHomePageState extends State<BankHomePage> {
 
 
       endDrawer: Drawer(
-        child: Column(
-          children: [
-            Container(
-              height: 160,
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              alignment: Alignment.bottomLeft,
-              color: const Color(0xFF3C4F76),
-              child: const Text(
-                "홍길동님\n환영합니다",
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text("마이페이지"),
-              onTap: () {
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text("거래내역"),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.send),
-              title: const Text("외화송금"),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.currency_exchange),
-              title: const Text("환율"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ExchangeRateScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.support_agent),
-              title: const Text("고객센터"),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_front_outlined),
-              title: const Text("AI 카메라 환율 변환"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CameraExchangeScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.mic_none_outlined),
-              title: const Text("AI 음성비서"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const VoiceAssistantScreen(),
-                  ),
-                );
-              },
-            ),
-            const Spacer(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text("로그아웃"),
-              onTap: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                      (route) => false,
-                );
-              },
-            ),
-          ],
-        ),
+        width: MediaQuery.sizeOf(context).width, // ✅ 거의 전체화면으로 슥 열림
+        child: const MyPageDrawer(),             // ✅ 마이페이지를 Drawer로 표시
       ),
+      endDrawerEnableOpenDragGesture: true,
 
       /// ✅ 하단 네비
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) {
-          if (i == 3) { // 마이페이지 탭
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const MyPageScreen(),
-              ),
-            );
-            return;
-          }
-
-          setState(() => _currentIndex = i);
-        },
-        selectedItemColor: const Color(0xFF3C4F76),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "홈"),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: "거래내역"),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: "외화상품"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "마이페이지"),
-        ],
-      ),
+      // bottomNavigationBar: BottomNavigationBar(
+      //   currentIndex: _currentIndex,
+      //   onTap: (i) {
+      //     if (i == 3) { // 마이페이지 탭
+      //       Navigator.push(
+      //         context,
+      //         MaterialPageRoute(
+      //           builder: (_) => const MyPageScreen(),
+      //         ),
+      //       );
+      //       return;
+      //     }
+      //
+      //     setState(() => _currentIndex = i);
+      //   },
+      //   selectedItemColor: const Color(0xFF3C4F76),
+      //   unselectedItemColor: Colors.grey,
+      //   items: const [
+      //     BottomNavigationBarItem(icon: Icon(Icons.home), label: "홈"),
+      //     BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: "거래내역"),
+      //     BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: "외화상품"),
+      //     BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: "전체"),
+      //   ],
+      // ),
 
       /// ✅ 메인 바디
       body: SafeArea(
