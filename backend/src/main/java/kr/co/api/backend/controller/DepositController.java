@@ -484,20 +484,4 @@ public class DepositController {
         return rates;
     }
 
-    @GetMapping("/products")
-    @ResponseBody
-    public List<ProductDTO> productsJson() {
-        return depositService.getActiveProducts();
-    }
-
-    @GetMapping("/products/{dpstId}")
-    @ResponseBody
-    public ProductDTO productDetailJson(@PathVariable String dpstId) {
-        return depositService.getProduct(dpstId);
-    }
-
-
-
-
-
 }
