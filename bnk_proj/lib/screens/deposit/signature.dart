@@ -37,9 +37,14 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
   String? _selectedMethod;
   Uint8List? _certificateImage;
 
-  bool _agree1 = false;
-  bool _agree2 = false;
-  bool _agree3 = false;
+  bool _agreeAll = false;
+
+  bool _agreeProductDesc = false;
+  bool _agreeProductTerms = false;
+  bool _agreeDepositBase = false;
+  bool _agreeSignature = false;
+  bool _agreeAuth = false;
+  bool _agreePrivacy = false;
 
   bool _submitting = false;
 
@@ -47,7 +52,17 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
   final _rrnController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  bool get _allAgreed => _agree1 && _agree2 && _agree3;
+  bool get _allAgreed =>
+      _agreeProductDesc &&
+          _agreeProductTerms &&
+          _agreeDepositBase &&
+          _agreeSignature &&
+          _agreeAuth &&
+          _agreePrivacy;
+
+  void _syncAgreeAll() {
+    _agreeAll = _allAgreed;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +93,6 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     );
   }
 
-  /* =========================================================
-     STEP 분기
-  ========================================================= */
   Widget _buildStep() {
     switch (_step) {
       case AuthStep.selectMethod:
@@ -96,9 +108,6 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     }
   }
 
-  /* =========================================================
-     STEP 1. 본인확인 수단 선택 (스타일 유지 / 복수)
-  ========================================================= */
   Widget _stepSelectMethod() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,9 +154,6 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     });
   }
 
-  /* =========================================================
-     STEP 2. 본인 정보 입력
-  ========================================================= */
   Widget _stepInputInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,29 +180,123 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
   }
 
   /* =========================================================
-     STEP 3. 약관 동의 (개별)
+     STEP 3. 약관 동의
   ========================================================= */
   Widget _stepAgreeTerms() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle("약관 동의"),
-        _AgreementTile(
-          value: _agree1,
-          text: "전자서명 이용약관 동의 (필수)",
-          onChanged: (v) => setState(() => _agree1 = v),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle("약관 동의"),
+
+                _SignatureNoticeBox(),
+
+                const SizedBox(height: 20),
+
+                _AgreementGroup(
+                  title: "상품 관련 약관",
+                  children: [
+                    _AgreementTile(
+                      value: _agreeProductDesc,
+                      text: "상품설명서 확인 및 동의 (필수)",
+                      onChanged: (v) {
+                        setState(() {
+                          _agreeProductDesc = v;
+                          _syncAgreeAll();
+                        });
+                      },
+                    ),
+                    _AgreementTile(
+                      value: _agreeProductTerms,
+                      text: "상품약관 동의 (필수)",
+                      onChanged: (v) {
+                        setState(() {
+                          _agreeProductTerms = v;
+                          _syncAgreeAll();
+                        });
+                      },
+                    ),
+                    _AgreementTile(
+                      value: _agreeDepositBase,
+                      text: "예금거래기본약관 동의 (필수)",
+                      onChanged: (v) {
+                        setState(() {
+                          _agreeDepositBase = v;
+                          _syncAgreeAll();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                _AgreementGroup(
+                  title: "전자서명 및 개인정보",
+                  children: [
+                    _AgreementTile(
+                      value: _agreeSignature,
+                      text: "전자서명 이용약관 동의 (필수)",
+                      onChanged: (v) {
+                        setState(() {
+                          _agreeSignature = v;
+                          _syncAgreeAll();
+                        });
+                      },
+                    ),
+                    _AgreementTile(
+                      value: _agreeAuth,
+                      text: "본인확인 서비스 이용약관 동의 (필수)",
+                      onChanged: (v) {
+                        setState(() {
+                          _agreeAuth = v;
+                          _syncAgreeAll();
+                        });
+                      },
+                    ),
+                    _AgreementTile(
+                      value: _agreePrivacy,
+                      text: "개인정보 수집 및 이용 동의 (필수)",
+                      onChanged: (v) {
+                        setState(() {
+                          _agreePrivacy = v;
+                          _syncAgreeAll();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: _AgreementTile(
+                    value: _agreeAll,
+                    text: "전체 약관에 동의합니다 (필수)",
+                    small: true,
+                    onChanged: (v) {
+                      setState(() {
+                        _agreeAll = v;
+                        _agreeProductDesc = v;
+                        _agreeProductTerms = v;
+                        _agreeDepositBase = v;
+                        _agreeSignature = v;
+                        _agreeAuth = v;
+                        _agreePrivacy = v;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        _AgreementTile(
-          value: _agree2,
-          text: "본인확인 서비스 이용약관 동의 (필수)",
-          onChanged: (v) => setState(() => _agree2 = v),
-        ),
-        _AgreementTile(
-          value: _agree3,
-          text: "개인정보 수집 및 이용 동의 (필수)",
-          onChanged: (v) => setState(() => _agree3 = v),
-        ),
-        const Spacer(),
+
         _PrimaryButton(
           text: "인증 요청",
           enabled: _allAgreed,
@@ -206,31 +306,62 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     );
   }
 
-  /* =========================================================
-     STEP 4. 인증 대기
-  ========================================================= */
+
   Widget _stepWaitingAuth() {
     _simulateAuth();
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: const [
-        Icon(Icons.phone_android,
-            size: 64, color: AppColors.pointDustyNavy),
-        SizedBox(height: 20),
-        Text(
-          "본인확인 요청을 전송했습니다.\n선택한 인증 수단에서 인증을 완료해 주세요.",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15, height: 1.5),
+        Icon(
+          Icons.phone_android,
+          size: 64,
+          color: AppColors.pointDustyNavy,
         ),
         SizedBox(height: 24),
-        CircularProgressIndicator(color: AppColors.pointDustyNavy),
+
+        CircularProgressIndicator(
+          color: AppColors.pointDustyNavy,
+        ),
+
+        SizedBox(height: 28),
+
+        Text(
+          "본인확인 진행 중입니다",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.pointDustyNavy,
+          ),
+        ),
+
+        SizedBox(height: 10),
+
+        Text(
+          "선택하신 인증 수단으로\n본인확인을 완료해 주세요.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.6,
+            color: Colors.black87,
+          ),
+        ),
+
+        SizedBox(height: 6),
+
+        Text(
+          "인증이 완료되면 자동으로 다음 단계로 이동합니다.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: Colors.black54,
+          ),
+        ),
       ],
     );
   }
 
-  /* =========================================================
-     STEP 5. 전자서명 완료
-  ========================================================= */
   Widget _stepCompleted() {
     return Column(
       children: [
@@ -250,9 +381,6 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     );
   }
 
-  /* =========================================================
-     인증 시뮬레이션
-  ========================================================= */
   Future<void> _simulateAuth() async {
     if (_certificateImage != null) return;
 
@@ -268,9 +396,6 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     });
   }
 
-  /* =========================================================
-     가입 완료 → step_4 이동
-  ========================================================= */
   Future<void> _goToCompletion() async {
     if (_submitting) return;
     setState(() => _submitting = true);
@@ -292,7 +417,100 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
 }
 
 /* =========================================================
-   공통 UI 컴포넌트 (이전 스타일 유지)
+   STEP 3 전용 컴포넌트
+========================================================= */
+
+class _AgreementGroup extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _AgreementGroup({
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.mainPaleBlue),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.pointDustyNavy,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _AgreementTile extends StatelessWidget {
+  final bool value;
+  final String text;
+  final bool small;
+  final ValueChanged<bool> onChanged;
+
+  const _AgreementTile({
+    required this.value,
+    required this.text,
+    required this.onChanged,
+    this.small = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckboxListTile(
+      value: value,
+      onChanged: (v) => onChanged(v ?? false),
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        text,
+        style: TextStyle(fontSize: small ? 12.5 : 14.5),
+      ),
+    );
+  }
+}
+
+class _SignatureNoticeBox extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.mainPaleBlue),
+      ),
+      child: const Text(
+        "[전자서명 안내]\n"
+            "본 동의는 전자서명 방식으로 처리되며 전자서명법 및 "
+            "전자금융거래법에 따라 서면 서명과 동일한 법적 효력을 가집니다.\n\n"
+            "[전자서명 동의서]\n"
+            "상품설명서, 상품약관, 예금거래기본약관의 내용을 확인하였으며 "
+            "전자서명에 동의합니다.",
+        style: TextStyle(fontSize: 13, height: 1.5),
+      ),
+    );
+  }
+}
+
+/* =========================================================
+   공통 UI 컴포넌트
 ========================================================= */
 
 class _StepIndicator extends StatelessWidget {
@@ -359,7 +577,6 @@ class _AuthMethodCard extends StatelessWidget {
           color: selected
               ? AppColors.pointDustyNavy
               : AppColors.mainPaleBlue,
-          width: selected ? 1.5 : 1,
         ),
       ),
       child: ListTile(
@@ -370,45 +587,9 @@ class _AuthMethodCard extends StatelessWidget {
             color: AppColors.pointDustyNavy,
           ),
         ),
-        subtitle: Text(
-          description,
-          style: const TextStyle(fontSize: 13),
-        ),
+        subtitle: Text(description),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _AgreementTile extends StatelessWidget {
-  final bool value;
-  final String text;
-  final ValueChanged<bool> onChanged;
-
-  const _AgreementTile({
-    required this.value,
-    required this.text,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.mainPaleBlue),
-      ),
-      child: CheckboxListTile(
-        value: value,
-        onChanged: (v) => onChanged(v ?? false),
-        controlAffinity: ListTileControlAffinity.leading,
-        title: Text(
-          text,
-          style: const TextStyle(fontSize: 14.5),
-        ),
       ),
     );
   }
@@ -419,11 +600,7 @@ class _InputField extends StatelessWidget {
   final String hint;
   final TextInputType keyboardType;
 
-  const _InputField(
-      this.controller,
-      this.hint,
-      this.keyboardType,
-      );
+  const _InputField(this.controller, this.hint, this.keyboardType);
 
   @override
   Widget build(BuildContext context) {
@@ -436,8 +613,6 @@ class _InputField extends StatelessWidget {
           hintText: hint,
           filled: true,
           fillColor: Colors.white,
-          contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide:

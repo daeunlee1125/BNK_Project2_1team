@@ -57,6 +57,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   String depositPw = "";
   String depositPwCheck = "";
 
+  bool _periodExpanded = false;
+
 
   @override
   void initState() {
@@ -526,49 +528,124 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
         const SizedBox(height: 20),
 
-        const Text("가입 월수",
-            style: TextStyle(color: AppColors.pointDustyNavy)),
-        if (product.fixedPeriodMonth != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        const Text(
+          "가입 월수",
+          style: TextStyle(
+            color: AppColors.pointDustyNavy,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+// =======================
+// 선택 박스 (항상 보임)
+// =======================
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            setState(() {
+              _periodExpanded = !_periodExpanded;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: AppColors.mainPaleBlue.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.mainPaleBlue),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('고정 기간', style: TextStyle(color: AppColors.pointDustyNavy)),
-                Text('${product.fixedPeriodMonth}개월',
-                    style: const TextStyle(
-                        color: AppColors.pointDustyNavy,
-                        fontWeight: FontWeight.w700)),
-
+                Text(
+                  newPeriod != null ? "$newPeriod개월" : "가입 기간 선택",
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: newPeriod != null
+                        ? AppColors.pointDustyNavy
+                        : AppColors.pointDustyNavy.withOpacity(0.6),
+                  ),
+                ),
+                Icon(
+                  _periodExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: AppColors.pointDustyNavy,
+                ),
               ],
-
             ),
-          )
-        else
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: _periodOptions
-                .map((m) => ChoiceChip(
-              label: Text('$m개월'),
-              selected: newPeriod == m.toString(),
-              onSelected: (_) => setState(() => newPeriod = m.toString()),
-              selectedColor: AppColors.pointDustyNavy,
-              backgroundColor: Colors.white,
-              labelStyle: TextStyle(
-                color: newPeriod == m.toString()
-                    ? Colors.white
-                    : AppColors.pointDustyNavy,
-                fontWeight: FontWeight.w700,
-              ),
-            ))
-                .toList(),
           ),
+        ),
+
+// =======================
+// 펼쳐지는 리스트
+// =======================
+        if (_periodExpanded)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.mainPaleBlue),
+            ),
+            child: Column(
+              children: _periodOptions.map((m) {
+                final bool selected = newPeriod == m.toString();
+
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      newPeriod = m.toString();
+                      _periodExpanded = false; // 선택 후 닫힘
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.pointDustyNavy.withOpacity(0.05)
+                          : Colors.white,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: m == _periodOptions.last
+                              ? Colors.transparent
+                              : AppColors.mainPaleBlue,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "$m개월",
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: selected
+                                ? AppColors.pointDustyNavy
+                                : Colors.black87,
+                          ),
+                        ),
+                        if (selected)
+                          const Icon(
+                            Icons.check,
+                            color: AppColors.pointDustyNavy,
+                            size: 20,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+
 
       ],
     );
