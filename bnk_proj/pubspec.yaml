@@ -31,6 +31,12 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # 고유 ID 생성을 위한 패키지
+  uuid: ^4.2.1
+
+  # 기기 내 보안 저장소 (Android Keystore / iOS Keychain 활용)
+  flutter_secure_storage: ^9.0.0
+
   #REST API 통신
   http: ^1.2.2
 

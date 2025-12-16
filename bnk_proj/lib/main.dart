@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:test_main/screens/member/signup_1.dart';
+import 'package:test_main/services/api_service.dart';
 
 import 'screens/app_colors.dart';
 import 'screens/main/bank_homepage.dart';
@@ -16,11 +17,17 @@ import 'package:test_main/screens/deposit/recommend.dart';
 import 'package:test_main/screens/deposit/survey.dart';
 import 'package:test_main/screens/main/menu/review_write.dart';
 
-import 'package:test_main/models/deposit/application.dart';
-void main() async {
+import 'package:test_main/utils/device_manager.dart';
+import 'package:http/http.dart' as http;
+
+void main() async{
+  // 1. 플러터 엔진 초기화 (비동기 작업 전 필수)
   WidgetsFlutterBinding.ensureInitialized();
 
-  await initializeDateFormatting('ko_KR', null);
+  // 2. 앱 실행 시점에 UUID 생성/확인
+  // 저장소에 기기 ID가 없으면 새로 만들고, 있으면 가져옴
+  String deviceId = await DeviceManager.getDeviceId();
+  debugPrint("[App Start] 기기 고유 ID 확보 완료: $deviceId");
 
   runApp(const MyApp());
 }
@@ -97,10 +104,6 @@ class MyApp extends StatelessWidget {
         DepositReviewWriteScreen.routeName: (_) =>
         const DepositReviewWriteScreen(),
       },
-
-
-
-
       home: const LoginPage(),
     );
   }
@@ -196,6 +199,18 @@ class _LoginFormState extends State<_LoginForm> {
   bool rememberMe = true;
   bool showPassword = false;
 
+  // 입력값 가져오는 컨트롤러 추가
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _pwController = TextEditingController();
+
+  @override
+  void dispose() {
+    // 메모리 누수 방지를 위해 화면이 꺼질 때 컨트롤러 정리
+    _idController.dispose();
+    _pwController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -225,7 +240,8 @@ class _LoginFormState extends State<_LoginForm> {
             ),
           ),
           const SizedBox(height: 16),
-          const TextField(
+          TextField(
+            controller: _idController, // 컨트롤러 연결
             decoration: InputDecoration(
               labelText: '아이디 또는 이메일',
               prefixIcon: Icon(Icons.person_outline, color: AppColors.pointDustyNavy),
@@ -234,6 +250,7 @@ class _LoginFormState extends State<_LoginForm> {
           ),
           const SizedBox(height: 12),
           TextField(
+            controller: _pwController, // 컨트롤러 연결
             obscureText: !showPassword,
             decoration: InputDecoration(
               labelText: '비밀번호',
@@ -274,11 +291,53 @@ class _LoginFormState extends State<_LoginForm> {
               minimumSize: const Size.fromHeight(50),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            onPressed: () {
-              debugPrint('로그인 버튼 클릭');
-              Navigator.push(context, MaterialPageRoute(
-                  builder: (context) => const BankHomePage())
-              );
+            onPressed: () async {
+              // 1. 입력값 확인
+              String id = _idController.text.trim();
+              String pw = _pwController.text.trim();
+
+              if (id.isEmpty || pw.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('아이디와 비밀번호를 입력해주세요.')),
+                );
+                return;
+              }
+
+              // 2. 기기 ID 가져오기 (main에서 이미 만들어졌으므로 즉시 리턴됨)
+              String deviceId = await DeviceManager.getDeviceId();
+
+              // 3. 로그인 요청 및 결과 처리 (Map으로 받음)
+              Map<String, dynamic> result = await ApiService.login(id, pw, deviceId);
+              String status = result['status']; // 서버에서 보낸 status 값 확인
+
+              if (!mounted) return;
+
+              if (status == 'SUCCESS') {
+                // [Case A] 정상 로그인 (기기 일치)
+                print("✅ 로그인 성공 & 기기 인증 완료");
+                Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const BankHomePage())
+                );
+              } else if (status == 'NEW_DEVICE') {
+                // [Case B] 새로운 기기 감지 -> 추가 인증 필요
+                print("새로운 기기 감지됨. 본인 인증 필요.");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('새로운 기기가 감지되었습니다. 본인 인증을 진행해주세요.'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+
+                // TODO: 여기서 본인인증 화면(SMS 등)으로 이동시키는 로직 추가
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => AuthCheckPage()));
+
+              } else {
+                // [Case C] 로그인 실패 (아이디/비번 틀림 등)
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? '로그인에 실패했습니다.')),
+                );
+              }
             },
             child: const Text('로그인하기'),
           ),
