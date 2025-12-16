@@ -23,6 +23,10 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/deposit")
 public class DepositApiController {
@@ -34,7 +38,7 @@ public class DepositApiController {
     }
 
     /**
-     * 활성화된 예금 상품 목록을 조회한다.
+     * 활성화된 예금 상품 목록을 조회
      */
     @GetMapping("/products")
     public List<DepositListResponse> getActiveProducts() {
@@ -45,7 +49,7 @@ public class DepositApiController {
     }
 
     /**
-     * 단일 예금 상품 상세 정보를 조회한다.
+     * 단일 예금 상품 상세 정보를 조회
      */
     @GetMapping("/products/{dpstId}")
     public ResponseEntity<DepositProductResponse> getProduct(@PathVariable String dpstId) {
@@ -143,26 +147,100 @@ public class DepositApiController {
     ) {
         Map<String, Object> response = new HashMap<>();
 
-        // 프론트에서 보낸 값 일부 사용
+        String dpstId = Objects.toString(request.get("dpstId"), "");
+        ProductDTO product = dpstId.isEmpty() ? null : depositMapper.findProductById(dpstId);
+
+        String productName = Optional.ofNullable(product)
+                .map(ProductDTO::getDpstName)
+                .orElse("외화정기예금");
+
+        String currency = Objects.toString(request.get("newCurrency"), "");
+        String periodLabel = request.get("newPeriodMonths") != null
+                ? request.get("newPeriodMonths") + "개월"
+                : "-";
+
+        String withdrawType = Objects.toString(request.get("withdrawType"), "krw");
+        String withdrawalAccount = Objects.toString(
+                "fx".equalsIgnoreCase(withdrawType)
+                        ? request.get("selectedFxAccount")
+                        : request.get("selectedKrwAccount"),
+                ""
+        );
+
+        String withdrawCurrency = "fx".equalsIgnoreCase(withdrawType)
+                ? Objects.toString(request.get("fxWithdrawCurrency"), "")
+                : "KRW";
+
+        String amount = formatAmount(request.get("newAmount"), currency);
+
+        String autoRenew = Objects.toString(request.get("autoRenew"), "no");
+        String autoRenewLabel = "apply".equalsIgnoreCase(autoRenew)
+                ? buildAutoRenewLabel(request.get("autoRenewCycle"))
+                : "미신청";
+
+        response.put("dpstId", dpstId);
+
         response.put("customerName", "홍길동");
-        response.put("productName", "외화정기예금");
+        response.put("productName", productName);
+
         response.put("newAccountNo", "123-456-789012");
-        response.put("currency", request.get("newCurrency"));
-        response.put("amount", request.get("newAmount"));
+        response.put("currency", currency);
+        response.put("amount", amount);
+        response.put("withdrawalAccount", withdrawalAccount);
+        response.put("withdrawCurrency", withdrawCurrency);
+        response.put("withdrawAmount", amount);
+
         response.put("rate", "3.5%");
         response.put("maturityDate", "2026-09-18");
-        response.put(
-                "periodLabel",
-                request.get("newPeriodMonths") != null
-                        ? request.get("newPeriodMonths") + "개월"
-                        : "-"
-        );
+
+
+
+        response.put("periodLabel", periodLabel);
+        response.put("autoRenewLabel", autoRenewLabel);
+
+
         response.put("contractDateTime", LocalDateTime.now().toString());
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+
+    private String formatAmount(Object amountObj, String currency) {
+        if (amountObj == null) {
+            return currency.isEmpty() ? "-" : currency + " -";
+        }
+
+        long amount;
+        if (amountObj instanceof Number number) {
+            amount = number.longValue();
+        } else {
+            try {
+                amount = Long.parseLong(amountObj.toString());
+            } catch (NumberFormatException e) {
+                return amountObj.toString();
+            }
+        }
+
+        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.KOREA);
+        return currency.isEmpty()
+                ? formatter.format(amount)
+                : currency + " " + formatter.format(amount);
+    }
+
+    private String buildAutoRenewLabel(Object cycleObj) {
+        if (cycleObj == null) {
+            return "신청 (주기 미입력)";
+        }
+
+        String cycle = cycleObj.toString();
+        return cycle.isEmpty()
+                ? "신청 (주기 미입력)"
+                : "신청 - " + cycle + "개월 주기";
+    }
+
+
 
 
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:test_main/screens/app_colors.dart';
 
 import 'package:test_main/models/deposit/application.dart';
+import 'package:intl/intl.dart';
 
 class DepositStep3Screen extends StatelessWidget {
   static const routeName = "/deposit-step3";
@@ -16,10 +17,29 @@ class DepositStep3Screen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final productName = application.product?.name ?? application.dpstId;
+    final formatter = NumberFormat.decimalPattern();
+
+    final withdrawAccountLabel = application.withdrawType == "fx"
+        ? (application.selectedFxAccount ?? "미입력")
+        : (application.selectedKrwAccount ?? "미입력");
+
+    final withdrawCurrencyLabel = application.withdrawType == "fx"
+        ? (application.fxWithdrawCurrency ?? "미입력")
+        : "KRW";
+
+    final amountLabel = application.newAmount != null
+        ? "${application.newCurrency} ${formatter.format(application.newAmount)}"
+        : "미입력";
+
+    final periodLabel = application.newPeriodMonths != null
+        ? "${application.newPeriodMonths}개월"
+        : "미입력";
+
     return Scaffold(
       backgroundColor: AppColors.backgroundOffWhite,
       appBar: AppBar(
-        title: const Text("입력확인", style: TextStyle(color: Colors.white)),
+        title: Text("$productName 입력확인", style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.pointDustyNavy,
       ),
 
@@ -33,15 +53,14 @@ class DepositStep3Screen extends StatelessWidget {
             const SizedBox(height: 30),
             _sectionTitle("출금계좌정보"),
             _infoCard([
+              ["출금 구분", application.withdrawType == "fx" ? "외화출금계좌" : "원화출금계좌"],
+
               [
                 "출금계좌",
-                application.withdrawType == "fx"
-                    ? (application.selectedFxAccount ?? "미입력")
-                    : (application.selectedKrwAccount ?? "미입력"),
+                withdrawAccountLabel,
               ],
-              ["출금통화", application.withdrawType == "fx"
-                  ? (application.fxWithdrawCurrency ?? "미입력")
-                  : "KRW"],
+
+              ["출금통화", withdrawCurrencyLabel],
               ["비밀번호 입력 여부", application.withdrawPassword != null
                   ? "입력완료"
                   : "미입력"],
@@ -53,12 +72,8 @@ class DepositStep3Screen extends StatelessWidget {
               ["신규 통화", application.newCurrency.isNotEmpty
                   ? application.newCurrency
                   : "미입력"],
-              ["신규 금액", application.newAmount != null
-                  ? application.newAmount.toString()
-                  : "미입력"],
-              ["가입기간", application.newPeriodMonths != null
-                  ? "${application.newPeriodMonths}개월"
-                  : "미입력"],
+              ["신규 금액", amountLabel],
+              ["가입기간", periodLabel],
             ]),
 
             const SizedBox(height: 28),

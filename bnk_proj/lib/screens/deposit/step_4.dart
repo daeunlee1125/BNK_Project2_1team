@@ -48,6 +48,10 @@ class DepositStep4Screen extends StatelessWidget {
   // -------------------------------------------------
   Widget _completeTop() {
     final result = args.result;
+    final productName = result.productName.isNotEmpty
+        ? result.productName
+        : (args.application.product?.name ?? args.application.dpstId);
+
     return Column(
       children: [
         Container(
@@ -64,8 +68,7 @@ class DepositStep4Screen extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          "${result.customerName}님의 ${result.productName} 가입이 완료되었습니다.",
-          style: const TextStyle(
+          "${result.customerName}님의 $productName 가입이 완료되었습니다.",          style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: AppColors.pointDustyNavy,
@@ -74,7 +77,8 @@ class DepositStep4Screen extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          "신규 계좌번호 ${result.newAccountNo.isNotEmpty ? result.newAccountNo : '-'}",          textAlign: TextAlign.center,
+          "신규 계좌번호 ${result.newAccountNo.isNotEmpty ? result.newAccountNo : '-'}",
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: AppColors.pointDustyNavy.withOpacity(0.7),
             height: 1.5,
@@ -91,17 +95,32 @@ class DepositStep4Screen extends StatelessWidget {
     final result = args.result;
     final application = args.application;
 
+    final formatter = NumberFormat.decimalPattern();
+
+    final productName = result.productName.isNotEmpty
+        ? result.productName
+        : (application.product?.name ?? application.dpstId);
+
+    final amountLabel = result.amount.isNotEmpty
+        ? result.amount
+        : (application.newAmount != null
+        ? '${application.newCurrency} ${formatter.format(application.newAmount)}'
+        : "-");
+
+    final withdrawCurrency = result.withdrawCurrency ??
+        (application.withdrawType == 'fx'
+            ? (application.fxWithdrawCurrency ?? '-')
+            : 'KRW');
+
     final rows = [
 
 
 
       ["고객명", result.customerName],
-      ["예금명", application.dpstId],
+      ["예금명", productName],
       ["신규계좌번호", result.newAccountNo.isNotEmpty ? result.newAccountNo : "-"],
       ["신규통화", result.currency.isNotEmpty ? result.currency : application.newCurrency],
-      ["신규금액", result.amount.isNotEmpty
-          ? result.amount
-          : (application.newAmount?.toString() ?? "-")],
+      ["신규금액", amountLabel],
       ["예금이율", result.rate ?? "확인중"],
       ["만기일", result.maturityDate ?? "-"],
       ["예치기간", result.periodLabel ??
@@ -113,10 +132,7 @@ class DepositStep4Screen extends StatelessWidget {
             (application.withdrawType == 'fx'
                 ? (application.selectedFxAccount ?? '-')
                 : (application.selectedKrwAccount ?? '-'))],
-      ["출금통화", result.withdrawCurrency ??
-          (application.withdrawType == 'fx'
-              ? (application.fxWithdrawCurrency ?? '-')
-              : 'KRW')],
+      ["출금통화", withdrawCurrency],
       ["출금금액", result.withdrawAmount ?? "-"],
       ["자동연장신청 여부",
         result.autoRenewLabel ?? (application.autoRenew == 'apply' ? '예' : '아니오')],

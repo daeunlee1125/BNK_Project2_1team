@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'view.dart';
 
 /// 예금 가입 플로우에서 사용하는 신청 정보 모델
 class DepositApplication {
@@ -35,6 +36,9 @@ class DepositApplication {
 
   String depositPassword = '';
   String receiveMethod = 'email';
+
+  // Product meta for UI/flow
+  DepositProduct? product;
 
   // Signature
   Uint8List? signatureImage;
