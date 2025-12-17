@@ -3,6 +3,9 @@ import 'package:test_main/screens/app_colors.dart';
 import 'package:test_main/screens/deposit/step_1.dart';
 import 'package:test_main/models/deposit/view.dart' as model;
 import 'package:test_main/services/deposit_service.dart';
+import 'package:test_main/models/terms.dart';
+import 'package:test_main/services/terms_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DepositViewArgs {
   final String dpstId;
@@ -32,24 +35,31 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
   final DepositService _service =  DepositService();
   late Future<model.DepositProduct> _futureProduct;
+  final TermsService _termsService = TermsService();
+  late Future<List<TermsDocument>> _futureTerms;
 
   @override
   void initState() {
     super.initState();
     _futureProduct = _service.fetchProductDetail(widget.dpstId);
+    _futureTerms = _termsService.fetchTerms(status: 4);
   }
 
 
   void _reload() {
     setState(() {
       _futureProduct = _service.fetchProductDetail(widget.dpstId);
+      _futureTerms = _termsService.fetchTerms(status: 4);
     });
   }
 
 
   Future<void> _refreshProduct() async {
     _reload();
-    await _futureProduct;
+    await Future.wait([
+      _futureProduct,
+      _futureTerms,
+    ]);
   }
 
 
@@ -1454,8 +1464,8 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
 
   // ============================================================
-// [탭 3] 상품약관
-// ============================================================
+  // [탭 3] 상품약관
+  // ============================================================
   Widget _buildTermsTab(model.DepositProduct product) {
     final String delibNo =
     product.deliberationNumber.isNotEmpty
@@ -1481,30 +1491,104 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
       "${end.year}.${end.month.toString().padLeft(2, '0')}.${end.day.toString().padLeft(2, '0')}";
     }
 
+    return FutureBuilder<List<TermsDocument>>(
+        future: _futureTerms,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.mainPaleBlue.withOpacity(0.8),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _termsRow("예금거래기본약관"),
-          Divider(
-            height: 1,
-            color: AppColors.mainPaleBlue.withOpacity(0.6),
-          ),
-          _termsRow("외화예금거래기본약관"),
-          Divider(
-            height: 1,
-            color: AppColors.mainPaleBlue.withOpacity(0.6),
-          ),
-          _termsRow("FLOBANK 외화 예금 상품 설명서"),
+
+          if (snapshot.hasError) {
+            return Column(
+              children: [
+                const Text(
+                  '약관 정보를 불러오지 못했습니다.',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _reload,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('다시 시도'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mainPaleBlue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          final terms = snapshot.data ?? [];
+
+
+
+
+          return Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.mainPaleBlue.withOpacity(0.8),
+
+            ),
+
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              const Text(
+              '상품설명서 및 약관',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.pointDustyNavy,
+
+
+
+
+
+                ),
+
+
+
+            ),
+            const SizedBox(height: 8),
+            Text(
+              ' 최신 버전의 상품별 설명서와 약관을 제공합니다.',
+              style: TextStyle(
+                color: Colors.black87.withOpacity(0.7),
+                height: 1.5,
+
+
+
+
+                ),
+
+            ),
+                const SizedBox(height: 16),
+                ...terms.map((t) => _termsRow(t)).toList(),
+                if (terms.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.subIvoryBeige,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.mainPaleBlue.withOpacity(0.6),
+                      ),
+                    ),
+                    child: const Text(
+                      '조회된 약관이 없습니다. 잠시 후 다시 시도해주세요.',
+                      style: TextStyle(color: Colors.black54),
+
+
+                  ),
+                ),
+
 
           const SizedBox(height: 28),
 
@@ -1512,13 +1596,17 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
           // 공시승인번호 영역
           // ------------------------------------------------------
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
-              ),
-            ),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: const BoxDecoration(
+          border: Border(
+          top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+
+
+
+                  ),
+                ),
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1561,32 +1649,73 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
               ],
             ),
           ),
-        ],
-      ),
+              ],
+
+
+
+
+
+          ),
+
+
+
+          );
+        },
     );
   }
 
-  Widget _termsRow(String label) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: AppColors.pointDustyNavy,
+  Widget _termsRow(TermsDocument terms) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.mainPaleBlue.withOpacity(0.4)),
+        borderRadius: BorderRadius.circular(10),
+        color: AppColors.subIvoryBeige,
+      ),
+
+
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        title: Text(
+          terms.title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: AppColors.pointDustyNavy,
+          ),
         ),
+        subtitle: Text(
+          'v${terms.version} · ${terms.regDate ?? "등록일 미상"}',
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.description_outlined, color: AppColors.pointDustyNavy),
+            SizedBox(width: 6),
+            Icon(Icons.download_outlined, color: AppColors.pointDustyNavy),
+          ],
+        ),
+        onTap: () => _openTerms(terms),
+
+
       ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: AppColors.pointDustyNavy,
-      ),
-      onTap: () {
-        // PDF/웹뷰 열기 예정
-      },
+
     );
   }
 
+  Future<void> _openTerms(TermsDocument terms) async {
+    final uri = Uri.parse(terms.downloadUrl);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('파일을 열 수 없습니다: ${terms.title}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
 
   // ------------------------------------------------------------
   // 하단 버튼 : 가입하기 / 목록

@@ -27,14 +27,21 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Optional;
 
+
+import kr.co.api.backend.dto.TermsHistDTO;
+import kr.co.api.backend.service.TermsDbService;
+import org.springframework.web.bind.annotation.RequestParam;
+
 @RestController
 @RequestMapping("/deposit")
 public class DepositApiController {
 
     private final DepositMapper depositMapper;
+    private final TermsDbService termsDbService;
 
-    public DepositApiController(DepositMapper depositMapper) {
+    public DepositApiController(DepositMapper depositMapper, TermsDbService termsDbService) {
         this.depositMapper = depositMapper;
+        this.termsDbService = termsDbService;
     }
 
     /**
@@ -60,6 +67,23 @@ public class DepositApiController {
 
         return ResponseEntity.ok(DepositProductResponse.from(product));
     }
+
+
+    /**
+     * 예금 관련 약관(외환예금) 리스트를 조회
+     */
+    @GetMapping("/terms")
+    public ResponseEntity<List<TermsResponse>> getTerms(
+            @RequestParam(name = "status", defaultValue = "4") int status
+    ) {
+        List<TermsHistDTO> terms = termsDbService.getTermsByLocation(status);
+        List<TermsResponse> response = terms.stream()
+                .map(TermsResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
 
     /**
      * 목록 조회 응답 DTO.
@@ -139,7 +163,35 @@ public class DepositApiController {
 
 
     /**
-     * 예금 신규 가입 신청 (프론트 연동용)
+     * 약관 응답 DTO.
+     */
+    public record TermsResponse(
+            Long histId,
+            Integer cate,
+            Integer order,
+            String title,
+            Integer version,
+            String regDate,
+            String file,
+            String content
+    ) {
+        public static TermsResponse from(TermsHistDTO dto) {
+            return new TermsResponse(
+                    dto.getThistNo(),
+                    dto.getThistTermCate(),
+                    dto.getThistTermOrder(),
+                    dto.getTermTitle(),
+                    dto.getThistVersion(),
+                    dto.getThistRegDy(),
+                    dto.getThistFile(),
+                    dto.getThistContent()
+            );
+        }
+    }
+
+    
+    /**
+     * 예금 신규 가입 신청
      */
     @PostMapping("/applications")
     public ResponseEntity<Map<String, Object>> applyDeposit(
