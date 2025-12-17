@@ -44,6 +44,8 @@ dependencies:
   camera: ^0.10.5
   permission_handler: ^11.0.1  # 권한 관리용
 
+  #외부링크열기 - pdf 열기
+  url_launcher: ^6.3.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
