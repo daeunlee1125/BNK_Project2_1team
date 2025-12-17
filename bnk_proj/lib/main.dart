@@ -5,7 +5,7 @@ import 'package:test_main/services/api_service.dart';
 import 'screens/app_colors.dart';
 import 'screens/main/bank_homepage.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
+import 'package:test_main/screens/auth/auth_verification_screen.dart';
 
 import 'package:test_main/screens/deposit/view.dart';
 import 'package:test_main/screens/deposit/step_1.dart';
@@ -294,6 +294,7 @@ class _LoginFormState extends State<_LoginForm> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: () async {
+
               // 1. 입력값 확인
               String id = _idController.text.trim();
               String pw = _pwController.text.trim();
@@ -310,32 +311,43 @@ class _LoginFormState extends State<_LoginForm> {
 
               // 3. 로그인 요청 및 결과 처리 (Map으로 받음)
               Map<String, dynamic> result = await ApiService.login(id, pw, deviceId);
-              String status = result['status']; // 서버에서 보낸 status 값 확인
+              String status = result['status'] ?? 'ERROR'; // 서버에서 보낸 status 값 확인
 
               if (!mounted) return;
 
               if (status == 'SUCCESS') {
-                // [Case A] 정상 로그인 (기기 일치)
-                print("✅ 로그인 성공 & 기기 인증 완료");
+                // [성공] -> 메인 페이지 이동
+                print("✅ 로그인 성공");
                 Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const BankHomePage())
                 );
               } else if (status == 'NEW_DEVICE') {
-                // [Case B] 새로운 기기 감지 -> 추가 인증 필요
-                print("새로운 기기 감지됨. 본인 인증 필요.");
+                print("⚠️ 새로운 기기 감지됨. 본인 인증 화면으로 이동.");
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('새로운 기기가 감지되었습니다. 본인 인증을 진행해주세요.'),
-                    duration: Duration(seconds: 3),
+                    content: Text('새로운 기기입니다. 본인 인증을 진행해주세요.'),
+                    duration: Duration(seconds: 2),
                   ),
                 );
 
-                // TODO: 여기서 본인인증 화면(SMS 등)으로 이동시키는 로직 추가
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => AuthCheckPage()));
+                // 스낵바가 보일 시간을 잠깐 줌
+                await Future.delayed(const Duration(milliseconds: 500));
+                if (!mounted) return;
 
+                // 인증 화면으로 이동 (ID, PW 전달)
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => AuthVerificationScreen(
+                            userId: id,
+                            userPassword: pw
+                        )
+                    )
+                );
               } else {
-                // [Case C] 로그인 실패 (아이디/비번 틀림 등)
+                // [실패] -> 에러 메시지
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(result['message'] ?? '로그인에 실패했습니다.')),
                 );

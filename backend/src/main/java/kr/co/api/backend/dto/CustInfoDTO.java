@@ -23,6 +23,7 @@ public class CustInfoDTO {
     private String custAddr2;
     private Integer custSecurityLevel; // 보안 등급
     private String custLastLoginDt;
+    private String custDeviceId; // UUID
 
     // 추가 필드
     private String custMaskHp;
