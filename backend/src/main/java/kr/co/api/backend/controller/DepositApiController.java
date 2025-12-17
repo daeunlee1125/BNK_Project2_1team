@@ -102,6 +102,7 @@ public class DepositApiController {
             String dpstPartWdrwYn,
             String dpstAddPayYn,
             Integer dpstAddPayMaxCnt,
+            String dpstInfoPdf,
             List<ProductLimitDTO> limits,
             Integer periodMinMonth,
             Integer periodMaxMonth,
@@ -150,6 +151,7 @@ public class DepositApiController {
                     product.getDpstPartWdrwYn(),
                     product.getDpstAddPayYn(),
                     product.getDpstAddPayMax(),
+                    product.getDpstInfoPdf(),
                     limits,
                     minMonth,
                     maxMonth,
@@ -189,7 +191,7 @@ public class DepositApiController {
         }
     }
 
-    
+
     /**
      * 예금 신규 가입 신청
      */
