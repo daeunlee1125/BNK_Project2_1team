@@ -1467,6 +1467,10 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   // [탭 3] 상품약관
   // ============================================================
   Widget _buildTermsTab(model.DepositProduct product) {
+
+    //약관 탭 자체는 정상 렌더링 - pdf 로그찍는거
+    debugPrint("[TermsTab] buildTermsTab 진입");
+
     final String delibNo =
     product.deliberationNumber.isNotEmpty
         ? product.deliberationNumber
@@ -1494,6 +1498,11 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
     return FutureBuilder<List<TermsDocument>>(
         future: _futureTerms,
         builder: (context, snapshot) {
+
+          //pdf 로그 찍기
+          debugPrint(" [TermsTab] snapshot.state=${snapshot.connectionState}");
+          debugPrint(" [TermsTab] snapshot.hasError=${snapshot.hasError}");
+          debugPrint(" [TermsTab] snapshot.data=${snapshot.data}");
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -1672,6 +1681,11 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
   List<TermsDocument> _buildTermsForProduct(
       model.DepositProduct product, List<TermsDocument> terms) {
+
+    //pdf 로그 찍기
+    debugPrint(" [TermsFilter] 서버 약관 개수 = ${terms.length}");
+    debugPrint(" [TermsFilter] product.infoPdf = ${product.infoPdf}");
+
     final List<TermsDocument> result = [];
 
     if (product.infoPdf.isNotEmpty) {
@@ -1690,6 +1704,17 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
       );
     }
     const specialTitle = 'flobank 외화예금 통합 특약';
+
+    ////////////pdf 관련 로그////////////////
+    final filtered = terms.where(
+          (t) => t.title.trim().toLowerCase() == specialTitle.toLowerCase(),
+    ).toList();
+
+    debugPrint("[TermsFilter] 특약 매칭 개수 = ${filtered.length}");
+
+    ///////////////////////////////////////
+
+
     result.addAll(
       terms.where(
             (t) => t.title.trim().toLowerCase() == specialTitle.toLowerCase(),
@@ -1705,14 +1730,20 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
 
   String _resolveTermsUrl(String filePath) {
-    if (filePath.startsWith('http')) return filePath;
+    // 1. 이미 절대경로면 그대로 사용
+    if (filePath.startsWith('http')) {
+      return filePath;
+    }
+
+    // 2. 앞에 / 가 있으면 그대로 baseUrl만 붙임
     if (filePath.startsWith('/')) {
       return '${TermsService.baseUrl}$filePath';
     }
+
+    // 3. 나머지는 uploads/terms 기준
     return '${TermsService.baseUrl}/uploads/terms/$filePath';
-
-
   }
+
 
   Widget _termsRow(TermsDocument terms) {
     return Container(
@@ -1740,10 +1771,28 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.description_outlined, color: AppColors.pointDustyNavy),
-            SizedBox(width: 6),
-            Icon(Icons.download_outlined, color: AppColors.pointDustyNavy),
+
+          children: [
+            IconButton(
+              onPressed: () => _openTerms(terms),
+              icon:
+              const Icon(Icons.description_outlined, color: AppColors.pointDustyNavy),
+              tooltip: '보기',
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: () => _downloadTerms(terms),
+              icon:
+              const Icon(Icons.download_outlined, color: AppColors.pointDustyNavy),
+              tooltip: '다운로드',
+            ),
+
+
+
+
+
+
+
           ],
         ),
         onTap: () => _openTerms(terms),
@@ -1754,10 +1803,41 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
     );
   }
 
+
   Future<void> _openTerms(TermsDocument terms) async {
+
+    //pdf 로그 찍기
+    debugPrint("[TermsOpen] 보기 클릭");
+    debugPrint("title=${terms.title}");
+    debugPrint("url=${terms.downloadUrl}");
+
+
+    await _launchTerms(terms, LaunchMode.externalApplication);
+  }
+
+
+
+
+
+  Future<void> _downloadTerms(TermsDocument terms) async {
+    await _launchTerms(terms, LaunchMode.externalApplication);
+  }
+
+  Future<void> _launchTerms(TermsDocument terms, LaunchMode mode) async {
+
+
+    debugPrint("🔴 [LaunchTerms] mode=$mode");
+    debugPrint("🔴 [LaunchTerms] rawUrl=${terms.downloadUrl}");
+
     final uri = Uri.parse(terms.downloadUrl);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!mounted) return;
+    debugPrint("🔴 [LaunchTerms] parsedUri=$uri");
+
+
+    final ok = await launchUrl(uri, mode: mode);
+    debugPrint("🔴 [LaunchTerms] launch result = $ok");
+
+    if (!ok && mounted) {
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('파일을 열 수 없습니다: ${terms.title}'),
