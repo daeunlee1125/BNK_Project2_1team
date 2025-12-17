@@ -1521,6 +1521,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
           }
 
           final terms = snapshot.data ?? [];
+          final displayTerms = _buildTermsForProduct(product, terms);
 
 
 
@@ -1545,6 +1546,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: AppColors.pointDustyNavy,
+              ),
 
 
 
@@ -1552,25 +1554,25 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
                 ),
 
-
-
-            ),
             const SizedBox(height: 8),
             Text(
               ' 최신 버전의 상품별 설명서와 약관을 제공합니다.',
               style: TextStyle(
                 color: Colors.black87.withOpacity(0.7),
                 height: 1.5,
+              ),
+
+
 
 
 
 
                 ),
 
-            ),
+
                 const SizedBox(height: 16),
-                ...terms.map((t) => _termsRow(t)).toList(),
-                if (terms.isEmpty)
+                ...displayTerms.map((t) => _termsRow(t)).toList(),
+                if (displayTerms.isEmpty)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -1586,82 +1588,130 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
                       style: TextStyle(color: Colors.black54),
 
 
-                  ),
-                ),
 
 
-          const SizedBox(height: 28),
-
-          // ------------------------------------------------------
-          // 공시승인번호 영역
-          // ------------------------------------------------------
-          Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: const BoxDecoration(
-          border: Border(
-          top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
 
 
+
+                     ),
 
                   ),
-                ),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
 
-                  "공시승인번호",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(height: 28),
+
+                // ------------------------------------------------------
+                // 공시승인번호 영역
+                // ------------------------------------------------------
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFFEEEEEE), width: 1),
+                    ),
+
+
+
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
 
-                  "이 내용은 법령 및 내부통제기준에 따른 광고관련 절차를 준수하였습니다.",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF666666),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "준법감시인 심의필 $delibNo (심의일자: $delibDate)",
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  validTo.isNotEmpty
-                      ? "유효기일 $validFrom ~ $validTo"
-                      : "유효기일 $validFrom",
-                  style: const TextStyle(
 
-                    fontSize: 15,
-                    color: Color(0xFF333333),
+
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "공시승인번호",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "이 내용은 법령 및 내부통제기준에 따른 광고관련 절차를 준수하였습니다.",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "준법감시인 심의필 $delibNo (심의일자: $delibDate)",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        validTo.isNotEmpty
+                            ? "유효기일 $validFrom ~ $validTo"
+                            : "유효기일 $validFrom",
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                    ],
+
+
+
+
                   ),
                 ),
               ],
             ),
-          ),
-              ],
-
-
-
-
-
-          ),
 
 
 
           );
         },
     );
+  }
+
+  List<TermsDocument> _buildTermsForProduct(
+      model.DepositProduct product, List<TermsDocument> terms) {
+    final List<TermsDocument> result = [];
+
+    if (product.infoPdf.isNotEmpty) {
+      result.add(
+        TermsDocument(
+          id: null,
+          cate: null,
+          order: null,
+          title: '${product.name} 상품설명서',
+          version: 1,
+          regDate: null,
+          filePath: product.infoPdf,
+          content: '',
+          downloadUrl: _resolveTermsUrl(product.infoPdf),
+        ),
+      );
+    }
+    const specialTitle = 'flobank 외화예금 통합 특약';
+    result.addAll(
+      terms.where(
+            (t) => t.title.trim().toLowerCase() == specialTitle.toLowerCase(),
+      ),
+    );
+
+    return result;
+  }
+
+
+
+
+
+
+  String _resolveTermsUrl(String filePath) {
+    if (filePath.startsWith('http')) return filePath;
+    if (filePath.startsWith('/')) {
+      return '${TermsService.baseUrl}$filePath';
+    }
+    return '${TermsService.baseUrl}/uploads/terms/$filePath';
+
+
   }
 
   Widget _termsRow(TermsDocument terms) {
