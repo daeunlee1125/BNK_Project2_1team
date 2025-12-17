@@ -35,4 +35,23 @@ class CustInfo {
     this.emailAgree,
     this.smsAgree
   });
+
+  Map<String, dynamic> toJson() => {
+    "custName": name,
+    "custJumin": rrn,
+    "custHp": phone,
+    "custEmail": email,
+    "custZip": zip,
+    "custAddr1": addr1,
+    "custAddr2": addr2,
+    // "jobType": jobType,
+    // "isForeignTax": isForeignTax,
+    "custDeviceId": deviceId,
+    "custId": id,
+    "custPw": pw,
+    "custMailAgree" : mailAgree,
+    "custPhoneAgree" : phoneAgree,
+    "custEmailAgree" : emailAgree,
+    "custSmsAgree" : smsAgree
+  };
 }

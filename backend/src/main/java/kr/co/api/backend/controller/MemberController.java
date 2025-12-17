@@ -14,13 +14,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import kr.co.api.backend.dto.CustInfoDTO;
+import kr.co.api.backend.dto.ReqSignupDTO;
 import kr.co.api.backend.jwt.CustomUserDetails;
 import kr.co.api.backend.jwt.JwtTokenProvider;
 import kr.co.api.backend.service.CustInfoService;
 import kr.co.api.backend.service.EmailService;
+import kr.co.api.backend.service.MypageService;
 import kr.co.api.backend.service.TermsDbService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -37,6 +40,8 @@ public class MemberController {
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
     private final TermsDbService termsDbService;
+    private final MypageService mypageService;
+
 
 
     //회원가입 약관 불러오기
@@ -187,5 +192,15 @@ public class MemberController {
         response.addCookie(loginFlag);
 
         return "redirect:/";
+    }
+
+    @PostMapping("/api/register")
+    public ResponseEntity<Object> appRegister(@RequestBody ReqSignupDTO reqSignupDTO) {
+
+        String custCode = custInfoService.apiRegister(reqSignupDTO.getCustInfo());
+        reqSignupDTO.getCustAcct().setAcctCustCode(custCode);
+        mypageService.apiSaveAcct(reqSignupDTO.getCustAcct());
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

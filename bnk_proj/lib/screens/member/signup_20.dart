@@ -421,6 +421,8 @@ class _DemandAccountOpenPageState extends State<DemandAccountOpenPage> {
 
                 widget.custAcct.salaryExist = salaryExist;
                 widget.custAcct.manageBranch = manageBranch;
+                widget.custAcct.acctPw = pw1;
+                widget.custAcct.contractMethod = contractMethod;
                 // 4. 다음 화면 이동
                 Navigator.push(
                   context,
@@ -428,8 +430,6 @@ class _DemandAccountOpenPageState extends State<DemandAccountOpenPage> {
                     builder: (_) => ElectronicSignaturePage(
                       custInfo: widget.custInfo,
                       custAcct: widget.custAcct,
-
-                      contractMethod: contractMethod,
 
                     ),
                   ),

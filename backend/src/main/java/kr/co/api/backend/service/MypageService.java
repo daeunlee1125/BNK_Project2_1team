@@ -31,6 +31,13 @@ public class MypageService {
     private final PasswordEncoder passwordEncoder;
     private final ExtAcctMapper extAcctMapper;
 
+    public void apiSaveAcct(CustAcctDTO custAcctDTO) {
+        String endPw = passwordEncoder.encode(custAcctDTO.getAcctPw());
+        custAcctDTO.setAcctPw(endPw);
+        custAcctDTO.setAcctName("FLO 입출금통장");
+        mypageMapper.insertAcct(custAcctDTO);
+    }
+
     public void saveAcct(CustAcctDTO custAcctDTO) { // 계좌 생성
         // 계좌 비밀번호 암호화 => 단방향
         String endPw = passwordEncoder.encode(custAcctDTO.getAcctPw());
@@ -153,7 +160,6 @@ public class MypageService {
             // 출금 이체 내역 삽입
             mypageMapper.insertTranHist(custTranHistDTO);
         }
-
 
 
     }

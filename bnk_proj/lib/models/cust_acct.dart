@@ -5,7 +5,7 @@ class CustAcct {
   bool salaryExist;      // 급여계좌 여부
   bool manageBranch;     // 관리희망점
   String? contractMethod; // 계약서 수신방법
-  String? acctName;       // ACCT_NAME
+  String? acctPw;
 
 
   CustAcct({
@@ -15,6 +15,16 @@ class CustAcct {
     required this.salaryExist,
     required this.manageBranch,
     this.contractMethod,
-    this.acctName,
+    this.acctPw,
   });
+
+  Map<String, dynamic> toJson() => {
+    "acctPurpose": purpose,
+    "acctFundSource": source,
+    // "isOwner": isOwner,
+    // "salaryExist": salaryExist,
+    // "manageBranch": manageBranch,
+    // "contractMethod": contractMethod,
+    "acctPw" : acctPw,
+  };
 }

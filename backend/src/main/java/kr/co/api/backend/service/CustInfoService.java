@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,65 @@ public class CustInfoService {
         custInfoDTO.setCustEmail(aesEmail);
 
         memberMapper.registerCustInfo(custInfoDTO);
+    }
+
+    public String apiRegister(CustInfoDTO custInfoDTO) {
+
+        log.info("[회원가입 요청] DTO 전송: {}", custInfoDTO.getCustId());
+
+        // 비밀번호 암호화 => 단방향
+        String endPw = passwordEncoder.encode(custInfoDTO.getCustPw());
+        custInfoDTO.setCustPw(endPw);
+        
+        char genderCode = custInfoDTO.getCustJumin().charAt(6);
+        
+        // 주민번호에서 성별 추출
+        switch (genderCode) {
+            case '1': case '3': case '5': case '7':
+                custInfoDTO.setCustGen("M");
+                break;
+            case '2': case '4': case '6': case '8':
+                custInfoDTO.setCustGen("F");
+                break;
+            default:
+                throw new IllegalArgumentException("잘못된 주민번호 성별 코드");
+        }
+
+        // 주민번호에서 생년월일 추출
+        String yy = custInfoDTO.getCustJumin().substring(0, 2);
+        String mm = custInfoDTO.getCustJumin().substring(2, 4);
+        String dd = custInfoDTO.getCustJumin().substring(4, 6);
+        int century = 2000;
+        switch (genderCode) {
+            case '1':
+            case '2':
+            case '5':
+            case '6':
+                century = 1900;
+                break;
+            default:
+                break;
+        }
+        int year = century + Integer.parseInt(yy);
+        custInfoDTO.setCustBirthDt(LocalDate.of(
+                year,
+                Integer.parseInt(mm),
+                Integer.parseInt(dd)
+        ));
+
+
+        // 주민번호, 전화번호, 생년월일, 이메일 암호화 (encrypt : 암호화, decrypt : 복호화)
+        String aesJumin = AesUtil.encrypt(custInfoDTO.getCustJumin());
+        String aesHp = AesUtil.encrypt(custInfoDTO.getCustHp());
+        String aesEmail = AesUtil.encrypt(custInfoDTO.getCustEmail());
+
+        custInfoDTO.setCustJumin(aesJumin);
+        custInfoDTO.setCustHp(aesHp);
+        custInfoDTO.setCustEmail(aesEmail);
+
+        memberMapper.apiRegister(custInfoDTO);
+
+        return memberMapper.findByIdCustInfo(custInfoDTO.getCustId()).getCustCode();
     }
 
     /*

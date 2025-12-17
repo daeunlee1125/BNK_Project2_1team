@@ -9,12 +9,17 @@ class AccountCreateCompletePage extends StatelessWidget {
   final CustInfo custInfo;
   final CustAcct custAcct;
 
-  final String contractMethod;
 
-  const AccountCreateCompletePage({super.key, required this.custInfo, required this.custAcct, required this.contractMethod});
+
+  const AccountCreateCompletePage({super.key, required this.custInfo, required this.custAcct,});
 
   @override
   Widget build(BuildContext context) {
+
+    debugPrint('📌 AccountCreateCompletePage 진입');
+    debugPrint('custInfo = ${custInfo.toJson()}');
+    debugPrint('custAcct = ${custAcct.toJson()}');
+
     return Scaffold(
       backgroundColor: Colors.white,
 
