@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../app_colors.dart';
-import 'exchange_risk.dart'; // ✅ 외부 리스크 화면
+import 'exchange_buy.dart';
+import 'exchange_risk.dart';
+import 'exchange_sell.dart'; // ✅ 외부 리스크 화면
 
 enum ExchangePage { rates, alerts }
 
@@ -778,6 +780,7 @@ class _ExchangeDetailScreenState
             _ActionButtons(
               changeColor: changeColor,
               isUp: isUp,
+              rate: widget.rate,
             ),
           ],
         ),
@@ -962,10 +965,12 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.changeColor,
     required this.isUp,
+    required this.rate,
   });
 
   final Color changeColor;
   final bool isUp;
+  final CurrencyRate rate;
 
   @override
   Widget build(BuildContext context) {
@@ -973,28 +978,40 @@ class _ActionButtons extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.pointDustyNavy,
-              side: const BorderSide(
-                color: AppColors.pointDustyNavy,
-              ),
-              padding:
-              const EdgeInsets.symmetric(vertical: 14),
-            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ExchangeSellPage(rate: rate),
+                ),
+              );
+            },
             child: const Text('팔기'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.pointDustyNavy,
-              padding:
-              const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: const Text('사기'),
+          child: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ExchangeBuyPage(rate: rate),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.pointDustyNavy,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  '사기',
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 12),

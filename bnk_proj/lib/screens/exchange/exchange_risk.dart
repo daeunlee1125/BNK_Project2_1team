@@ -63,7 +63,7 @@ class _ExchangeRiskScreenState extends State<ExchangeRiskScreen> {
   List<ExchangeRiskModel> _riskList = [];
   bool _isLoading = false;
 
-  // ✅ [수정됨] 조회할 통화 목록 (7개)
+  //  [수정됨] 조회할 통화 목록 (7개)
   final List<String> _targetCurrencies = [
     'USD', // 미국
     'JPY', // 일본
@@ -80,7 +80,7 @@ class _ExchangeRiskScreenState extends State<ExchangeRiskScreen> {
     _fetchRiskData(_selectedDate);
   }
 
-  // ✅ [수정됨] 통화별 한글 이름 매핑
+  //  [수정됨] 통화별 한글 이름 매핑
   String _getCurrencyDisplayName(String code) {
     switch (code) {
       case 'USD': return '미국 달러 (USD)';
@@ -105,7 +105,7 @@ class _ExchangeRiskScreenState extends State<ExchangeRiskScreen> {
 
     String dateStr = DateFormat('yyyyMMdd').format(date);
 
-    // ⚠️ 실제 백엔드 서버 주소 확인 (localhost vs IP)
+    // 실제 백엔드 서버 주소 확인 (localhost vs IP)
     final String baseUrl = "http://34.64.124.33:8080/backend/api/risk";
 
     List<ExchangeRiskModel> tempResult = [];

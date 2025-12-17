@@ -60,10 +60,12 @@ public class RiskService {
         String weatherIcon = "SUNNY";
         String weatherText = "맑음";
 
-        if (riskPercent >= 1.0) {
+        if (riskPercent >= 1.5) {
+            // 1.5% 이상 변동 (1400원 기준 약 21원 변동) -> 이건 진짜 폭풍우!
             weatherIcon = "STORM";
             weatherText = "폭풍우";
-        } else if (riskPercent >= 0.5) {
+        } else if (riskPercent >= 0.7) {
+            // 0.7% 이상 변동 (1400원 기준 약 10원 변동) -> 꽤 움직임
             weatherIcon = "CLOUDY";
             weatherText = "구름조금";
         }
@@ -82,8 +84,9 @@ public class RiskService {
         result.put("weather_text", weatherText);
 
         // 사용자용 메시지
-        String message = String.format("오늘 환율(%,.0f원) 대비 ±%s원 변동이 예상돼요.",
-                currentRate, String.format("%.1f", expectedGap));
+        String message = String.format("오늘 환율 대비 ±%s원 변동이 예상돼요.",
+                String.format("%.1f", expectedGap)); // currentRate는 제거
+
         result.put("message", message);
 
         return result;
