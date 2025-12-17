@@ -25,6 +25,7 @@ class DepositProduct {
   final String name;
   final String description;
   final String info;
+  final String infoPdf;
   final String dpstCurrency;
   final String dpstPartWdrwYn; // Y / N
   final String dpstAddPayYn; // 추가납입 가능 여부
@@ -43,6 +44,7 @@ class DepositProduct {
     required this.name,
     required this.description,
     required this.info,
+    required this.infoPdf,
     required this.dpstCurrency,
     required this.dpstPartWdrwYn,
     required this.limits,
@@ -63,6 +65,7 @@ class DepositProduct {
       name: json['dpstName']?.toString() ?? '',
       description: json['dpstDescript']?.toString() ?? '',
       info: json['dpstInfo']?.toString() ?? '',
+      infoPdf: json['dpstInfoPdf']?.toString() ?? '',
 
       dpstCurrency: json['dpstCurrency']?.toString() ?? '',
 

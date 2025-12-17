@@ -129,8 +129,9 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
             _buildSteps(),
             const SizedBox(height: 25),
 
-            _productSummary(product),
-            const SizedBox(height: 20),
+            //최상단의 요약 카드
+            //_productSummary(product),
+            //const SizedBox(height: 20),
 
             _blockTitle("출금계좌정보입력"),
             _withdrawAccount(product),

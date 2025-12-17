@@ -3,6 +3,10 @@ import 'package:test_main/screens/app_colors.dart';
 import 'package:test_main/screens/deposit/step_2.dart';
 import 'package:test_main/models/deposit/application.dart';
 
+import 'package:test_main/models/terms.dart';
+import 'package:test_main/services/terms_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 class DepositStep1Screen extends StatefulWidget {
   static const routeName = "/deposit-step1";
 
@@ -25,6 +29,11 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
   bool agree2 = false;
   bool agree3 = false;
 
+  final TermsService _termsService = TermsService();
+  late Future<void> _termsFuture;
+  List<TermsDocument> _terms = [];
+  List<bool> _termChecks = [];
+
   bool info1 = false;
   bool info2 = false;
   bool info3 = false;
@@ -34,6 +43,14 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
   bool important3 = false;
 
   bool finalAgree = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsFuture = _loadTerms();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -60,24 +77,7 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
             /// 카드 1 - 약관 및 상품설명서
             /// ================================
             _cardBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle("약관 및 상품설명서"),
-                  _check("예금거래기본약관", agree1, (v) {
-                    agree1 = v;
-                    _updateAllAgreeState();
-                  }),
-                  _check("외화예금거래기본약관", agree2, (v) {
-                    agree2 = v;
-                    _updateAllAgreeState();
-                  }),
-                  _check("상품설명서", agree3, (v) {
-                    agree3 = v;
-                    _updateAllAgreeState();
-                  }),
-                ],
-              ),
+              child: _termsAgreementSection(),
             ),
 
             /// ================================
@@ -89,8 +89,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                 children: [
                   _buildSectionTitle("확인 및 안내사항"),
                   _paragraphCheck(
-                    "[필수] 불법탈법·차명거래 금지 설명 확인",
-                    "금융실명거래법에 따라 타인의 명의로 금융거래를 하면 처벌받을 수 있습니다.",
+                    "[필수] 불법·차명거래 금지에 대한 설명 확인",
+                    "「금융실명거래 및 비밀보장에 관한 법률」에 따라 타인의 명의를 이용하거나 명의를 대여하여 금융거래를 하는 행위는 금지되어 있으며, 이를 위반할 경우 관련 법령에 따라 제재 또는 처벌을 받을 수 있음을 확인합니다.",
+
                     info1,
                         (v) {
                       info1 = v;
@@ -98,8 +99,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                     },
                   ),
                   _paragraphCheck(
-                    "[필수] 예금자보호법 설명확인",
-                    "가입 상품의 예금자보호 여부 및 보호 한도에 대한 설명을 들었습니다.",
+                    "[필수] 예금자보호제도 설명 확인",
+                    "본 상품은 「예금자보호법」에 따라 보호되며, 보호 한도는 본인 명의 금융상품의 합산 원리금 기준 1인당 최대 5천만 원임을 확인합니다.",
+
                     info2,
                         (v) {
                       info2 = v;
@@ -107,8 +109,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                     },
                   ),
                   _paragraphCheck(
-                    "[필수] 외화현찰수수료확인",
-                    "외화현찰 입출금 시 환전 수수료가 발생할 수 있습니다.",
+                    "[필수] 외화현찰 입·출금 수수료 안내 확인",
+                    "외화현찰의 입금 또는 출금 시 환전 수수료 및 기타 부대비용이 발생할 수 있으며, 수수료율은 통화 종류 및 거래 조건에 따라 달라질 수 있음을 확인합니다.",
+
                     info3,
                         (v) {
                       info3 = v;
@@ -128,8 +131,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                 children: [
                   _buildSectionTitle("금융상품의 중요사항 안내"),
                   _paragraphCheck(
-                    "[필수] 우선설명 사항",
-                    "이자율·중도해지 조건·만기후 이율 등을 확인했습니다.",
+                    "[필수] 주요 상품내용 설명 확인",
+                    "이자율, 이자지급 방식, 중도해지 시 적용되는 이율 및 만기 후 적용 이율 등 본 상품의 주요 내용을 충분히 설명받고 이해하였음을 확인합니다.",
+
                     important1,
                         (v) {
                       important1 = v;
@@ -137,8 +141,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                     },
                   ),
                   _paragraphCheck(
-                    "[필수] 부담정보 및 금융소비자의 권리",
-                    "소비자 권리(자료열람·위법계약해지 등)에 대해 안내받았습니다.",
+                    "[필수] 금융소비자의 권리 및 유의사항 확인",
+                    "금융소비자는 「금융소비자 보호에 관한 법률」에 따라 자료열람 요구권, 청약철회권, 위법계약해지권 등의 권리를 보유하고 있으며, 이에 대한 설명을 받고 확인합니다.",
+
                     important2,
                         (v) {
                       important2 = v;
@@ -146,8 +151,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                     },
                   ),
                   _paragraphCheck(
-                    "[필수] 예금성 상품 및 연계·제휴 서비스",
-                    "가입기간·이자지급·계약해제 방법 등을 확인했습니다.",
+                    "[필수] 예금성 상품 및 부가서비스 안내 확인",
+                    "본 상품의 가입기간, 이자지급 조건, 자동연장 여부, 계약해지 방법 및 관련 부가서비스에 대한 안내를 확인합니다.",
+
                     important3,
                         (v) {
                       important3 = v;
@@ -270,21 +276,144 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
   // =============================
   // 체크박스 UI
   // =============================
-  Widget _check(String text, bool value, Function(bool) onChange) {
+  Widget _termsAgreementSection() {
+    return FutureBuilder<void>(
+      future: _termsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle("약관 및 상품설명서"),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                ),
+                child: const Text(
+                  "약관 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() {
+                    _termsFuture = _loadTerms();
+                  }),
+                  icon: const Icon(Icons.refresh, color: AppColors.pointDustyNavy),
+                  label: const Text(
+                    "새로고침",
+                    style: TextStyle(color: AppColors.pointDustyNavy),
+                  ),
+                ),
+              )
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle("약관 및 상품설명서"),
+            ..._terms.asMap().entries.map((entry) {
+              return _termTile(entry.key, entry.value);
+            }),
+            if (_terms.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 6, left: 4),
+                child: Text(
+                  "표시할 약관이 없습니다. 관리자에게 문의해 주세요.",
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _termTile(int index, TermsDocument term) {
+    final checked = index < _termChecks.length ? _termChecks[index] : false;
+
     return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      value: checked,
+      onChanged: (v) {
+        setState(() {
+          if (index < _termChecks.length) {
+            _termChecks[index] = v ?? false;
+            _syncLegacyAgreement(index, v ?? false);
+          }
+          _updateAllAgreeState();
+        });
+      },
+      activeColor: AppColors.pointDustyNavy,
+      controlAffinity: ListTileControlAffinity.leading,
+
+
       title: Text(
-        text,
+        term.title,
         style: const TextStyle(
           color: AppColors.pointDustyNavy,
           fontWeight: FontWeight.w600,
         ),
       ),
-      value: value,
-      onChanged: (v) => setState(() => onChange(v!)),
-      activeColor: AppColors.pointDustyNavy,
-      controlAffinity: ListTileControlAffinity.leading,
+      subtitle: Text(
+        'v${term.version} · ${term.regDate ?? "등록일 미상"}',
+        style: TextStyle(color: AppColors.pointDustyNavy.withOpacity(0.6)),
+      ),
+      secondary: IconButton(
+        onPressed: () => _downloadTerm(term),
+        icon: const Icon(Icons.download_outlined, color: AppColors.pointDustyNavy),
+        tooltip: '다운로드',
+      ),
     );
   }
+
+  Future<void> _downloadTerm(TermsDocument term) async {
+    final uri = Uri.parse(term.downloadUrl);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('파일을 열 수 없습니다: ${term.title}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadTerms() async {
+    final terms = await _termsService.fetchTerms(status: 4);
+    setState(() {
+      _terms = terms;
+      _termChecks = List<bool>.filled(terms.length, false);
+      agree1 = false;
+      agree2 = false;
+      agree3 = false;
+    });
+  }
+
+  void _syncLegacyAgreement(int index, bool value) {
+    if (index == 0) agree1 = value;
+    if (index == 1) agree2 = value;
+    if (index == 2) agree3 = value;
+  }
+
 
   Widget _paragraphCheck(String title, String content, bool value, Function(bool) onChange) {
     return Column(
@@ -336,7 +465,7 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
         contentPadding: EdgeInsets.zero,
         activeColor: AppColors.pointDustyNavy,
         title: const Text(
-          "본인은 예금상품의 약관 및 내용을 충분히 이해하였으며 가입을 확인합니다.",
+          "본인은 본 예금상품의 약관, 상품설명서 및 주요 내용을 충분히 이해하였으며, 이에 동의하고 가입을 신청합니다.",
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
@@ -390,9 +519,17 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
           setState(() {
             allAgree = v!;
 
-            agree1 = v;
-            agree2 = v;
-            agree3 = v;
+            if (_termChecks.isNotEmpty) {
+              _termChecks = List<bool>.filled(_termChecks.length, v);
+              for (int i = 0; i < _termChecks.length; i++) {
+                _syncLegacyAgreement(i, v);
+              }
+            } else {
+              agree1 = v;
+              agree2 = v;
+              agree3 = v;
+            }
+
 
             info1 = v;
             info2 = v;
@@ -447,9 +584,9 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
           onPressed: canNext
               ? () {
             final application = DepositApplication(dpstId: widget.dpstId)
-              ..agree1 = agree1
-              ..agree2 = agree2
-              ..agree3 = agree3
+              ..agree1 = _getTermAgree(0)
+              ..agree2 = _getTermAgree(1)
+              ..agree3 = _getTermAgree(2)
               ..info1 = info1
               ..info2 = info2
               ..info3 = info3
@@ -481,9 +618,7 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
   // 체크 여부
   // =============================
   bool _allChecked() =>
-      agree1 &&
-          agree2 &&
-          agree3 &&
+      _termsAgreementComplete &&
           info1 &&
           info2 &&
           info3 &&
@@ -492,6 +627,13 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
           important3 &&
           finalAgree;
 
+  bool get _termsAgreementComplete {
+    if (_termChecks.isNotEmpty) {
+      return _termChecks.every((v) => v);
+    }
+    return agree1 && agree2 && agree3;
+  }
+
   // =============================
   // 전체 동의 상태 업데이트
   // =============================
@@ -499,5 +641,17 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
     setState(() {
       allAgree = _allChecked();
     });
+  }
+
+  bool _getTermAgree(int index) {
+    if (_termChecks.isNotEmpty) {
+      if (index < _termChecks.length) return _termChecks[index];
+      return false;
+    }
+
+    if (index == 0) return agree1;
+    if (index == 1) return agree2;
+    if (index == 2) return agree3;
+    return false;
   }
 }
