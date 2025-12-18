@@ -1823,39 +1823,56 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
 
   Future<void> _openTerms(TermsDocument terms) async {
-
     //pdf 로그 찍기
     debugPrint("[TermsOpen] 보기 클릭");
     debugPrint("title=${terms.title}");
     debugPrint("url=${terms.downloadUrl}");
 
-
     await _launchTerms(terms, LaunchMode.externalApplication);
   }
-
-
-
-
 
   Future<void> _downloadTerms(TermsDocument terms) async {
     await _launchTerms(terms, LaunchMode.externalApplication);
   }
 
-  Future<void> _launchTerms(TermsDocument terms, LaunchMode mode) async {
+  Uri? _buildTermsUri(TermsDocument terms) {
+    // 백엔드에서 제공하는 다운로드 엔드포인트를 우선 사용
+    if (terms.id != null) {
+      return Uri.parse('${TermsService.baseUrl}/terms_download/${terms.id}/file');
+    }
 
+    final raw = terms.downloadUrl.trim();
+    if (raw.isEmpty) return null;
+
+    // 공백/한글이 포함된 경우를 대비해 안전하게 인코딩
+    final encoded = Uri.encodeFull(raw);
+    final parsed = Uri.tryParse(encoded);
+    return parsed;
+  }
+
+  Future<void> _launchTerms(TermsDocument terms, LaunchMode mode) async {
+    final uri = _buildTermsUri(terms);
 
     debugPrint("🔴 [LaunchTerms] mode=$mode");
     debugPrint("🔴 [LaunchTerms] rawUrl=${terms.downloadUrl}");
+    debugPrint("🔴 [LaunchTerms] resolvedUri=$uri");
 
-    final uri = Uri.parse(terms.downloadUrl);
-    debugPrint("🔴 [LaunchTerms] parsedUri=$uri");
-
+    if (uri == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('유효한 약관 경로가 없습니다: ${terms.title}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
 
     final ok = await launchUrl(uri, mode: mode);
     debugPrint("🔴 [LaunchTerms] launch result = $ok");
 
     if (!ok && mounted) {
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('파일을 열 수 없습니다: ${terms.title}'),
