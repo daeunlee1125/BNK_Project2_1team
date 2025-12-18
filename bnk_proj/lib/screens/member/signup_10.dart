@@ -71,8 +71,40 @@ class IdCardConfirmPage extends StatelessWidget {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => IdVerifyCompletePage(custInfo: custInfo,)));
+                final isMatched = isIdCardMatched(
+                  ocrName: sname,
+                  ocrRrn: rrnRaw,
+                  custInfo: custInfo,
+                );
+
+                if (!isMatched) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text("신분증 확인 실패"),
+                      content: const Text(
+                        "입력한 정보와 신분증 정보가 일치하지 않습니다.\n신분증을 다시 촬영해주세요.",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("확인"),
+                        ),
+                      ],
+                    ),
+                  );
+                  return;
+                }
+
+                // 일치할 때만 다음 화면
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => IdVerifyCompletePage(custInfo: custInfo),
+                  ),
+                );
               },
+
               child: Container(
                 height: 60,
                 alignment: Alignment.center,
@@ -129,6 +161,21 @@ class IdCardConfirmPage extends StatelessWidget {
   }
 
 }
+
+bool isIdCardMatched({
+  required String? ocrName,
+  required String? ocrRrn,
+  required CustInfo custInfo,
+}) {
+  if (ocrName == null || ocrRrn == null) return false;
+
+  // rrn 정규화 (숫자만)
+  final ocrRrnDigits = ocrRrn.replaceAll(RegExp(r'[^0-9]'), '');
+
+  return ocrName == custInfo.name &&
+      ocrRrnDigits == custInfo.rrn;
+}
+
 
 
 String? extractRrn(String text) {

@@ -125,6 +125,26 @@ class _IdCameraPageState extends State<IdCameraPage> {
 
     if (!mounted) return;
 
+    if (isOcrFailed(recognizedText.text)) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("신분증 인식 실패"),
+          content: const Text(
+            "신분증 정보가 정확히 인식되지 않았습니다.\n"
+                "빛 번짐이 없는 곳에서 다시 촬영해주세요.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("다시 촬영"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -133,6 +153,18 @@ class _IdCameraPageState extends State<IdCameraPage> {
         ),
       ),
     );
+  }
+
+  bool isOcrFailed(String text) {
+    // 너무 짧으면 실패
+    if (text.trim().length < 20) return true;
+
+    // 이름 / 주민번호 / 날짜 중 하나라도 없으면 실패
+    if (extractName(text) == null) return true;
+    if (extractRrn(text) == null) return true;
+    if (extractIssueDate(text) == null) return true;
+
+    return false;
   }
 
 
