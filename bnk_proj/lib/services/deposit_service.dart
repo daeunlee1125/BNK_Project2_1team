@@ -7,29 +7,29 @@ import '../models/deposit/application.dart';
 import '../models/deposit/context.dart';
 import '../models/deposit/list.dart';
 import '../models/deposit/view.dart';
-import 'api_service.dart';
 
 class DepositService {
-  static const String baseUrl = 'http://34.64.124.33:8080/backend';
-  static const String mobileBaseUrl = '${ApiService.baseUrl}/deposit';
+  static const String baseUrl =
+      'http://34.64.124.33:8080/backend/deposit';
 
   final http.Client _client = http.Client();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  /// =========================
   /// 상품 목록
-  /// =========================
   Future<List<DepositProductList>> fetchProductList() async {
-    final response =
-    await _client.get(Uri.parse('$baseUrl/deposit/products'));
+    final token = await _storage.read(key: 'auth_token');
 
-    ///예금 리스트 잘 나오는지 확인하는 로그
-    ///print('STATUS = ${response.statusCode}');
-    ///print('BODY = ${response.body}');
-
+    final response = await _client.get(
+      Uri.parse('$baseUrl/products'),
+      headers: token == null
+          ? null
+          : {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
     if (response.statusCode != 200) {
-      throw Exception('상품 목록 조회 실패');
+      throw Exception('상품 목록 조회 실패 (${response.statusCode})');
     }
 
     final List<dynamic> data =
@@ -40,16 +40,21 @@ class DepositService {
         .toList();
   }
 
-  /// =========================
   /// 상품 상세
-  /// =========================
   Future<DepositProduct> fetchProductDetail(String dpstId) async {
+    final token = await _storage.read(key: 'auth_token');
+
     final response = await _client.get(
-      Uri.parse('$baseUrl/deposit/products/$dpstId'),
+      Uri.parse('$baseUrl/products/$dpstId'),
+      headers: token == null
+          ? null
+          : {
+        'Authorization': 'Bearer $token',
+      },
     );
 
     if (response.statusCode != 200) {
-      throw Exception('상품 상세 조회 실패');
+      throw Exception('상품 상세 조회 실패 (${response.statusCode})');
     }
 
     final Map<String, dynamic> data =
@@ -58,6 +63,7 @@ class DepositService {
     return DepositProduct.fromJson(data);
   }
 
+  /// 사용자 컨텍스트
   Future<DepositContext> fetchContext() async {
     final token = await _storage.read(key: 'auth_token');
     if (token == null) {
@@ -65,35 +71,32 @@ class DepositService {
     }
 
     final response = await _client.get(
-      Uri.parse('$mobileBaseUrl/context'),
+      Uri.parse('$baseUrl/context'),
       headers: {
         'Authorization': 'Bearer $token',
       },
     );
 
     if (response.statusCode != 200) {
-      throw Exception('사용자 정보를 불러오지 못했습니다. (${response.statusCode})');
+      throw Exception('사용자 정보 조회 실패 (${response.statusCode})');
     }
 
-    final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+    final Map<String, dynamic> data =
+    jsonDecode(utf8.decode(response.bodyBytes));
+
     return DepositContext.fromJson(data);
   }
 
-
-
-  /// =========================
-  /// 예금 신규 가입 신청
-  /// =========================
+  /// 예금 가입 신청
   Future<DepositSubmissionResult> submitApplication(
       DepositApplication application) async {
-
     final token = await _storage.read(key: 'auth_token');
     if (token == null) {
       throw Exception('로그인이 필요합니다.');
     }
 
     final response = await _client.post(
-      Uri.parse('$mobileBaseUrl/applications'),
+      Uri.parse('$baseUrl/applications'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -101,7 +104,8 @@ class DepositService {
       body: jsonEncode(application.toJson()),
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
+    if (response.statusCode != 200 &&
+        response.statusCode != 201) {
       throw Exception('예금 가입 신청 실패 (${response.statusCode})');
     }
 
@@ -110,5 +114,4 @@ class DepositService {
 
     return DepositSubmissionResult.fromJson(data);
   }
-
 }
