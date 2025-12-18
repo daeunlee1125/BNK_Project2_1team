@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:test_main/main.dart';
 import '../../services/api_service.dart';
 import '../main/bank_homepage.dart';
 import '../app_colors.dart';
@@ -47,9 +49,9 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
     if (result['status'] == 'SUCCESS') {
       // 로그인 성공 시 메인으로 이동 (이전 기록 삭제)
       Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const BankHomePage()),
-              (route) => false
+        context,
+        MaterialPageRoute(builder: (context) => const BankHomePage()), // LoginPage로 직접 이동
+            (route) => false,
       );
     } else {
       // 실패 시 알림 및 초기화
@@ -67,11 +69,25 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
       body: Column(
         children: [
           const SizedBox(height: 60),
-          // 아이디 표시 (어떤 아이디로 로그인하는지 알려주기 위함)
-          Text("${widget.userId}님,", style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 8),
           const Text("간편비밀번호 6자리를 입력하세요", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 40),
+
+          // 다른 계정으로 로그인 버튼
+          TextButton(
+            onPressed: () async {
+              // 저장된 아이디 삭제
+              const storage = FlutterSecureStorage();
+              await storage.delete(key: 'saved_userid');
+
+              // 로그인 화면으로 이동
+              if (!mounted) return;
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+
+              // 또는 직접 이동: Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+            },
+            child: const Text("다른 아이디로 로그인", style: TextStyle(color: Colors.grey, decoration: TextDecoration.underline)),
+          ),
 
           // PIN 도트 UI
           Row(

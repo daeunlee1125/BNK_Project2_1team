@@ -23,6 +23,8 @@ import 'package:test_main/utils/device_manager.dart';
 import 'package:http/http.dart' as http;
 import 'package:test_main/models/deposit/application.dart';
 
+import 'package:test_main/screens/splash_screen.dart';
+
 
 void main() async{
   // 1. 플러터 엔진 초기화 (비동기 작업 전 필수)
@@ -109,7 +111,7 @@ class MyApp extends StatelessWidget {
         DepositReviewWriteScreen.routeName: (_) =>
         const DepositReviewWriteScreen(),
       },
-      home: const LoginPage(),
+      home: const SplashScreen(),
     );
   }
 }
@@ -325,13 +327,18 @@ class _LoginFormState extends State<_LoginForm> {
               }
               else if (result['status'] == 'NEW_DEVICE') {
                 // ★ 새로운 기기 감지 -> 인증 화면 이동
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('새로운 기기입니다. 인증을 진행해주세요.')));
-                await Future.delayed(const Duration(milliseconds: 500));
+                bool hasPin = result['hasPin'] ?? false;
 
                 if (!mounted) return;
                 Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AuthVerificationScreen(userId: id, userPassword: pw))
+                    MaterialPageRoute(
+                        builder: (context) => AuthVerificationScreen(
+                          userId: id,
+                          userPassword: pw,
+                          hasPin: hasPin, // ★ 생성자로 전달
+                        )
+                    )
                 );
               }
               else {

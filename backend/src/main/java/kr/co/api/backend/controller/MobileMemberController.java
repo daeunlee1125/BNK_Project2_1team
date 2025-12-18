@@ -47,6 +47,10 @@ public class MobileMemberController {
             Boolean checkId = mobileMemberService.login(request);
             Map<String, Object> response = new HashMap<>();
 
+            // PIN 존재 여부 확인 로직
+            // custPin이 null이 아니면 true, null이면 false
+            boolean hasPin = custInfoDTO.getCustPin() != null && !custInfoDTO.getCustPin().isEmpty();
+
             if(checkId){
                 log.info("인증 성공. 토큰 생성 중...");
                 String token = jwtTokenProvider.createToken(custInfoDTO.getCustCode(), "USER", custInfoDTO.getCustName());
@@ -62,6 +66,10 @@ public class MobileMemberController {
                 log.info("다른 기기로 접근하여 추가 인증이 필요합니다.");
                 response.put("status", "NEW_DEVICE");
                 response.put("message", "등록되지 않은 기기입니다. 추가 인증이 필요합니다.");
+
+                // PIN 번호 존재 여부 확인 (null이 아니고 빈 문자열이 아니면 true)
+                response.put("hasPin", hasPin);
+
                 return ResponseEntity.ok(response);
             }
         } else {

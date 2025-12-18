@@ -1,6 +1,7 @@
 import 'dart:async'; // 타이머용
 import 'package:flutter/material.dart';
 import 'package:test_main/screens/app_colors.dart';
+import 'package:test_main/screens/auth/pin_login_screen.dart';
 import 'package:test_main/screens/auth/pin_setup_screen.dart';
 import 'package:test_main/screens/main/bank_homepage.dart';
 import 'package:test_main/services/api_service.dart';
@@ -9,11 +10,13 @@ import 'package:test_main/utils/device_manager.dart';
 class AuthVerificationScreen extends StatefulWidget {
   final String userId;
   final String userPassword;
+  final bool hasPin;
 
   const AuthVerificationScreen({
     super.key,
     required this.userId,
     required this.userPassword,
+    required this.hasPin,
   });
 
   @override
@@ -133,17 +136,27 @@ class _AuthVerificationScreenState extends State<AuthVerificationScreen> {
       if (!mounted) return;
 
       if (registerSuccess) {
-        _timer?.cancel();
-
-        // 성공 시 PIN 설정 화면으로 이동 (스택 제거 후 이동)
-        Navigator.pushReplacement(
+        // 성공 시 분기 처리
+        if (widget.hasPin) {
+          // [Case 1] 이미 PIN이 있는 경우 -> 로그인(입력) 화면으로 이동
+          Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => PinSetupScreen(userId: widget.userId))
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('기기 인증 성공! 간편번호를 설정합니다.')),
-        );
+            MaterialPageRoute(builder: (context) => PinLoginScreen(userId: widget.userId)),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('기기 인증 완료! 기존 간편비밀번호로 로그인해주세요.')),
+          );
+        } else {
+          // [Case 2] PIN이 없는 경우 -> 설정(등록) 화면으로 이동
+          // (PinSetupScreen이 아직 없다면 일단 BankHomePage로 보내셔도 됩니다)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => PinSetupScreen(userId: widget.userId)),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('기기 인증 완료! 사용할 간편비밀번호를 설정해주세요.')),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('기기 등록 실패. 잠시 후 다시 시도해주세요.')),

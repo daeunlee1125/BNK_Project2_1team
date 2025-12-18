@@ -36,7 +36,9 @@ class ApiService {
         if (responseBody['status'] == 'NEW_DEVICE') {
           return {
             'status': 'NEW_DEVICE',
-            'message': responseBody['message'] ?? '새로운 기기입니다. 인증이 필요합니다.'
+            'message': responseBody['message'] ?? '새로운 기기입니다.',
+            // 서버에서 받은 hasPin 값 전달 (없으면 false)
+            'hasPin': responseBody['hasPin'] ?? false,
           };
         }
 
