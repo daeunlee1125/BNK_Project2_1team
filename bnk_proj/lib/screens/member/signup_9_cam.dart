@@ -4,6 +4,8 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:test_main/models/cust_info.dart';
 import 'package:test_main/screens/member/signup_10.dart';
 
+import '../app_colors.dart';
+
 class IdCameraPage extends StatefulWidget {
   const IdCameraPage({super.key, required this.custInfo,});
 
@@ -128,20 +130,74 @@ class _IdCameraPageState extends State<IdCameraPage> {
     if (isOcrFailed(recognizedText.text)) {
       showDialog(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text("신분증 인식 실패"),
-          content: const Text(
-            "신분증 정보가 정확히 인식되지 않았습니다.\n"
-                "빛 번짐이 없는 곳에서 다시 촬영해주세요.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("다시 촬영"),
+        barrierDismissible: false,
+        builder: (_) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 타이틀
+                  const Text(
+                    "신분증 인식 실패",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 설명 문구
+                  Text(
+                        "빛 반사가 없는 곳에서 다시\n촬영해주세요.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 확인 버튼
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.pointDustyNavy,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "재촬영",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          );
+        },
       );
+
       return;
     }
 

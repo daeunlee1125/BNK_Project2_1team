@@ -80,19 +80,74 @@ class IdCardConfirmPage extends StatelessWidget {
                 if (!isMatched) {
                   showDialog(
                     context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text("신분증 확인 실패"),
-                      content: const Text(
-                        "입력한 정보와 신분증 정보가 일치하지 않습니다.\n신분증을 다시 촬영해주세요.",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("확인"),
+                    barrierDismissible: false,
+                    builder: (_) {
+                      return Dialog(
+                        backgroundColor: Colors.transparent,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // 타이틀
+                              const Text(
+                                "신분증 확인 실패",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // 설명 문구
+                              Text(
+                                "입력한 정보와 신분증 정보가\n일치하지 않습니다.\n신분증을 다시 촬영해주세요.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                  height: 1.4,
+                                ),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // 확인 버튼
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.pointDustyNavy,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: const Text(
+                                    "재촬영",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
+
                   return;
                 }
 
@@ -216,6 +271,9 @@ String? extractName(String text) {
     final cleaned = noParen
         .replaceAll(' ', '')
         .replaceAll(RegExp(r'[^가-힣]'), '');
+
+    if (cleaned.contains('주민')) continue;
+    if (cleaned.length > 4) continue;
 
     // 이름 길이 체크
     if (cleaned.length >= 2 && cleaned.length <= 4) {
