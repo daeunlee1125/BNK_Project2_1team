@@ -85,7 +85,11 @@ class _CustInfoAllInOneFormPageState extends State<CustInfoAllInOneFormPage> {
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!(_formKey.currentState?.validate() ?? false)){
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("필수 항목을 선택해주세요.")),
+      );
+    } return;
 
     final custInfo = CustInfo(
       name: _nameCtrl.text.trim(),
@@ -161,7 +165,7 @@ class _CustInfoAllInOneFormPageState extends State<CustInfoAllInOneFormPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
-              child: const Text("저장하고 계속", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              child: const Text("저장", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ),
         ),
