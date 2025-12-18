@@ -1735,18 +1735,31 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
 
   String _resolveTermsUrl(String filePath) {
-    // 1. 이미 절대경로면 그대로 사용
-    if (filePath.startsWith('http')) {
-      return filePath;
+    final trimmed = filePath.trim();
+    if (trimmed.isEmpty) return '';
+
+    final absolute = Uri.tryParse(trimmed);
+    if (absolute != null && absolute.hasScheme) {
+      return absolute.toString();
     }
 
-    // 2. 앞에 / 가 있으면 그대로 baseUrl만 붙임
-    if (filePath.startsWith('/')) {
-      return '${TermsService.baseUrl}$filePath';
+    final normalizedSegments = trimmed
+        .split('/')
+        .where((segment) => segment.isNotEmpty)
+        .map(Uri.encodeComponent)
+        .toList();
+
+    if (!trimmed.startsWith('/')) {
+      normalizedSegments.insertAll(0, ['uploads', 'terms']);
     }
 
-    // 3. 나머지는 uploads/terms 기준
-    return '${TermsService.baseUrl}/uploads/terms/$filePath';
+    final base = Uri.parse(TermsService.baseUrl);
+    final mergedSegments = <String>[
+      ...base.pathSegments.where((s) => s.isNotEmpty),
+      ...normalizedSegments,
+    ];
+
+    return base.replace(pathSegments: mergedSegments).toString();
   }
 
 
