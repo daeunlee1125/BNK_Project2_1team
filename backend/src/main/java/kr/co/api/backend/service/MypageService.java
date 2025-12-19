@@ -285,7 +285,7 @@ public class MypageService {
         CustAcctDTO account = mypageMapper.selectCustAcct(acctNo);
         List<CustTranHistDTO> historyList = mypageMapper.selectTranHist(acctNo);
 
-        Integer calculatorBalance = account.getAcctBalance();
+        Integer calculatorBalance = Math.toIntExact(account.getAcctBalance());
 
         for (CustTranHistDTO hist : historyList) {
 
@@ -397,7 +397,7 @@ public class MypageService {
                                  CustTranHistDTO custTranHistDTO,
                                  DpstAcctDtlDTO dpstDtlDTO){
         // 외화계좌 잔액 변화
-        balAcct.setBalBalance(balAcct.getBalBalance() - custTranHistDTO.getTranAmount().doubleValue());
+        balAcct.setBalBalance((long) (balAcct.getBalBalance() - custTranHistDTO.getTranAmount().doubleValue()));
         // 예금계좌 추납카운트, 잔액 변화
         dpstAcctHdrDTO.setDpstHdrAddPayCnt(dpstAcctHdrDTO.getDpstHdrAddPayCnt() + 1);
         dpstAcctHdrDTO.setDpstHdrBalance(dpstAcctHdrDTO.getDpstHdrBalance().add(custTranHistDTO.getDpstDtlAmount()));

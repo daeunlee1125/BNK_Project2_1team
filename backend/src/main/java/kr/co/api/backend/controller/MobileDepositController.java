@@ -234,7 +234,7 @@ public class MobileDepositController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금가능금액을 초과했습니다.");
         }
 
-        account.setAcctBalance(balance.subtract(amount).intValue());
+        account.setAcctBalance((long) balance.subtract(amount).intValue());
         depositMapper.updateAcctBalance(account);
     }
 
@@ -264,7 +264,7 @@ public class MobileDepositController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금가능금액을 초과했습니다.");
         }
 
-        balance.setBalBalance(current.subtract(amount).doubleValue());
+        balance.setBalBalance((long) current.subtract(amount).doubleValue());
         depositMapper.updateBalBalance(balance);
     }
 

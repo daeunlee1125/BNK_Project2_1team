@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'forex_insight.dart';
+import 'package:intl/intl.dart';
 
 class ExchangeSellPage extends StatefulWidget {
   final CurrencyRate rate;
@@ -74,7 +75,19 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
             style: const TextStyle(fontSize: 14, color: Colors.black54),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 4),
+
+
+          Text(
+            '(${widget.rate.regDt} 기준)',
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          ),
+
+          const SizedBox(height: 20), // ✅ 이거 추가
+
 
           // USD 카드 (보유 달러)
           _currencyCard(

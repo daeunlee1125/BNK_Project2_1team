@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.api.backend.mapper.OnlineExchangeMapper">
+
+
+    <select id="selectCustCodeByUserId" resultType="string">
+        SELECT cust_code
+        FROM TB_CUSTOMER
+        WHERE cust_id = #{custId}
+          AND cust_status = 1
+    </select>
+
+
+    <!-- =========================
+         1. 최신 환율 조회
+         ========================= -->
+    <select id="selectLatestRate" resultType="kr.co.api.backend.dto.RateDTO">
+        SELECT *
+        FROM TB_EXCH_RATE_HIST
+        WHERE rhist_currency = #{currency}
+          AND rhist_reg_dt = (
+            SELECT MAX(rhist_reg_dt)
+            FROM TB_EXCH_RATE_HIST
+            WHERE rhist_currency = #{currency}
+        )
+    </select>
+
+
+    <!-- =========================
+         2. 원화 계좌 조회 (FOR UPDATE)
+         ========================= -->
+    <select id="selectKrwAcctForUpdate"
+            resultType="kr.co.api.backend.dto.CustAcctDTO">
+        SELECT
+            acct_no        AS acctNo,
+            acct_pw        AS acctPw,
+            acct_balance   AS acctBalance,
+            acct_reg_dt    AS acctRegDt,
+            acct_status    AS acctStatus,
+            acct_cust_code AS acctCustCode,
+            acct_fund_source AS acctFundSource,
+            acct_purpose   AS acctPurpose,
+            acct_name      AS acctName
+        FROM TB_CUST_ACCT
+        WHERE acct_no = #{acctNo}
+            FOR UPDATE
+    </select>
+
+
+    <!-- =========================
+         3. 외화 자식 계좌 조회 (FOR UPDATE)
+         ========================= -->
+    <select id="selectFrgnBalanceForUpdate"
+            resultType="kr.co.api.backend.dto.FrgnAcctBalanceDTO">
+        SELECT
+            bal_no           AS balNo,
+            bal_currency     AS balCurrency,
+            bal_balance      AS balBalance,
+            bal_reg_dt       AS balRegDt,
+            bal_frgn_acct_no AS balFrgnAcctNo
+        FROM TB_FRGN_ACCT_BALANCE
+        WHERE bal_no = #{balNo}
+            FOR UPDATE
+    </select>
+
+
+    <!-- =========================
+         4. 원화 계좌 잔액 UPDATE
+         ========================= -->
+    <update id="updateKrwAcctBalance">
+        UPDATE TB_CUST_ACCT
+        SET acct_balance = #{balance}
+        WHERE acct_no = #{acctNo}
+    </update>
+
+
+    <!-- =========================
+         5. 외화 자식 계좌 잔액 UPDATE
+         ========================= -->
+    <update id="updateFrgnBalance">
+        UPDATE TB_FRGN_ACCT_BALANCE
+        SET bal_balance = #{balance}
+        WHERE bal_no = #{balNo}
+    </update>
+
+
+    <!-- =========================
+         6. 온라인 환전 INSERT
+         ========================= -->
+    <insert id="insertOnlineExchange">
+        INSERT INTO TB_FRGN_EXCH_ONLINE_TRAN (
+            exch_cust_code,
+            exch_krw_acct_no,
+            exch_frgn_acct_no,
+            exch_frgn_bal_no,
+            exch_type,
+            exch_from_currency,
+            exch_to_currency,
+            exch_krw_amount,
+            exch_frgn_amount,
+            exch_applied_rate,
+            exch_status,
+            exch_req_dt
+        ) VALUES (
+                     #{exchCustCode},
+                     #{exchKrwAcctNo},
+                     #{exchFrgnAcctNo},
+                     #{exchFrgnBalNo},
+                     #{exchType},
+                     #{exchFromCurrency},
+                     #{exchToCurrency},
+                     #{exchKrwAmount},
+                     #{exchFrgnAmount},
+                     #{exchAppliedRate},
+                     #{exchStatus},
+                     #{exchReqDt}
+                 )
+    </insert>
+
+
+
+    <insert id="insertCustTranHist">
+        INSERT INTO TB_CUST_TRAN_HIST (
+            tran_acct_no,
+            tran_cust_name,
+            tran_type,
+            tran_amount,
+            tran_dt,
+            tran_rec_acct_no,
+            tran_rec_name,
+            tran_rec_bk_code,
+            tran_memo,
+            tran_approve_no
+        ) VALUES (
+                     #{acctNo},
+                     #{custName},
+                     #{tranType},
+                     #{amount},
+                     SYSDATE,
+                     #{recAcctNo},
+                     #{custName},
+                     '001',
+                     #{memo},
+                     TO_CHAR(SYSDATE,'YYYYMMDD') || LPAD(SEQ_CUST_TRAN_NO.CURRVAL,4,'0')
+                 )
+    </insert>
+
+
+    <select id="selectCustNameByCustCode" resultType="string">
+        SELECT cust_name
+        FROM TB_CUSTOMER
+        WHERE cust_code = #{custCode}
+    </select>
+
+
+
+
+</mapper>

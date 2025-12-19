@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'forex_insight.dart';
+import '../../services/exchange_service.dart';
+import 'exchange_complete_page.dart';
+
 
 class ExchangeBuyPage extends StatefulWidget {
   final CurrencyRate rate;
@@ -74,6 +77,23 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
             style: const TextStyle(fontSize: 14, color: Colors.black54),
           ),
 
+          const SizedBox(height: 4),
+
+
+          Text(
+            '기준일: ${widget.rate.regDt}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black38,
+            ),
+
+
+          ),
+
+          const SizedBox(height: 20), // ✅ 이거 추가
+
+
+
           const SizedBox(height: 20),
 
           // 외화 카드
@@ -127,7 +147,36 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  try {
+                    final double foreign = double.tryParse(foreignAmount) ?? 0;
+                    final int krwAmount = (foreign * widget.rate.rate).round();
+
+                    // 1️⃣ 서버 환전 요청
+                    await ExchangeService.buyForeignCurrency(
+                      toCurrency: widget.rate.code,
+                      krwAmount: krwAmount,
+                    );
+
+                    // 2️⃣ 환전 완료 화면으로 이동
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ExchangeCompletePage(
+                          currency: widget.rate.code,
+                          foreignAmount: foreign,
+                          krwAmount: krwAmount,
+                          appliedRate: widget.rate.rate,
+                        ),
+                      ),
+                    );
+
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("환전 실패: $e")),
+                    );
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3F5073),
                   shape: RoundedRectangleBorder(

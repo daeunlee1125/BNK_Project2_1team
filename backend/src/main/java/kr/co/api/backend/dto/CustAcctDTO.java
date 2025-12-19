@@ -6,7 +6,7 @@ import lombok.Data;
 public class CustAcctDTO {
     private String acctNo;
     private String acctPw;
-    private Integer acctBalance;
+    private Long acctBalance;
     private String acctRegDt;
     private String acctStatus;
     private String acctCustCode;

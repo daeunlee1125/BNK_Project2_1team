@@ -28,6 +28,7 @@ class CurrencyRate {
   final double rate;
   final double change;
   final double changePercent;
+  final String regDt;
   final List<ExchangeHistory> history;
 
   CurrencyRate({
@@ -38,6 +39,7 @@ class CurrencyRate {
     required this.change,
     required this.changePercent,
     required this.history,
+    required this.regDt,
   });
 
   factory CurrencyRate.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,7 @@ class CurrencyRate {
       change: 0,
       changePercent: 0,
       history: const [],
+      regDt: json['rhistRegDt'],
     );
   }
   CurrencyRate copyWith({
@@ -59,6 +62,7 @@ class CurrencyRate {
     double? change,
     double? changePercent,
     List<ExchangeHistory>? history,
+    String? regDt,
   }) {
     return CurrencyRate(
       code: code ?? this.code,
@@ -68,6 +72,7 @@ class CurrencyRate {
       change: change ?? this.change,
       changePercent: changePercent ?? this.changePercent,
       history: history ?? this.history,
+      regDt: regDt ?? this.regDt,
     );
   }
 }
