@@ -93,7 +93,7 @@ public class PdfAiService {
         dto.setStatus("wait");
 
         // ⭐ AI 서버에서 실제로 다운로드할 수 있는 URL 생성
-        String downloadUrl = "http://34.64.124.33:8080/flobank/pdf_ai/" + storedName;
+        String downloadUrl = "http://34.64.124.33:8080/backend/pdf_ai/" + storedName;
         dto.setDownloadUrl(downloadUrl);
 
         // DB INSERT

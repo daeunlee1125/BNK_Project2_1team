@@ -1,37 +1,36 @@
 package kr.co.api.backend.controller;
 
-
-import kr.co.api.backend.service.RateService;
+import kr.co.api.backend.dto.RateDTO;
+import kr.co.api.backend.service.RateQueryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/exchange")
 @RequiredArgsConstructor
-@RequestMapping("/rate")
 public class RateController {
 
-    private final RateService rateService;
+    private final RateQueryService rateQueryService;
 
+    /**
+     * 환율 목록 (통화별 최신 1건)
+     */
+    @GetMapping("/rates")
+    public List<RateDTO> getRates() {
+        return rateQueryService.getLatestRates();
+    }
 
-    @GetMapping("/rate_info")
-    public String rateInfoPage() {
-        return "rate/rate_info";   // templates/rate/rate_info.html
+    /**
+     * 특정 통화 환율 히스토리
+     */
+    @GetMapping("/rates/{currency}")
+    public List<RateDTO> getRateHistory(
+            @PathVariable String currency
+    ) {
+        return rateQueryService.getRateHistory(currency);
     }
 
 
-    @GetMapping("/rate_calc")
-    public String rateCalcPage() {
-        return "rate/rate_calc";   // templates/rate/rate_calc.html
-    }
-
-
-    @ResponseBody
-    @GetMapping("/data")
-    public String getRateData(@RequestParam String date) {
-        return rateService.getRate(date);
-    }
 }

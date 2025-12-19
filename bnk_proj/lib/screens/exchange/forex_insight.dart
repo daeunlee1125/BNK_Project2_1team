@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import '../../services/exchange_api.dart';
 import '../app_colors.dart';
+import 'exchange_buy.dart';
+import 'exchange_risk.dart';
+import 'exchange_sell.dart';
+import 'exchange_chart.dart';
 
-enum ExchangePage { rates, alerts, risk }
+enum ExchangePage { rates, alerts }
+
+class ExchangeHistory {
+  final DateTime date;
+  final double rate;
+
+  ExchangeHistory({
+    required this.date,
+    required this.rate,
+  });
+}
+
+
+
 
 class CurrencyRate {
   final String code;
@@ -10,258 +28,85 @@ class CurrencyRate {
   final double rate;
   final double change;
   final double changePercent;
-  final double dailyHigh;
-  final double dailyLow;
-  final List<double> history;
+  final String regDt;
+  final List<ExchangeHistory> history;
 
-  const CurrencyRate({
+  CurrencyRate({
     required this.code,
     required this.name,
     required this.flagEmoji,
     required this.rate,
     required this.change,
     required this.changePercent,
-    required this.dailyHigh,
-    required this.dailyLow,
     required this.history,
+    required this.regDt,
   });
+
+  factory CurrencyRate.fromJson(Map<String, dynamic> json) {
+    return CurrencyRate(
+      code: json['rhistCurrency'],
+      name: json['rhistCurName'],
+      flagEmoji: _flagFromCode(json['rhistCurrency']),
+      rate: (json['rhistBaseRate'] as num).toDouble(),
+      change: 0,
+      changePercent: 0,
+      history: const [],
+      regDt: json['rhistRegDt'],
+    );
+  }
+  CurrencyRate copyWith({
+    String? code,
+    String? name,
+    String? flagEmoji,
+    double? rate,
+    double? change,
+    double? changePercent,
+    List<ExchangeHistory>? history,
+    String? regDt,
+  }) {
+    return CurrencyRate(
+      code: code ?? this.code,
+      name: name ?? this.name,
+      flagEmoji: flagEmoji ?? this.flagEmoji,
+      rate: rate ?? this.rate,
+      change: change ?? this.change,
+      changePercent: changePercent ?? this.changePercent,
+      history: history ?? this.history,
+      regDt: regDt ?? this.regDt,
+    );
+  }
 }
 
-class RiskIndicator {
-  final String title;
-  final String value;
-  final String subtitle;
-
-  const RiskIndicator({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-  });
+String _flagFromCode(String code) {
+  switch (code) {
+    case 'USD': return '🇺🇸';
+    case 'JPY': return '🇯🇵';
+    case 'EUR': return '🇪🇺';
+    case 'CNY':
+    case 'CNH': return '🇨🇳';
+    case 'GBP': return '🇬🇧';
+    case 'AUD': return '🇦🇺';
+    case 'CAD': return '🇨🇦';
+    case 'CHF': return '🇨🇭';
+    case 'HKD': return '🇭🇰';
+    case 'SGD': return '🇸🇬';
+    case 'THB': return '🇹🇭';
+    case 'KRW': return '🇰🇷';
+    case 'NZD': return '🇳🇿';
+    case 'DKK': return '🇩🇰';
+    case 'NOK': return '🇳🇴';
+    case 'SEK': return '🇸🇪';
+    case 'IDR': return '🇮🇩';
+    case 'MYR': return '🇲🇾';
+    case 'SAR': return '🇸🇦';
+    case 'AED': return '🇦🇪';
+    case 'BHD': return '🇧🇭';
+    case 'BND': return '🇧🇳';
+    default: return '🏳️';
+  }
 }
 
-const List<CurrencyRate> currencyRates = [
-  CurrencyRate(
-    code: 'USD',
-    name: '미국 달러',
-    flagEmoji: '🇺🇸',
-    rate: 1469.06,
-    change: -1.14,
-    changePercent: 0.08,
-    dailyHigh: 1472.09,
-    dailyLow: 1464.80,
-    history: [
-      1468.2,
-      1471.9,
-      1472.1,
-      1469.5,
-      1468.9,
-      1470.2,
-      1467.3,
-      1466.8,
-      1464.8,
-      1467.1,
-    ],
-  ),
-  CurrencyRate(
-    code: 'JPY',
-    name: '일본 엔',
-    flagEmoji: '🇯🇵',
-    rate: 943.54,
-    change: 4.63,
-    changePercent: 0.49,
-    dailyHigh: 945.10,
-    dailyLow: 939.20,
-    history: [
-      941.2,
-      942.0,
-      942.4,
-      943.8,
-      943.0,
-      944.3,
-      945.1,
-      944.0,
-      943.4,
-      943.5,
-    ],
-  ),
-  CurrencyRate(
-    code: 'EUR',
-    name: '유럽 유로',
-    flagEmoji: '🇪🇺',
-    rate: 1718.77,
-    change: 8.84,
-    changePercent: 0.52,
-    dailyHigh: 1725.10,
-    dailyLow: 1714.10,
-    history: [
-      1710.2,
-      1712.8,
-      1715.1,
-      1719.5,
-      1718.0,
-      1716.4,
-      1717.9,
-      1719.9,
-      1720.2,
-      1718.8,
-    ],
-  ),
-  CurrencyRate(
-    code: 'CNY',
-    name: '중국 위안',
-    flagEmoji: '🇨🇳',
-    rate: 208.16,
-    change: 0.38,
-    changePercent: 0.19,
-    dailyHigh: 208.80,
-    dailyLow: 207.10,
-    history: [
-      207.3,
-      207.6,
-      207.9,
-      208.2,
-      208.6,
-      208.5,
-      208.1,
-      208.0,
-      208.3,
-      208.1,
-    ],
-  ),
-  CurrencyRate(
-    code: 'HKD',
-    name: '홍콩 달러',
-    flagEmoji: '🇭🇰',
-    rate: 188.91,
-    change: 0.0,
-    changePercent: 0.0,
-    dailyHigh: 189.30,
-    dailyLow: 188.30,
-    history: [
-      188.2,
-      188.4,
-      188.6,
-      188.9,
-      189.1,
-      189.0,
-      188.7,
-      188.6,
-      188.8,
-      188.9,
-    ],
-  ),
-  CurrencyRate(
-    code: 'TWD',
-    name: '대만 달러',
-    flagEmoji: '🇹🇼',
-    rate: 47.1518,
-    change: 0.0057,
-    changePercent: 0.01,
-    dailyHigh: 47.30,
-    dailyLow: 47.10,
-    history: [
-      47.08,
-      47.10,
-      47.14,
-      47.12,
-      47.18,
-      47.20,
-      47.16,
-      47.15,
-      47.13,
-      47.15,
-    ],
-  ),
-  CurrencyRate(
-    code: 'THB',
-    name: '태국 바트',
-    flagEmoji: '🇹🇭',
-    rate: 46.3432,
-    change: 0.1730,
-    changePercent: 0.37,
-    dailyHigh: 46.60,
-    dailyLow: 46.10,
-    history: [
-      46.0,
-      46.2,
-      46.5,
-      46.4,
-      46.6,
-      46.5,
-      46.3,
-      46.2,
-      46.3,
-      46.34,
-    ],
-  ),
-  CurrencyRate(
-    code: 'SGD',
-    name: '싱가포르 달러',
-    flagEmoji: '🇸🇬',
-    rate: 1136.62,
-    change: 2.41,
-    changePercent: 0.21,
-    dailyHigh: 1139.5,
-    dailyLow: 1132.0,
-    history: [
-      1131.2,
-      1132.8,
-      1133.6,
-      1135.2,
-      1136.9,
-      1137.1,
-      1135.8,
-      1136.2,
-      1136.8,
-      1136.6,
-    ],
-  ),
-  CurrencyRate(
-    code: 'PHP',
-    name: '필리핀 페소',
-    flagEmoji: '🇵🇭',
-    rate: 24.8255,
-    change: 0.0064,
-    changePercent: 0.03,
-    dailyHigh: 24.90,
-    dailyLow: 24.70,
-    history: [
-      24.72,
-      24.75,
-      24.79,
-      24.82,
-      24.84,
-      24.83,
-      24.81,
-      24.82,
-      24.83,
-      24.82,
-    ],
-  ),
-];
 
-const List<RiskIndicator> riskIndicators = [
-  RiskIndicator(
-    title: '환율 변동성 (R 기반)',
-    value: '0.83%',
-    subtitle: '최근 30일 표준편차 추정',
-  ),
-  RiskIndicator(
-    title: '시장 심리 지수',
-    value: '중립 ↔',
-    subtitle: 'R 샤프비율·모멘텀',
-  ),
-  RiskIndicator(
-    title: '환리스크 한도',
-    value: '70% 사용',
-    subtitle: '사전 설정 대비 노출도',
-  ),
-  RiskIndicator(
-    title: '헤지 적정도',
-    value: '65%',
-    subtitle: 'VaR·CVaR 조정 권고',
-  ),
-];
 
 class ForexInsightScreen extends StatelessWidget {
   const ForexInsightScreen({super.key});
@@ -279,93 +124,139 @@ class ExchangeRateScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExchangeBaseScaffold(
       currentPage: ExchangePage.rates,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 하이라이트 카드 제거됨
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      child: DefaultTabController(
+        length: 2,
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const TabBar(
+                labelColor: AppColors.pointDustyNavy,
+                tabs: [
+                  Tab(text: '실시간 환율'),
+                  Tab(text: '환율 뉴스'),
+                ],
+              ),
             ),
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
+            const SizedBox(height: 12),
+
+            // 🔥 이게 핵심
+            Expanded(
+              child: TabBarView(
                 children: [
-                  const TabBar(
-                    labelColor: AppColors.pointDustyNavy,
-                    unselectedLabelColor: Colors.black38,
-                    indicatorColor: AppColors.pointDustyNavy,
-                    tabs: [
-                      Tab(text: '실시간 환율'),
-                      Tab(text: '환율 뉴스'),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 520,
-                    child: TabBarView(
-                      children: [
-                        _RealtimeRateList(),
-                        _ExchangeNewsPlaceholder(
-                          onTap: () => _goTo(context, ExchangePage.alerts),
-                        ),
-                      ],
-                    ),
+                  _RealtimeRateList(),          // ← 환율 리스트
+                  _ExchangeNewsPlaceholder(
+                    onTap: (){},
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _SwitcherCard(
-            title: '리스크 지표 확인',
-            description: 'R 기반 변동성·심리 지표로 노출도를 점검하세요.',
-            icon: Icons.analytics_outlined,
-            onTap: () => _goTo(context, ExchangePage.risk),
-          ),
-          const SizedBox(height: 10),
-          _SwitcherCard(
-            title: '알림 설정 이동',
-            description: '지정가와 변동폭 알림을 바로 설정할 수 있습니다.',
-            icon: Icons.notifications_active_outlined,
-            onTap: () => _goTo(context, ExchangePage.alerts),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _RealtimeRateList extends StatelessWidget {
+
+
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: currencyRates.length,
-      itemBuilder: (context, index) {
-        final rate = currencyRates[index];
-        return _RateCard(
-          rate: rate,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ExchangeDetailScreen(rate: rate),
-            ),
-          ),
+    return FutureBuilder<List<CurrencyRate>>(
+      future: ExchangeApi.fetchRates(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Center(child: Text('환율 정보를 불러오지 못했습니다.'));
+        }
+
+        final majorOrder = ['USD', 'JPY', 'EUR', 'CNY', 'CNH', 'VND'];
+
+        final rates = snapshot.data!
+          ..sort((a, b) {
+            final aIndex = majorOrder.indexOf(a.code);
+            final bIndex = majorOrder.indexOf(b.code);
+
+            if (aIndex == -1 && bIndex == -1) return 0;
+            if (aIndex == -1) return 1;
+            if (bIndex == -1) return -1;
+            return aIndex.compareTo(bIndex);
+          });
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: rates.length,
+          itemBuilder: (context, index) {
+            final rate = rates[index];
+
+            return FutureBuilder<List<ExchangeHistory>>(
+              future: ExchangeApi.fetchHistory(rate.code),
+              builder: (context, snap) {
+                if (!snap.hasData || snap.data!.length < 2) {
+                  return _RateCard(rate: rate);
+                }
+
+                final history = snap.data!
+                  ..sort((a, b) => a.date.compareTo(b.date));
+
+                final daily = <ExchangeHistory>[];
+                for (final h in history) {
+                  if (daily.isEmpty ||
+                      daily.last.date.day != h.date.day ||
+                      daily.last.date.month != h.date.month ||
+                      daily.last.date.year != h.date.year) {
+                    daily.add(h);
+                  }
+                }
+
+                if (daily.length < 2) {
+                  return _RateCard(rate: rate);
+                }
+
+
+                final yesterday = daily[daily.length - 2].rate;
+                final today = daily.last.rate;
+
+                final change = today - yesterday;
+                final changePercent =
+                yesterday == 0 ? 0.0 : (change / yesterday) * 100;
+
+                final computedRate = rate.copyWith(
+                  change: change,
+                  changePercent: changePercent,
+                );
+
+                return _RateCard(
+                  rate: computedRate,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ExchangeDetailScreen(
+                          rate: computedRate.copyWith(history: history),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
         );
       },
     );
   }
 }
 
-class _ExchangeNewsPlaceholder extends StatelessWidget {
+
+            class _ExchangeNewsPlaceholder extends StatelessWidget {
   const _ExchangeNewsPlaceholder({required this.onTap});
 
   final VoidCallback onTap;
@@ -425,124 +316,98 @@ class ExchangeAlertScreen extends StatefulWidget {
 }
 
 class _ExchangeAlertScreenState extends State<ExchangeAlertScreen> {
-  late Map<String, bool> _alertEnabled;
-  late Map<String, double> _alertTargets;
-
-  @override
-  void initState() {
-    super.initState();
-    _alertEnabled = {
-      for (final rate in currencyRates) rate.code: rate.code != 'JPY'
-    };
-    _alertTargets = {
-      for (final rate in currencyRates) rate.code: rate.rate,
-    };
-  }
+  final Map<String, bool> _alertEnabled = {};
+  final Map<String, double> _alertTargets = {};
 
   @override
   Widget build(BuildContext context) {
-    return ExchangeBaseScaffold(
-      currentPage: ExchangePage.alerts,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _InfoCard(
-            title: '환율 알림 설정',
-            body:
-            '변동폭과 지정가를 설정해 주요 통화의 움직임을 놓치지 마세요. 슬라이더로 알림 기준을 조정할 수 있습니다.',
-            icon: Icons.notifications_active_outlined,
+    return FutureBuilder<List<CurrencyRate>>(
+      future: ExchangeApi.fetchRates(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: Text('알림 정보를 불러올 수 없습니다')),
+          );
+        }
+
+        final rates = snapshot.data!;
+
+        // 🔹 최초 1회만 초기화
+        for (final rate in rates) {
+          _alertEnabled.putIfAbsent(rate.code, () => rate.code != 'JPY');
+          _alertTargets.putIfAbsent(rate.code, () => rate.rate);
+        }
+
+        return ExchangeBaseScaffold(
+          currentPage: ExchangePage.alerts,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _InfoCard(
+                title: '환율 알림 설정',
+                body:
+                '변동폭과 지정가를 설정해 주요 통화의 움직임을 놓치지 마세요. 슬라이더로 알림 기준을 조정할 수 있습니다.',
+                icon: Icons.notifications_active_outlined,
+              ),
+              const SizedBox(height: 16),
+
+              ...rates.map(
+                    (rate) => _AlertCard(
+                  rate: rate,
+                  enabled: _alertEnabled[rate.code] ?? false,
+                  target: _alertTargets[rate.code] ?? rate.rate,
+                  onToggle: (value) {
+                    setState(() {
+                      _alertEnabled[rate.code] = value;
+                    });
+                  },
+                  onChange: (value) {
+                    setState(() {
+                      _alertTargets[rate.code] =
+                          double.parse(value.toStringAsFixed(2));
+                    });
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ✅ 이 부분은 그대로 유지 (리스크 지표 이동)
+              _SwitcherCard(
+                title: '환율 조회로 이동',
+                description: '현재가와 고·저가 흐름을 다시 확인합니다.',
+                icon: Icons.table_chart_outlined,
+                onTap: () => _goTo(context, ExchangePage.rates),
+              ),
+              const SizedBox(height: 10),
+              _SwitcherCard(
+                title: '리스크 지표 보기',
+                description: 'R 기반 변동성, 헤지 권고를 살펴보세요.',
+                icon: Icons.auto_graph_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ExchangeRiskScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ...currencyRates.map(
-                (rate) => _AlertCard(
-              rate: rate,
-              enabled: _alertEnabled[rate.code] ?? false,
-              target: _alertTargets[rate.code] ?? rate.rate,
-              onToggle: (value) {
-                setState(() {
-                  _alertEnabled[rate.code] = value;
-                });
-              },
-              onChange: (value) {
-                setState(() {
-                  _alertTargets[rate.code] =
-                      double.parse(value.toStringAsFixed(2));
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SwitcherCard(
-            title: '환율 조회로 이동',
-            description: '현재가와 고·저가 흐름을 다시 확인합니다.',
-            icon: Icons.table_chart_outlined,
-            onTap: () => _goTo(context, ExchangePage.rates),
-          ),
-          const SizedBox(height: 10),
-          _SwitcherCard(
-            title: '리스크 지표 보기',
-            description: 'R 기반 변동성, 헤지 권고를 살펴보세요.',
-            icon: Icons.auto_graph_outlined,
-            onTap: () => _goTo(context, ExchangePage.risk),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class ExchangeRiskScreen extends StatelessWidget {
-  const ExchangeRiskScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return ExchangeBaseScaffold(
-      currentPage: ExchangePage.risk,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _InfoCard(
-            title: '환율 리스크 지표',
-            body:
-            'R 기반 변동성 분석과 심리 지표를 간략히 보여드립니다. VaR·CVaR를 포함한 헤지 적정도도 확인하세요.',
-            icon: Icons.shield_outlined,
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
-            ),
-            itemCount: riskIndicators.length,
-            itemBuilder: (context, index) {
-              final indicator = riskIndicators[index];
-              return _RiskCard(indicator: indicator);
-            },
-          ),
-          const SizedBox(height: 16),
-          _SwitcherCard(
-            title: '환율 조회',
-            description: '실시간 환율과 고·저가 흐름으로 이동합니다.',
-            icon: Icons.swap_horizontal_circle_outlined,
-            onTap: () => _goTo(context, ExchangePage.rates),
-          ),
-          const SizedBox(height: 10),
-          _SwitcherCard(
-            title: '알림 설정',
-            description: '지정가 알림과 변동폭 알림을 세부 조정합니다.',
-            icon: Icons.notifications_outlined,
-            onTap: () => _goTo(context, ExchangePage.alerts),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class ExchangeBaseScaffold extends StatelessWidget {
   const ExchangeBaseScaffold({
@@ -579,16 +444,19 @@ class ExchangeBaseScaffold extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        children: [
-          _ExchangeNavigation(
-            current: currentPage,
-            onSelected: (page) => _goTo(context, page),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
+        child: Column(
+          children: [
+            _ExchangeNavigation(
+              current: currentPage,
+              onSelected: (page) => _goTo(context, page),
+            ),
+            const SizedBox(height: 12),
+
+            Expanded(child: child),
+          ],
+        ),
       ),
     );
   }
@@ -614,15 +482,22 @@ class _ExchangeNavigation extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         _NavChip(
-          label: '리스크 지표',
-          selected: current == ExchangePage.risk,
-          onTap: () => onSelected(ExchangePage.risk),
-        ),
-        const SizedBox(width: 8),
-        _NavChip(
           label: '알림 설정',
           selected: current == ExchangePage.alerts,
           onTap: () => onSelected(ExchangePage.alerts),
+        ),
+        const SizedBox(width: 8),
+        _NavChip(
+          label: '리스크 지표',
+          selected: false,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ExchangeRiskScreen(),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -679,7 +554,10 @@ class _RateCard extends StatelessWidget {
     final Color changeColor =
     isUp ? Colors.redAccent : Colors.blueAccent;
     final String changeLabel =
-        '${isUp ? '+' : ''}${rate.change.toStringAsFixed(2)} (${rate.changePercent.toStringAsFixed(2)}%)';
+        '${isUp ? '+' : ''}${rate.change.toStringAsFixed(2)}원 '
+        '(${rate.changePercent.toStringAsFixed(2)}%)';
+
+
 
     return GestureDetector(
       onTap: onTap,
@@ -726,29 +604,23 @@ class _RateCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      rate.rate.toStringAsFixed(4),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.pointDustyNavy,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      isUp
-                          ? Icons.arrow_drop_up
-                          : Icons.arrow_drop_down,
-                      color: changeColor,
-                      size: 24,
-                    ),
-                  ],
-                ),
                 Text(
-                  changeLabel,
-                  style: TextStyle(color: changeColor),
+                  '${rate.rate.toStringAsFixed(2)}원',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.pointDustyNavy,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${isUp ? '+' : ''}${rate.change.toStringAsFixed(2)}원 '
+                      '(${rate.changePercent.toStringAsFixed(2)}%)',
+                  style: TextStyle(
+                    color: changeColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -771,7 +643,6 @@ class ExchangeDetailScreen extends StatefulWidget {
 
 class _ExchangeDetailScreenState
     extends State<ExchangeDetailScreen> {
-  String _selectedRange = '1일';
 
   @override
   Widget build(BuildContext context) {
@@ -779,7 +650,14 @@ class _ExchangeDetailScreenState
     final Color changeColor =
     isUp ? Colors.redAccent : Colors.blueAccent;
     final String changeLabel =
-        '${isUp ? '+' : ''}${widget.rate.change.toStringAsFixed(2)} (${widget.rate.changePercent.toStringAsFixed(2)}%)';
+        '${isUp ? '+' : ''}${widget.rate.change.toStringAsFixed(2)} (${widget
+        .rate.changePercent.toStringAsFixed(2)}%)';
+
+    final prices =
+    widget.rate.history.map((e) => e.rate).toList();
+
+    final dates =
+    widget.rate.history.map((e) => e.date).toList();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundOffWhite,
@@ -791,13 +669,6 @@ class _ExchangeDetailScreenState
           widget.rate.name,
           style: const TextStyle(color: AppColors.pointDustyNavy),
         ),
-        actions: const [
-          Icon(
-            Icons.file_download_outlined,
-            color: AppColors.pointDustyNavy,
-          ),
-          SizedBox(width: 12),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -838,40 +709,22 @@ class _ExchangeDetailScreenState
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
-            _RangeSelector(
-              selected: _selectedRange,
-              onSelected: (value) =>
-                  setState(() => _selectedRange = value),
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
+
             Expanded(
-              child: _RateChart(
-                points: widget.rate.history,
-                high: widget.rate.dailyHigh,
-                low: widget.rate.dailyLow,
-                changeColor: changeColor,
+              child: ExchangeChart(
+                prices: prices,
+                dates: dates,
+                lineColor: changeColor,
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment:
-              MainAxisAlignment.spaceBetween,
-              children: [
-                _Chip(
-                  label:
-                  '최고 ${widget.rate.dailyHigh.toStringAsFixed(2)}원',
-                ),
-                _Chip(
-                  label:
-                  '최저 ${widget.rate.dailyLow.toStringAsFixed(2)}원',
-                ),
-              ],
-            ),
+
             const SizedBox(height: 16),
+
             _ActionButtons(
               changeColor: changeColor,
               isUp: isUp,
+              rate: widget.rate,
             ),
           ],
         ),
@@ -880,186 +733,17 @@ class _ExchangeDetailScreenState
   }
 }
 
-class _RangeSelector extends StatelessWidget {
-  const _RangeSelector({
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String selected;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    const ranges = ['1일', '1주', '3달', '1년'];
-    return Row(
-      children: ranges
-          .map(
-            (range) => Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
-            label: Text(range),
-            selected: selected == range,
-            onSelected: (_) => onSelected(range),
-            selectedColor: AppColors.pointDustyNavy,
-            labelStyle: TextStyle(
-              color: selected == range
-                  ? Colors.white
-                  : AppColors.pointDustyNavy,
-              fontWeight: FontWeight.bold,
-            ),
-            backgroundColor: Colors.white,
-          ),
-        ),
-      )
-          .toList(),
-    );
-  }
-}
-
-class _RateChart extends StatelessWidget {
-  const _RateChart({
-    required this.points,
-    required this.high,
-    required this.low,
-    required this.changeColor,
-  });
-
-  final List<double> points;
-  final double high;
-  final double low;
-  final Color changeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '실시간 환율',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: CustomPaint(
-              painter: _LineChartPainter(
-                points: points,
-                lineColor: changeColor,
-              ),
-              child: Container(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                '매수 · 매도 시점에 맞춰 확인',
-                style: TextStyle(color: Colors.black54),
-              ),
-              Icon(
-                Icons.info_outline,
-                size: 18,
-                color: Colors.black45,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LineChartPainter extends CustomPainter {
-  _LineChartPainter({
-    required this.points,
-    required this.lineColor,
-  });
-
-  final List<double> points;
-  final Color lineColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.isEmpty) return;
-
-    final double maxPoint =
-    points.reduce((a, b) => a > b ? a : b);
-    final double minPoint =
-    points.reduce((a, b) => a < b ? a : b);
-    final double range =
-    (maxPoint - minPoint).abs() < 0.01
-        ? 1
-        : maxPoint - minPoint;
-
-    final Paint linePaint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final Paint areaPaint = Paint()
-      ..color = lineColor.withOpacity(0.1)
-      ..style = PaintingStyle.fill;
-
-    final Path linePath = Path();
-    final Path areaPath = Path();
-
-    for (int i = 0; i < points.length; i++) {
-      final double dx =
-          size.width * (i / (points.length - 1));
-      final double dy = size.height -
-          ((points[i] - minPoint) / range) *
-              size.height;
-
-      if (i == 0) {
-        linePath.moveTo(dx, dy);
-        areaPath.moveTo(dx, size.height);
-        areaPath.lineTo(dx, dy);
-      } else {
-        linePath.lineTo(dx, dy);
-        areaPath.lineTo(dx, dy);
-      }
-    }
-
-    areaPath.lineTo(size.width, size.height);
-    areaPath.close();
-
-    canvas.drawPath(areaPath, areaPaint);
-    canvas.drawPath(linePath, linePaint);
-  }
-
-  @override
-  bool shouldRepaint(
-      covariant _LineChartPainter oldDelegate,
-      ) {
-    return oldDelegate.points != points ||
-        oldDelegate.lineColor != lineColor;
-  }
-}
 
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.changeColor,
     required this.isUp,
+    required this.rate,
   });
 
   final Color changeColor;
   final bool isUp;
+  final CurrencyRate rate;
 
   @override
   Widget build(BuildContext context) {
@@ -1067,28 +751,40 @@ class _ActionButtons extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.pointDustyNavy,
-              side: const BorderSide(
-                color: AppColors.pointDustyNavy,
-              ),
-              padding:
-              const EdgeInsets.symmetric(vertical: 14),
-            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ExchangeSellPage(rate: rate),
+                ),
+              );
+            },
             child: const Text('팔기'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.pointDustyNavy,
-              padding:
-              const EdgeInsets.symmetric(vertical: 14),
-            ),
-            child: const Text('사기'),
+          child: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ExchangeBuyPage(rate: rate),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.pointDustyNavy,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  '사기',
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 12),
@@ -1238,58 +934,8 @@ class _AlertCard extends StatelessWidget {
   }
 }
 
-class _RiskCard extends StatelessWidget {
-  const _RiskCard({required this.indicator});
 
-  final RiskIndicator indicator;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-        children: [
-          Text(
-            indicator.title,
-            style: const TextStyle(
-              color: AppColors.pointDustyNavy,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            indicator.value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: AppColors.pointDustyNavy,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            indicator.subtitle,
-            style: const TextStyle(
-              color: Colors.black54,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _InfoCard extends StatelessWidget {
   const _InfoCard({
@@ -1434,6 +1080,7 @@ class _SwitcherCard extends StatelessWidget {
 
 void _goTo(BuildContext context, ExchangePage page) {
   Widget target;
+
   switch (page) {
     case ExchangePage.rates:
       target = const ExchangeRateScreen();
@@ -1441,23 +1088,10 @@ void _goTo(BuildContext context, ExchangePage page) {
     case ExchangePage.alerts:
       target = const ExchangeAlertScreen();
       break;
-    case ExchangePage.risk:
-      target = const ExchangeRiskScreen();
-      break;
-  }
-
-  if (ModalRoute.of(context)?.settings.name ==
-      target.runtimeType.toString()) {
-    return;
   }
 
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(
-      builder: (_) => target,
-      settings: RouteSettings(
-        name: target.runtimeType.toString(),
-      ),
-    ),
+    MaterialPageRoute(builder: (_) => target),
   );
 }

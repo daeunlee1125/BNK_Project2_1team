@@ -1,19 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:test_main/screens/app_colors.dart';
-import 'step_2.dart';
-import 'step_4.dart';
+
+import 'package:test_main/models/deposit/application.dart';
+import 'package:intl/intl.dart';
+import 'package:test_main/services/deposit_draft_service.dart';
 
 class DepositStep3Screen extends StatelessWidget {
   static const routeName = "/deposit-step3";
 
-  const DepositStep3Screen({super.key});
+  final DepositApplication application;
+  final DepositDraftService _draftService = const DepositDraftService();
+
+  const DepositStep3Screen({
+    super.key,
+    required this.application,
+  });
+
 
   @override
   Widget build(BuildContext context) {
+    final productName = application.product?.name ?? application.dpstId;
+    final formatter = NumberFormat.decimalPattern();
+
+    final withdrawAccountLabel = application.withdrawType == "fx"
+        ? (application.selectedFxAccount ?? "미입력")
+        : (application.selectedKrwAccount ?? "미입력");
+
+    final withdrawCurrencyLabel = application.withdrawType == "fx"
+        ? (application.fxWithdrawCurrency ?? "미입력")
+        : "KRW";
+
+    final amountLabel = application.newAmount != null
+        ? "${application.newCurrency} ${formatter.format(application.newAmount)}"
+        : "미입력";
+
+    final periodLabel = application.newPeriodMonths != null
+        ? "${application.newPeriodMonths}개월"
+        : "미입력";
+
     return Scaffold(
       backgroundColor: AppColors.backgroundOffWhite,
       appBar: AppBar(
-        title: const Text("입력확인", style: TextStyle(color: Colors.white)),
+        title: Text("$productName 입력확인", style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.pointDustyNavy,
       ),
 
@@ -27,31 +55,75 @@ class DepositStep3Screen extends StatelessWidget {
             const SizedBox(height: 30),
             _sectionTitle("출금계좌정보"),
             _infoCard([
-              ["출금계좌", "104302-04-412952"],
-              ["출금가능금액", "0원"],
-              ["비밀번호 입력 여부", "입력완료"],
+              ["출금 구분", application.withdrawType == "fx" ? "외화출금계좌" : "원화출금계좌"],
+
+              [
+                "출금계좌",
+                withdrawAccountLabel,
+              ],
+
+              ["출금통화", withdrawCurrencyLabel],
+              ["비밀번호 입력 여부", application.withdrawPassword != null
+                  ? "입력완료"
+                  : "미입력"],
             ]),
 
             const SizedBox(height: 28),
             _sectionTitle("신규상품가입정보"),
             _infoCard([
-              ["신규 통화", "USD"],
-              ["신규 금액", "1.00"],
-              ["가입기간", "1개월"],
+              ["신규 통화", application.newCurrency.isNotEmpty
+                  ? application.newCurrency
+                  : "미입력"],
+              ["신규 금액", amountLabel],
+              ["가입기간", periodLabel],
+
             ]),
 
             const SizedBox(height: 28),
             _sectionTitle("만기자동연장"),
             _infoCard([
-              ["자동연장 여부", "미신청"],
-              ["연장 주기", "-"],
+              ["자동연장 여부", application.autoRenew == "apply" ? "신청" : "미신청"],
+              ["연장 주기", application.autoRenew == "apply"
+                  ? "${application.autoRenewCycle ?? '-'}개월"
+                  : "-"],
+              [
+                "연장 횟수",
+                application.autoRenew == "apply"
+                    ? (application.autoRenewCount?.toString() ?? "-")
+                    : "-",
+              ],
+              [
+                "만기 자동 해지",
+                application.autoRenew == "apply" &&
+                    application.autoTerminateAtMaturity
+                    ? "예"
+                    : "아니오",
+              ],
             ]),
 
             const SizedBox(height: 28),
-            _sectionTitle("비밀번호 및 서류 수령방법"),
+            _sectionTitle("추가 옵션"),
             _infoCard([
-              ["정기예금 비밀번호", "입력완료"],
-              ["상품서류 수령방법", "이메일"],
+              [
+                "추가납입",
+                application.addPaymentEnabled
+                    ? "가능 (${application.addPaymentCount ?? '-'}회)"
+                    : "불가",
+              ],
+              [
+                "일부출금",
+                application.partialWithdrawEnabled
+                    ? "가능 (${application.partialWithdrawCount ?? '-'}회)"
+                    : "불가",
+              ],
+            ]),
+
+            const SizedBox(height: 28),
+            _sectionTitle("비밀번호"),
+            _infoCard([
+              ["정기예금 비밀번호", application.depositPassword.isNotEmpty
+                  ? "입력완료"
+                  : "미입력"],
             ]),
 
             const SizedBox(height: 40),
@@ -202,9 +274,7 @@ class DepositStep3Screen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () {
-            Navigator.pushNamed(context, DepositStep2Screen.routeName);
-          },
+          onPressed: () => Navigator.pop(context),
           child: const Text(
             "이전",
             style: TextStyle(
@@ -222,9 +292,7 @@ class DepositStep3Screen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () {
-            Navigator.pushNamed(context, "/deposit-signature");
-          },
+          onPressed: () => _goToSignature(context),
           child: const Text(
             "가입하기",
             style: TextStyle(
@@ -234,6 +302,22 @@ class DepositStep3Screen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _goToSignature(BuildContext context) async {
+    await _draftService.saveDraft(
+      application,
+      step: 3,
+      customerCode: application.customerCode,
+    );
+
+    if (!context.mounted) return;
+
+    Navigator.pushNamed(
+      context,
+      "/deposit-signature",
+      arguments: application,
     );
   }
 }

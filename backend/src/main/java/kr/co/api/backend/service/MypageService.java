@@ -31,6 +31,13 @@ public class MypageService {
     private final PasswordEncoder passwordEncoder;
     private final ExtAcctMapper extAcctMapper;
 
+    public void apiSaveAcct(CustAcctDTO custAcctDTO) {
+        String endPw = passwordEncoder.encode(custAcctDTO.getAcctPw());
+        custAcctDTO.setAcctPw(endPw);
+        custAcctDTO.setAcctName("FLO 입출금통장");
+        mypageMapper.insertAcct(custAcctDTO);
+    }
+
     public void saveAcct(CustAcctDTO custAcctDTO) { // 계좌 생성
         // 계좌 비밀번호 암호화 => 단방향
         String endPw = passwordEncoder.encode(custAcctDTO.getAcctPw());
@@ -153,7 +160,6 @@ public class MypageService {
             // 출금 이체 내역 삽입
             mypageMapper.insertTranHist(custTranHistDTO);
         }
-
 
 
     }
@@ -279,7 +285,7 @@ public class MypageService {
         CustAcctDTO account = mypageMapper.selectCustAcct(acctNo);
         List<CustTranHistDTO> historyList = mypageMapper.selectTranHist(acctNo);
 
-        Integer calculatorBalance = account.getAcctBalance();
+        Integer calculatorBalance = Math.toIntExact(account.getAcctBalance());
 
         for (CustTranHistDTO hist : historyList) {
 
@@ -391,7 +397,7 @@ public class MypageService {
                                  CustTranHistDTO custTranHistDTO,
                                  DpstAcctDtlDTO dpstDtlDTO){
         // 외화계좌 잔액 변화
-        balAcct.setBalBalance(balAcct.getBalBalance() - custTranHistDTO.getTranAmount().doubleValue());
+        balAcct.setBalBalance((long) (balAcct.getBalBalance() - custTranHistDTO.getTranAmount().doubleValue()));
         // 예금계좌 추납카운트, 잔액 변화
         dpstAcctHdrDTO.setDpstHdrAddPayCnt(dpstAcctHdrDTO.getDpstHdrAddPayCnt() + 1);
         dpstAcctHdrDTO.setDpstHdrBalance(dpstAcctHdrDTO.getDpstHdrBalance().add(custTranHistDTO.getDpstDtlAmount()));

@@ -1,9 +1,16 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:test_main/models/cust_info.dart';
+import 'package:test_main/screens/member/signup_10.dart';
+
+import '../app_colors.dart';
 
 class IdCameraPage extends StatefulWidget {
-  const IdCameraPage({super.key});
+  const IdCameraPage({super.key, required this.custInfo,});
+
+  final CustInfo custInfo;
+
 
   @override
   State<IdCameraPage> createState() => _IdCameraPageState();
@@ -23,7 +30,7 @@ class _IdCameraPageState extends State<IdCameraPage> {
     _cameras = await availableCameras();
     _controller = CameraController(
       _cameras.first,
-      ResolutionPreset.high,
+      ResolutionPreset.medium,
       enableAudio: false,
     );
     await _controller!.initialize();
@@ -105,28 +112,118 @@ class _IdCameraPageState extends State<IdCameraPage> {
   }
 
   Future<void> _takePicture() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+
     final image = await _controller!.takePicture();
 
     final inputImage = InputImage.fromFilePath(image.path);
+    final textRecognizer =
+        TextRecognizer(script: TextRecognitionScript.korean);
 
-    // 2️⃣ 한글 OCR 인식기 생성
-    final textRecognizer = TextRecognizer(
-      script: TextRecognitionScript.korean,
-    );
-
-    // 3️⃣ OCR 실행
     final recognizedText =
-    await textRecognizer.processImage(inputImage);
+        await textRecognizer.processImage(inputImage);
 
-    // 4️⃣ 결과 확인 (디버그)
-    print(recognizedText.text);
-
-    // 5️⃣ 사용 끝났으면 반드시 close
     await textRecognizer.close();
 
-    // 👉 여기서 ML Kit OCR로 넘기면 됨
-    // image.path
+    if (!mounted) return;
+
+    if (isOcrFailed(recognizedText.text)) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 타이틀
+                  const Text(
+                    "신분증 인식 실패",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 설명 문구
+                  Text(
+                        "빛 반사가 없는 곳에서 다시\n촬영해주세요.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 확인 버튼
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.pointDustyNavy,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "재촬영",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => IdCardConfirmPage(
+          ocrText: recognizedText.text, custInfo: widget.custInfo,
+        ),
+      ),
+    );
   }
+
+  bool isOcrFailed(String text) {
+    // 너무 짧으면 실패
+    if (text.trim().length < 20) return true;
+
+    // 이름 / 주민번호 / 날짜 중 하나라도 없으면 실패
+    if (extractName(text) == null) return true;
+    if (extractRrn(text) == null) return true;
+    if (extractIssueDate(text) == null) return true;
+
+    return false;
+  }
+
+
 }
 
 class _IdGuideOverlay extends StatelessWidget {

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,104 +51,94 @@ public class ChatbotController {
     }
 
     private final ChatbotRuleService chatbotRuleService;
-    @PostMapping("/mypage/chatbot")
-    public String chatbot(Model model, String q, String sessId) {
 
+    @PostMapping("/api/mypage/chatbot")
+    @ResponseBody
+    public Map<String, Object> chatbotApi(
+            @RequestBody Map<String, String> req
+    ) {
+
+        String q = req.get("question");
+
+
+
+        // 질문 저장
         ChatbotHistDTO qHistDTO = new ChatbotHistDTO();
         qHistDTO.setBotType(1);
         qHistDTO.setBotContent(q);
-        qHistDTO.setBotSessId(sessId);
-        chatbotHistService.insertHist(qHistDTO);
-
+        chatbotHistService.insertNoSessHist(qHistDTO);
 
         try {
-
             ChatbotHistDTO aHistDTO = new ChatbotHistDTO();
             aHistDTO.setBotType(2);
-            aHistDTO.setBotSessId(sessId);
 
-
+            // 금칙어 체크
             String forbiddenResponse = chatbotRuleService.checkForbiddenWord(q);
-            if (forbiddenResponse != null){
+            if (forbiddenResponse != null) {
                 aHistDTO.setBotContent(forbiddenResponse);
-                chatbotHistService.insertHist(aHistDTO);
+                chatbotHistService.insertNoSessHist(aHistDTO);
 
-                List<ChatbotHistDTO> dtoList = chatbotHistService.selectHist(sessId);
-                model.addAttribute("dtoList", dtoList);
-                model.addAttribute("sessId", sessId);
-
-                return "mypage/chatbot"; // 금칙어 차단
+                return Map.of(
+                        "answer", forbiddenResponse,
+                        "blocked", true
+                );
             }
-
 
             StringBuilder contextBuilder = new StringBuilder();
 
+            // 화이트리스트 SQL
             String query = typeClassifier.detectQueryByGPT(q);
-            System.out.println("=== 실행될 QUERY = " + query);
-            String queryResult = "";
-            if (query != null && !query.equals("null")) {
-                queryResult = whiteListService.queryAndFormat(query);
+            if (query != null && !"null".equals(query)) {
+                String queryResult = whiteListService.queryAndFormat(query);
                 contextBuilder.append("\n\n").append(queryResult);
             }
-            //System.out.println("=== 쿼리 실행 결과 = " + queryResult);
+            
+            log.info("🛒 화이트리스트 sql 실행 완");
 
-
-
-
-            // 질문 타입 분류
+            // 질문 타입 분류 + RAG
             String type = typeClassifier.detectTypeByGPT(q);
+            log.info("🔈 타입 : " + type);
+            if (type != null && !"null".equals(type)) {
 
-
-
-            if (type != null && !type.equals("null")) {
-                // 질문 임베딩
                 List<Double> qEmbedding = embeddingService.embedText(q);
-                // VectorDB 검색
+
                 var results = pineconeService.search(
                         qEmbedding,
-                        5,          // topK
-                        "fx-interest",       // namespace 전체 검색
-                        type,       // GPT가 판별한 문서 타입 (null 가능)
+                        5,
+                        "fx-interest",
+                        type,
                         0
                 );
-                contextBuilder.append("\n\n\n\n");
-                // 검색된 문서로 문맥 텍스트 구성
+
                 for (SearchResDTO r : results) {
                     Map<String, Object> meta = r.getMetadata();
                     if (meta != null && meta.containsKey("content")) {
-                        contextBuilder.append(meta.get("content")).append("\n\n");
+                        contextBuilder.append(meta.get("content"))
+                                .append("\n\n");
                     }
                 }
             }
 
             String context = contextBuilder.toString();
-            log.info("=== 최종 context ===\n" + context);
+            log.info("=== API context ===\n{}", context);
 
-            // GPT 호출 (문맥 + 질문)
             String response = chatGPTService.ask(q, context);
 
-            if (response != null) {
-                response = response.replace("\r\n", "\n");
-                response = response.replace("\n", "<br/>");
-                response = response.replace("<br>", "<br/>");
-            }
-
-
             aHistDTO.setBotContent(response);
-            chatbotHistService.insertHist(aHistDTO);
+            chatbotHistService.insertNoSessHist(aHistDTO);
 
-            List<ChatbotHistDTO> dtoList = chatbotHistService.selectHist(sessId);
-
-            model.addAttribute("dtoList", dtoList);
-            model.addAttribute("sessId", sessId);
-
-            return "mypage/chatbot";
-
+            return Map.of(
+                    "answer", response,
+                    "isUser", false,
+                    "createdAt", LocalDateTime.now()
+            );
 
         } catch (Exception e) {
             e.printStackTrace();
-            model.addAttribute("error", e.getMessage());
-            return "mypage/chatbot";
+            return Map.of(
+                    "error", "챗봇 처리 중 오류가 발생했습니다."
+            );
         }
     }
+
 }

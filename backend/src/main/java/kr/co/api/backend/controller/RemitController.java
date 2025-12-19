@@ -71,7 +71,7 @@ public class RemitController {
 
         for(FrgnAcctBalanceDTO dto : frgnAcctBalanceDTOList){
             // DTO의 balCurrency(통화)를 Key로 사용
-            currencyAcctBal.put(dto.getBalCurrency(), dto.getBalBalance());
+            currencyAcctBal.put(dto.getBalCurrency(), Double.valueOf(dto.getBalBalance()));
 
             // DTO의 balNo(자식 계좌번호)를 Value로 저장
             currencyAcctNo.put(dto.getBalCurrency(), dto.getBalNo());

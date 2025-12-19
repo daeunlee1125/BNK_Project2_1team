@@ -1,15 +1,14 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:test_main/models/cust_info.dart';
 import 'package:test_main/screens/app_colors.dart';
 import 'package:test_main/screens/member/signup_7.dart';
 
 class SignUp6Page extends StatelessWidget {
-  final String name;
-  final String rrn;
-  final String phone;
+  final CustInfo custInfo;
 
-  const SignUp6Page({super.key, required this.name, required this.rrn, required this.phone});
+  const SignUp6Page({super.key, required this.custInfo});
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +125,7 @@ class SignUp6Page extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => const _LimitAccountPopup(),
+      builder: (context) => _LimitAccountPopup(custInfo),
     );
   }
 }
@@ -135,7 +134,8 @@ class SignUp6Page extends StatelessWidget {
 
 
 class _LimitAccountPopup extends StatelessWidget {
-  const _LimitAccountPopup({super.key});
+  const _LimitAccountPopup(this.custInfo);
+  final CustInfo custInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +185,7 @@ class _LimitAccountPopup extends StatelessWidget {
               ),
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => AgreementPage()
+                    builder: (_) => AgreementPage(custInfo: custInfo,)
                 )); // 팝업 닫기
 
                 // → 필요하면 다음 페이지 push

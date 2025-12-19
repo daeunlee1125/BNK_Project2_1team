@@ -30,12 +30,30 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  local_auth: ^2.1.6
+
+  # 고유 ID 생성을 위한 패키지
+  uuid: ^4.2.1
+
+  # 기기 내 보안 저장소 (Android Keystore / iOS Keychain 활용)
+  flutter_secure_storage: ^9.0.0
+
+  #REST API 통신
+  http: ^1.2.2
+
+  # 날짜/시간 포맷
+  intl: ^0.19.0
 
   #카메라 인식 어쩌구...
   image_picker: ^1.0.4
   google_mlkit_text_recognition: ^0.11.0
+  google_mlkit_face_detection: ^0.9.0
   camera: ^0.10.5
   permission_handler: ^11.0.1  # 권한 관리용
+  crypto: ^3.0.3
+
+  #외부링크열기 - pdf 열기
+  url_launcher: ^6.3.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -50,6 +68,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_native_splash: ^2.4.0
+  flutter_launcher_icons: ^0.13.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -101,3 +121,29 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  # 배경색 (흰색 또는 원하시는 브랜드 컬러 Hex코드)
+  color: "#FFFFFF"
+
+  # 가운데 띄울 이미지 (프로젝트 루트 기준 경로)
+  image: "images/icon.png"
+
+  # 안드로이드 12 이상을 위한 설정 (아이콘 주변 배경이 원형으로 잘림)
+  android_12:
+    image: "images/icon.png"
+    color: "#FFFFFF"
+
+  # 전체 화면 채우기 여부
+  fullscreen: true
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+
+  # 사용할 이미지 경로 (프로젝트 루트 기준)
+  image_path: "images/icon.png"
+
+  # [선택] 안드로이드 8.0 이상을 위한 설정 (아이콘 배경색)
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "images/icon.png"

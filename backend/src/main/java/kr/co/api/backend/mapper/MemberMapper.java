@@ -9,4 +9,5 @@ public interface MemberMapper {
     CustInfoDTO findByCodeCustInfo(String userCode);
     void registerCustInfo(CustInfoDTO custInfoDTO);
     void insertLastLogin(String custId);
+    void apiRegister(CustInfoDTO custInfoDTO);
 }

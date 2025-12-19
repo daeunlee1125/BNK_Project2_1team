@@ -1,33 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:test_main/screens/auth/pin_login_screen.dart';
 import 'package:test_main/screens/member/signup_1.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:test_main/services/api_service.dart';
+import 'package:test_main/screens/auth/pin_setup_screen.dart';
 
 import 'screens/app_colors.dart';
 import 'screens/main/bank_homepage.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:test_main/screens/auth/auth_verification_screen.dart';
+
+import 'package:test_main/utils/device_manager.dart';
+import 'package:http/http.dart' as http;
+import 'package:test_main/models/deposit/application.dart';
+
+import 'package:test_main/screens/splash_screen.dart';
 
 import 'package:test_main/screens/deposit/view.dart';
 import 'package:test_main/screens/deposit/step_1.dart';
 import 'package:test_main/screens/deposit/step_2.dart';
 import 'package:test_main/screens/deposit/step_3.dart';
+import 'package:test_main/screens/deposit/step_4.dart';
 import 'package:test_main/screens/deposit/signature.dart';
 import 'package:test_main/screens/deposit/recommend.dart';
 import 'package:test_main/screens/deposit/survey.dart';
 import 'package:test_main/screens/main/menu/review_write.dart';
 
-
-final navigatorKey = GlobalKey<NavigatorState>();
+final navigatorKey = GlobalKey<NavigatorState>(
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final deviceId = await DeviceManager.getDeviceId();
+  debugPrint("[App Start] 기기 고유 ID 확보 완료: $deviceId");
+  await initializeDateFormatting();
   await Firebase.initializeApp();
-
   await FirebaseMessaging.instance.requestPermission();
 
   final token = await FirebaseMessaging.instance.getToken();
   await FirebaseMessaging.instance.subscribeToTopic('notice');
-  print('Subscribed to topic: notice');
+  print('Subscribed to topic: notice');  
   print('FCM token: $token');
 
   // 토큰 갱신(나중에 서버에 업데이트)
@@ -35,6 +49,7 @@ Future<void> main() async {
     print('FCM token refreshed: $newToken');
   });
 
+   // 앱이 "종료 상태"에서 푸시 눌러 켜진 경우
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage != null) {
     final route = initialMessage.data['route'];
@@ -42,12 +57,14 @@ Future<void> main() async {
     }
   }
 
+  // 앱이 "백그라운드"에서 푸시 눌러 열린 경우
   FirebaseMessaging.onMessageOpenedApp.listen((m) {
     final route = m.data['route'];
     if (route != null) {
       // navigatorKey로 pushNamed
     }
   });
+
 
   runApp(const MyApp());
 }
@@ -97,16 +114,75 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(useMaterial3: true),
       home: const LoginPage(),
       routes: {
-        DepositStep1Screen.routeName: (context) => const DepositStep1Screen(),
-        DepositStep2Screen.routeName: (context) => const DepositStep2Screen(),
-        DepositStep3Screen.routeName: (context) => const DepositStep3Screen(),
-        DepositSignatureScreen.routeName: (context) => const DepositSignatureScreen(),
-        RecommendScreen.routeName: (context) => const RecommendScreen(),
+        // -------------------------
+        // 예금 상품 상세
+        // -------------------------
+        DepositViewScreen.routeName: (context) {
+          final args =
+          ModalRoute.of(context)!.settings.arguments as DepositViewArgs;
+
+          return DepositViewScreen(
+            dpstId: args.dpstId,
+          );
+        },
+
+        // -------------------------
+        // 예금 가입 Step 1 (약관동의)
+        // -------------------------
+        DepositStep1Screen.routeName: (context) {
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is DepositStep1Args) {
+            return DepositStep1Screen(
+              dpstId: args.dpstId,
+              product: args.product,
+            );
+          }
+
+          final dpstId = args as String;
+
+          return DepositStep1Screen(dpstId: dpstId);
+        },
+
+        // -------------------------
+        // 예금 가입 Step 2 (정보입력)
+        // -------------------------
+        DepositStep2Screen.routeName: (context) {
+          final application =
+          ModalRoute.of(context)!.settings.arguments as DepositApplication;
+
+          return DepositStep2Screen(application: application);        },
+
+        // -------------------------
+        // 예금 가입 Step 3 (확인)
+        // -------------------------
+        DepositStep3Screen.routeName: (context) {
+          final application =
+          ModalRoute.of(context)!.settings.arguments as DepositApplication;
+
+          return DepositStep3Screen(application: application);
+        },
+
+        DepositSignatureScreen.routeName: (context) {
+          final application =
+          ModalRoute.of(context)!.settings.arguments as DepositApplication;
+
+          return DepositSignatureScreen(application: application);        },
+
+        DepositStep4Screen.routeName: (context) {
+          final args =
+          ModalRoute.of(context)!.settings.arguments as DepositCompletionArgs;
+
+          return DepositStep4Screen(args: args);
+        },
+
+        RecommendScreen.routeName: (_) => const RecommendScreen(),
         DepositSurveyScreen.routeName: (_) => const DepositSurveyScreen(),
-        DepositReviewWriteScreen.routeName: (_) => const DepositReviewWriteScreen(),
+        DepositReviewWriteScreen.routeName: (_) =>
+        const DepositReviewWriteScreen(),
         '/tx/detail': (_) => const TxDetailScreen(),
         '/notice/detail': (_) => const NoticeDetailScreen(),
       },
+      home: const SplashScreen(),
     );
   }
 }
@@ -202,6 +278,18 @@ class _LoginFormState extends State<_LoginForm> {
   bool rememberMe = true;
   bool showPassword = false;
 
+  // 입력값 가져오는 컨트롤러 추가
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _pwController = TextEditingController();
+
+  @override
+  void dispose() {
+    // 메모리 누수 방지를 위해 화면이 꺼질 때 컨트롤러 정리
+    _idController.dispose();
+    _pwController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -231,7 +319,8 @@ class _LoginFormState extends State<_LoginForm> {
             ),
           ),
           const SizedBox(height: 16),
-          const TextField(
+          TextField(
+            controller: _idController, // 컨트롤러 연결
             decoration: InputDecoration(
               labelText: '아이디 또는 이메일',
               prefixIcon: Icon(Icons.person_outline, color: AppColors.pointDustyNavy),
@@ -240,6 +329,7 @@ class _LoginFormState extends State<_LoginForm> {
           ),
           const SizedBox(height: 12),
           TextField(
+            controller: _pwController, // 컨트롤러 연결
             obscureText: !showPassword,
             decoration: InputDecoration(
               labelText: '비밀번호',
@@ -280,11 +370,76 @@ class _LoginFormState extends State<_LoginForm> {
               minimumSize: const Size.fromHeight(50),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            onPressed: () {
-              debugPrint('로그인 버튼 클릭');
-              Navigator.push(context, MaterialPageRoute(
-                  builder: (context) => const BankHomePage())
-              );
+            onPressed: () async {
+              String id = _idController.text.trim();
+              String pw = _pwController.text.trim();
+
+              if (id.isEmpty || pw.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('아이디와 비밀번호를 입력해주세요.')));
+                return;
+              }
+
+              String deviceId = await DeviceManager.getDeviceId();
+
+              // 로그인 요청
+              Map<String, dynamic> result = await ApiService.login(id, pw, deviceId);
+
+              if (!mounted) return;
+
+              if (result['status'] == 'SUCCESS') {
+                print("✅ 로그인 성공 -> PIN 검증 단계로 이동");
+
+                // ID 저장 (필수)
+                await const FlutterSecureStorage().write(key: 'saved_userid', value: id);
+
+                // 서버에서 받은 hasPin 값 확인
+                bool hasPin = result['hasPin'] ?? false;
+
+                if (hasPin) {
+                  // ★ [수정] 바로 BankHomePage로 가지 않고, PinLoginScreen으로 이동하여 검증 유도
+                  // (PinLoginScreen에서 인증 성공해야 BankHomePage로 넘어가게 됨)
+                  if (!mounted) return;
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => PinLoginScreen(
+                              userId: id,
+                              autoBioAuth: true // ★ (선택) ID/PW 쳤으니 지문은 생략할지, 띄울지 선택 (보통 true 추천)
+                          )
+                      )
+                  );
+                } else {
+                  // PIN이 없으면 설정 화면으로 이동
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('보안을 위해 간편 비밀번호 설정이 필요합니다.'))
+                  );
+
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => PinSetupScreen(userId: id))
+                  );
+                }
+              }
+              else if (result['status'] == 'NEW_DEVICE') {
+                // ★ 새로운 기기 감지 -> 인증 화면 이동
+                bool hasPin = result['hasPin'] ?? false;
+
+                if (!mounted) return;
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => AuthVerificationScreen(
+                          userId: id,
+                          userPassword: pw,
+                          hasPin: hasPin, // ★ 생성자로 전달
+                        )
+                    )
+                );
+              }
+              else {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? '로그인 실패')));
+              }
             },
             child: const Text('로그인하기'),
           ),
@@ -303,17 +458,40 @@ class _LoginShortcuts extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Divider(height: 32),
+        const Divider(height: 32),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // 1. 지문 로그인 버튼
             _ShortcutButton(
               icon: Icons.fingerprint,
               label: '지문 로그인',
+              onTap: () async {
+                // TODO: 지문 인식 로직 호출 (아래 3단계에서 설명)
+                print("지문 인증 시작");
+              },
             ),
+            // 2. 간편 비밀번호 로그인 버튼
             _ShortcutButton(
               icon: Icons.smartphone,
               label: '간편 비밀번호',
+              onTap: () async {
+                // 로컬에 저장된 ID가 있는지 확인
+                String? savedId = await const FlutterSecureStorage().read(key: 'saved_userid');
+
+                if (savedId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('등록된 정보가 없습니다. 일반 로그인을 먼저 진행해주세요.'))
+                  );
+                  return;
+                }
+
+                // PIN 입력 화면으로 이동 (로그인 용도)
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PinLoginScreen(userId: savedId))
+                );
+              },
             ),
             _ShortcutButton(
               icon: Icons.person_add_alt_1,

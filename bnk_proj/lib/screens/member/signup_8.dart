@@ -2,12 +2,14 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:test_main/models/cust_info.dart';
 import 'package:test_main/screens/member/signup_9_cam.dart';
 
 import '../app_colors.dart';
 
 class SignUp8Page extends StatefulWidget {
-  const SignUp8Page({super.key});
+  const SignUp8Page({super.key, required this.custInfo});
+  final CustInfo custInfo;
 
   @override
   State<SignUp8Page> createState() => _SignUp8PageState();
@@ -51,7 +53,7 @@ class _SignUp8PageState extends State<SignUp8Page> {
             ),
             const SizedBox(height: 24),
 
-            // ✅ 주민등록증 / 운전면허증 (전체 폭)
+            // 주민등록증 / 운전면허증 (전체 폭)
             Center(
               child: Container(
                 width: screenWidth * 0.7,
@@ -92,7 +94,7 @@ class _SignUp8PageState extends State<SignUp8Page> {
                 ),
                 onPressed: () {
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => IdCameraPage()));
+                      MaterialPageRoute(builder: (_) => IdCameraPage(custInfo: widget.custInfo,)));
                 },
                 child: const Text(
                   "촬영",

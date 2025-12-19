@@ -1,13 +1,22 @@
 package kr.co.api.backend.service;
 
+import kr.co.api.backend.dto.CustAcctDTO;
+import kr.co.api.backend.dto.CustFrgnAcctDTO;
 import kr.co.api.backend.dto.CustInfoDTO;
+import kr.co.api.backend.dto.FrgnAcctBalanceDTO;
 import kr.co.api.backend.jwt.JwtTokenProvider;
 import kr.co.api.backend.mapper.MemberMapper;
+import kr.co.api.backend.mapper.MypageMapper;
 import kr.co.api.backend.util.AesUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -16,6 +25,7 @@ public class CustInfoService {
     private final PasswordEncoder passwordEncoder; // SecurityConfig에서 등록한 빈
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberMapper memberMapper;
+    private final MypageMapper mypageMapper;
 
     public void saveLastLogin(String custId) {
         memberMapper.insertLastLogin(custId);
@@ -42,6 +52,114 @@ public class CustInfoService {
         custInfoDTO.setCustEmail(aesEmail);
 
         memberMapper.registerCustInfo(custInfoDTO);
+    }
+
+    @Transactional
+    public void apiRegister(CustInfoDTO custInfoDTO, CustAcctDTO custAcctDTO) {
+
+        log.info("[회원가입 + 계좌개설]");
+
+
+        /// //////////////////////////////////////
+        ///            CustInfo 삽입
+        /// //////////////////////////////////////
+
+        // 비밀번호 암호화 => 단방향
+        String endPw = passwordEncoder.encode(custInfoDTO.getCustPw());
+        custInfoDTO.setCustPw(endPw);
+        
+        char genderCode = custInfoDTO.getCustJumin().charAt(6);
+        
+        // 주민번호에서 성별 추출
+        switch (genderCode) {
+            case '1': case '3': case '5': case '7':
+                custInfoDTO.setCustGen("M");
+                break;
+            case '2': case '4': case '6': case '8':
+                custInfoDTO.setCustGen("F");
+                break;
+            default:
+                throw new IllegalArgumentException("잘못된 주민번호입니다.");
+        }
+
+        // 주민번호에서 생년월일 추출
+        String yy = custInfoDTO.getCustJumin().substring(0, 2);
+        String mm = custInfoDTO.getCustJumin().substring(2, 4);
+        String dd = custInfoDTO.getCustJumin().substring(4, 6);
+        int century = 2000;
+        switch (genderCode) {
+            case '1':
+            case '2':
+            case '5':
+            case '6':
+                century = 1900;
+                break;
+            default:
+                break;
+        }
+        int year = century + Integer.parseInt(yy);
+        custInfoDTO.setCustBirthDt(LocalDate.of(
+                year,
+                Integer.parseInt(mm),
+                Integer.parseInt(dd)
+        ));
+
+
+        // 주민번호, 전화번호, 생년월일, 이메일 암호화 (encrypt : 암호화, decrypt : 복호화)
+        String aesJumin = AesUtil.encrypt(custInfoDTO.getCustJumin());
+        String aesHp = AesUtil.encrypt(custInfoDTO.getCustHp());
+        String aesEmail = AesUtil.encrypt(custInfoDTO.getCustEmail());
+
+        custInfoDTO.setCustJumin(aesJumin);
+        custInfoDTO.setCustHp(aesHp);
+        custInfoDTO.setCustEmail(aesEmail);
+
+        memberMapper.apiRegister(custInfoDTO);
+
+        String custCode = memberMapper.findByIdCustInfo(custInfoDTO.getCustId()).getCustCode();
+
+        /// //////////////////////////////////////
+        ///            CustAcct 삽입
+        /// //////////////////////////////////////
+        custAcctDTO.setAcctCustCode(custCode);
+        String aEndPw = passwordEncoder.encode(custAcctDTO.getAcctPw());
+        custAcctDTO.setAcctPw(aEndPw);
+        custAcctDTO.setAcctName("FLO 입출금통장");
+        mypageMapper.insertAcct(custAcctDTO);
+
+
+        /// //////////////////////////////////////
+        ///            FrgnAcct 삽입
+        /// //////////////////////////////////////
+        CustFrgnAcctDTO custFrgnAcctDTO = new CustFrgnAcctDTO();
+        custFrgnAcctDTO.setFrgnAcctCustCode(custCode);
+        custFrgnAcctDTO.setFrgnAcctPw(custAcctDTO.getAcctPw());
+        custFrgnAcctDTO.setFrgnAcctName("FLO 외화통장");
+        custFrgnAcctDTO.setFrgnAcctFundSource(custAcctDTO.getAcctFundSource());
+        custFrgnAcctDTO.setFrgnPurpose(custAcctDTO.getAcctPurpose());
+        custFrgnAcctDTO.setFrgnAcctCustEngName(custInfoDTO.getCustEngName());
+
+        mypageMapper.insertFrgnAcct(custFrgnAcctDTO);
+
+
+
+        /// //////////////////////////////////////
+        ///            자식 외화계좌 삽입
+        /// //////////////////////////////////////
+        // 생성된 외화 부모 계좌 들고오기
+        CustFrgnAcctDTO frgnAcctDTO = mypageMapper.selectFrgnAcct(custFrgnAcctDTO.getFrgnAcctCustCode());
+        // 자식 통장 만들기
+        String[] currency = {"USD", "JPY", "EUR", "CNH", "GBP", "AUD"};
+        List<FrgnAcctBalanceDTO> frgnAcctBalanceList = new ArrayList<>();
+        for(String c : currency){
+            FrgnAcctBalanceDTO frgnAcctBalance = new FrgnAcctBalanceDTO();
+            frgnAcctBalance.setBalCurrency(c);
+            frgnAcctBalance.setBalFrgnAcctNo(frgnAcctDTO.getFrgnAcctNo());
+
+            frgnAcctBalanceList.add(frgnAcctBalance);
+        }
+        mypageMapper.insertAllFrgnAcctBal(frgnAcctBalanceList);
+
     }
 
     /*

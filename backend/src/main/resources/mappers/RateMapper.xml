@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.api.backend.mapper.RateMapper">
+
+    <!-- =========================
+         오늘 환율 중복 체크
+         ========================= -->
+    <select id="existsTodayRate" resultType="int">
+        SELECT COUNT(*)
+        FROM TB_EXCH_RATE_HIST
+        WHERE rhist_currency = #{currency}
+          AND TRUNC(rhist_reg_dt) = #{regDt}
+    </select>
+
+    <!-- =========================
+         환율 INSERT
+         rhist_no 는 트리거 자동 생성
+         ========================= -->
+    <insert id="insertRate">
+        INSERT INTO TB_EXCH_RATE_HIST (
+            rhist_currency,
+            rhist_cur_name,
+            rhist_base_rate,
+            rhist_bkpr_rate,
+            rhist_tt_buy_rate,
+            rhist_tt_sell_rate,
+            rhist_smbs_base_rate,
+            rhist_smbs_bkpr_rate,
+            rhist_reg_dt,
+            rhist_announce_no
+        )
+        VALUES (
+                   #{rhistCurrency},
+                   #{rhistCurName},
+                   #{rhistBaseRate},
+                   #{rhistBkprRate},
+                   #{rhistTtBuyRate},
+                   #{rhistTtSellRate},
+                   #{rhistSmbsBaseRate},
+                   #{rhistSmbsBkprRate},
+                   #{rhistRegDt},
+                   #{rhistAnnounceNo}
+               )
+    </insert>
+
+
+    <!-- =========================
+     통화별 최신 환율 조회
+     ========================= -->
+    <select id="selectLatestRates"
+            resultType="kr.co.api.backend.dto.RateDTO">
+        SELECT *
+        FROM (
+                 SELECT
+                     t.*,
+                     ROW_NUMBER() OVER (
+                PARTITION BY rhist_currency
+                ORDER BY rhist_reg_dt DESC
+            ) rn
+                 FROM TB_EXCH_RATE_HIST t
+             )
+        WHERE rn = 1
+        ORDER BY rhist_currency
+    </select>
+
+    <!-- =========================
+     특정 통화 환율 히스토리 조회
+     ========================= -->
+    <select id="selectRateHistory"
+            resultType="kr.co.api.backend.dto.RateDTO">
+        SELECT *
+        FROM TB_EXCH_RATE_HIST
+        WHERE rhist_currency = #{currency}
+        ORDER BY rhist_reg_dt DESC
+    </select>
+
+
+    <select id="selectLatestRatesWithChange"
+            resultType="kr.co.api.backend.dto.RateDTO">
+
+        SELECT
+            curr.rhist_currency   AS rhistCurrency,
+            curr.rhist_cur_name   AS rhistCurName,
+            curr.rhist_base_rate  AS rhistBaseRate,
+
+            NVL(curr.rhist_base_rate - prev.rhist_base_rate, 0) AS change,
+
+            CASE
+                WHEN prev.rhist_base_rate IS NULL THEN 0
+                ELSE ROUND(
+                        (curr.rhist_base_rate - prev.rhist_base_rate)
+                            / prev.rhist_base_rate * 100, 2
+                     )
+                END AS changePercent
+
+        FROM TB_EXCH_RATE_HIST curr
+                 LEFT JOIN TB_EXCH_RATE_HIST prev
+                           ON curr.rhist_currency = prev.rhist_currency
+                               AND prev.rhist_reg_dt = (
+                                   SELECT MAX(rhist_reg_dt)
+                                   FROM TB_EXCH_RATE_HIST
+                                   WHERE rhist_currency = curr.rhist_currency
+                                     AND rhist_reg_dt <![CDATA[ < ]]> curr.rhist_reg_dt
+                               )
+
+        WHERE curr.rhist_reg_dt = (
+            SELECT MAX(rhist_reg_dt)
+            FROM TB_EXCH_RATE_HIST
+            WHERE rhist_currency = curr.rhist_currency
+        )
+
+        ORDER BY curr.rhist_currency
+    </select>
+
+</mapper>
