@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:test_main/main.dart';
 import '../../services/api_service.dart';
 import '../main/bank_homepage.dart';
 import '../app_colors.dart';
+import 'package:local_auth/local_auth.dart';
 
 class PinLoginScreen extends StatefulWidget {
   final String userId;
@@ -19,17 +21,51 @@ class PinLoginScreen extends StatefulWidget {
 }
 
 class _PinLoginScreenState extends State<PinLoginScreen> {
+  final LocalAuthentication auth = LocalAuthentication(); // ★ 인증 객체 생성
   String _pin = "";
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // 자동 생체인증이 켜져있으면 화면 켜지자마자 실행
+    // ★ 자동 생체인증 옵션이 켜져있으면, 화면 빌드 후 지문 창 띄우기
     if (widget.autoBioAuth) {
-      // 지문인증 함수 호출 (나중에 구현할 함수)
-      // _authenticateBio();
-      print("지문 인식 팝업 자동 실행!");
+      _authenticateBio();
+    }
+  }
+
+  Future<void> _authenticateBio() async {
+    bool authenticated = false;
+    try {
+      // 1. 기기가 생체인증을 지원하는지 확인 (선택 사항)
+      // bool canCheckBiometrics = await auth.canCheckBiometrics;
+
+      // 2. 인증 시도 (시스템 팝업)
+      authenticated = await auth.authenticate(
+        localizedReason: '로그인하려면 지문 또는 Face ID로 인증해주세요.',
+        options: const AuthenticationOptions(
+          stickyAuth: true, // 앱이 잠깐 백그라운드 갔다 와도 인증창 유지
+          biometricOnly: true, // PIN/패턴 말고 생체정보만 사용
+        ),
+      );
+    } on PlatformException catch (e) {
+      print("생체 인증 오류: $e");
+      // 오류 나면 그냥 조용히 PIN 입력 모드로 둠
+      return;
+    }
+
+    if (!mounted) return;
+
+    // 3. 인증 성공 시 메인 화면으로 이동
+    if (authenticated) {
+      print("✅ 생체 인증 성공! 메인으로 이동합니다.");
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const BankHomePage()),
+            (route) => false,
+      );
+    } else {
+      print("❌ 생체 인증 실패 또는 취소됨 (PIN 입력 대기)");
     }
   }
 
@@ -122,6 +158,16 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
             const SizedBox(height: 20),
             const CircularProgressIndicator(),
           ],
+          // 지문 인증 수동 호출 버튼
+          if (widget.autoBioAuth && !_isLoading)
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: TextButton.icon(
+                onPressed: _authenticateBio, // 함수 다시 호출
+                icon: const Icon(Icons.fingerprint, size: 24, color: AppColors.pointDustyNavy),
+                label: const Text("지문 인증 다시 시도", style: TextStyle(color: AppColors.pointDustyNavy)),
+              ),
+            ),
 
           const Spacer(),
           _buildKeypad(),

@@ -11,7 +11,7 @@ public class FrgnAcctBalanceDTO {
 
     String balNo;
     String balCurrency;
-    double balBalance;
+    Long balBalance;
     String balRegDt;
 
     String balFrgnAcctNo; // 모체 통장 계좌번호

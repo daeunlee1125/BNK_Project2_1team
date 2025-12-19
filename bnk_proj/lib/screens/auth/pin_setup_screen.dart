@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_main/screens/auth/pin_login_screen.dart';
 import '../../services/api_service.dart';
 import '../app_colors.dart';
 
@@ -51,7 +52,15 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
       if (result['status'] == 'SUCCESS') {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('간편비밀번호 등록 완료!')));
-        Navigator.pop(context); // 이전 화면(메인 등)으로 이동
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PinLoginScreen(
+              userId: widget.userId,
+              autoBioAuth: false, // 방금 PIN 만들었으니 지문 말고 PIN으로 로그인 유도
+            ),
+          ),
+        );
       } else {
         _reset();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));

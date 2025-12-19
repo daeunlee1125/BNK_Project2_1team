@@ -30,6 +30,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   final DepositDraftService _draftService = const DepositDraftService();
   late Future<_Step2Data> _initFuture;
   final NumberFormat _amountFormat = NumberFormat.decimalPattern();
+  final DateFormat _ymd = DateFormat('yyyyMMdd');
   _Step2Data? _cachedData;
 
   DepositContext? _context;
@@ -381,9 +382,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ],
         ),
 
-        _schemaHint(
-          '선택한 출금계좌가 DPST_HDR_LINKED_ACCT_NO, 출금유형이 DPST_HDR_LINKED_ACCT_TYPE(원화=0/외화=1)로 저장됩니다.',
-        ),
+
+
 
         if (withdrawType == "krw") _krwAccountFields(),
         if (withdrawType == "fx") _fxAccountFields(product),
@@ -438,7 +438,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
                   color: AppColors.pointDustyNavy.withOpacity(0.6), fontSize: 12),
             ),
           ),
-        _schemaHint('원화 출금 선택 시 DPST_HDR_LINKED_ACCT_TYPE=0 으로 저장됩니다.'),
+
         const SizedBox(height: 20),
 
         const Text("계좌 비밀번호",
@@ -459,7 +459,6 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ),
         ),
 
-        _schemaHint('계좌 인증 비밀번호는 출금 확인용이며, 본 예금 비밀번호(DPST_HDR_PW)와 구분됩니다.'),
 
         if (!isKrwPwValid)
           const Text(
@@ -520,7 +519,6 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
                   color: AppColors.pointDustyNavy.withOpacity(0.6), fontSize: 12)),
         const SizedBox(height: 20),
 
-        _schemaHint('외화 출금 선택 시 DPST_HDR_LINKED_ACCT_TYPE=1 으로 저장됩니다.'),
 
         const Text("비밀번호",
             style: TextStyle(color: AppColors.pointDustyNavy)),
@@ -639,7 +637,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           },
 
         ),
-        _schemaHint('신규 통화는 DPST_HDR_CURRENCY 및 DPST_HDR_CURRENCY_EXP에 반영됩니다.'),
+
         const SizedBox(height: 20),
 
         const Text("신규 금액",
@@ -657,7 +655,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
             },
           ),
         ),
-        _schemaHint('입력 금액은 DPST_HDR_BALANCE(헤더)와 거래내역 DPST_DTL_AMOUNT에 전달됩니다.'),
+
         if (_findLimitFor(newCurrency, product) != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -680,7 +678,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ),
         ),
 
-        _schemaHint('선택한 가입기간은 DPST_HDR_MONTH에 저장되며 만기일(DPST_HDR_FIN_DY) 산정에 활용됩니다.'),
+
 
         const SizedBox(height: 10),
 
@@ -1160,7 +1158,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ),
         ),
 
-        _schemaHint('정기예금 비밀번호는 DPST_HDR_PW에 저장됩니다.'),
+
 
         const SizedBox(height: 20),
         const Text("비밀번호 확인",
@@ -1226,6 +1224,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newCurrency.isEmpty) return false;
     if (newAmount.isEmpty) return false;
     if (newPeriod == null) return false;
+    if (autoRenew == 'apply' && autoRenewCycle == null) return false;
 
     if (appliedRate == null) return false;
     if (appliedFxRate == null) return false;
@@ -1262,6 +1261,9 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newCurrency.isEmpty) return _err("신규 통화를 선택해주세요.");
     if (newAmount.isEmpty) return _err("신규 금액을 입력해주세요.");
     if (newPeriod == null) return _err("가입 기간을 선택해주세요.");
+    if (autoRenew == 'apply' && autoRenewCycle == null) {
+      return _err('자동연장을 신청할 때는 주기를 선택해주세요.');
+    }
 
     final selectedProduct = widget.application.product;
     final limit = selectedProduct != null
@@ -1615,6 +1617,12 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   }
 
   void _saveToApplication() {
+
+    final startDate = _deriveStartDate();
+    final maturityDate = _deriveMaturityDate(startDate);
+    final linkedAccount =
+    withdrawType == 'fx' ? selectedFxAccount : selectedKrwAccount;
+
     widget.application
       ..product = widget.application.product
       ..customerCode = _context?.customerCode ?? widget.application.customerCode

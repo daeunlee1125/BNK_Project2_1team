@@ -4,6 +4,8 @@ import 'package:local_auth/local_auth.dart';
 import '../../../services/api_service.dart';
 import '../../app_colors.dart';
 import 'security_settings_screen.dart';
+import '../../../utils/device_manager.dart';
+import '../../auth/pin_setup_screen.dart';
 
 class SecuritySettingsScreen extends StatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -18,6 +20,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
 
   bool _useBio = false; // 현재 설정 상태
   String _userId = "";
+  bool _isLoading = true; // 로딩 상태 표시용
 
   @override
   void initState() {
@@ -27,15 +30,44 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
 
   // 초기 설정값 불러오기
   void _loadSettings() async {
-    String? id = await _storage.read(key: 'saved_userid');
-    // 실제로는 서버에서 'BIO_AUTH_YN' 값을 가져와야 정확하지만,
-    // 편의상 로컬 스토리지에 저장된 값을 쓴다고 가정하거나 API를 호출합니다.
-    String? bioYn = await _storage.read(key: 'use_bio'); // 'Y' or 'N'
+    try {
+      // 1. 필요한 정보 조회
+      String? id = await _storage.read(key: 'saved_userid');
+      String deviceId = await DeviceManager.getDeviceId();
 
-    setState(() {
-      _userId = id ?? "";
-      _useBio = (bioYn == 'Y');
-    });
+      if (id == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // 2. ★ 서버에 최신 상태 조회 (ApiService 재활용)
+      // checkDeviceStatus는 { "status": "MATCH", "useBio": true/false, ... } 를 반환함
+      Map<String, dynamic> result = await ApiService.checkDeviceStatus(id, deviceId);
+
+      if (!mounted) return;
+
+      if (result['status'] == 'MATCH') {
+        // 3. 서버 값으로 상태 업데이트
+        bool dbUseBio = result['useBio'] ?? false;
+
+        setState(() {
+          _userId = id;
+          _useBio = dbUseBio;
+          _isLoading = false;
+        });
+
+        // (선택) 로컬 스토리지도 DB와 똑같이 맞춰줌 (싱크 맞추기)
+        await _storage.write(key: 'use_bio', value: dbUseBio ? 'Y' : 'N');
+
+        print("✅ DB 설정 로드 완료: Bio=$dbUseBio");
+      } else {
+        // 기기 불일치 등 예외 상황
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      print("설정 로드 실패: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   // 스위치 토글 시 실행되는 함수
@@ -97,7 +129,16 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
             title: const Text("간편 비밀번호 재설정"),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // TODO: PIN 재설정 화면 이동 구현
+              if (_userId.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PinSetupScreen(userId: _userId),
+                  ),
+                );
+              } else {
+                _showMsg("사용자 정보를 찾을 수 없습니다.");
+              }
             },
           ),
           const Divider(),
