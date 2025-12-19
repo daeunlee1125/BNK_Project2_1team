@@ -9,15 +9,28 @@ import 'package:test_main/models/terms.dart';
 import 'package:test_main/services/terms_service.dart';
 import 'package:test_main/services/deposit_draft_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:test_main/models/deposit/view.dart';
+
+class DepositStep1Args {
+  final String dpstId;
+  final DepositProduct? product;
+
+  const DepositStep1Args({
+    required this.dpstId,
+    this.product,
+  });
+}
 
 class DepositStep1Screen extends StatefulWidget {
   static const routeName = "/deposit-step1";
 
   final String dpstId;
+  final DepositProduct? product;
 
   const DepositStep1Screen({
     super.key,
     required this.dpstId,
+    this.product,
   });
 
 
@@ -282,6 +295,8 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
 
     final application = _draft!.application ??
         DepositApplication(dpstId: widget.dpstId);
+
+    application.product ??= widget.product;
 
     if (_draft!.step <= 1) {
       _applyDraftToState(application);
@@ -700,6 +715,7 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
           onPressed: canNext
               ? () async {
                   final application = DepositApplication(dpstId: widget.dpstId)
+                    ..product = widget.product
                     ..agree1 = _getTermAgree(0)
                     ..agree2 = _getTermAgree(1)
                     ..agree3 = _getTermAgree(2)

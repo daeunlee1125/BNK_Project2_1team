@@ -1094,7 +1094,22 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   }
 
   Future<_Step2Data> _loadData() async {
-    final product = await _service.fetchProductDetail(widget.application.dpstId);
+    DepositProduct? product = widget.application.product;
+
+    if (product == null) {
+      product = await _service.fetchProductDetail(widget.application.dpstId);
+    } else {
+      try {
+        product = await _service.fetchProductDetail(widget.application.dpstId);
+      } catch (_) {
+        debugPrint('기존 상품 정보를 사용합니다 (네트워크 오류)');
+      }
+    }
+
+    if (product == null) {
+      throw Exception('상품 정보를 불러오지 못했습니다.');
+    }
+
     final context = await _service.fetchContext();
 
     widget.application.product = product;

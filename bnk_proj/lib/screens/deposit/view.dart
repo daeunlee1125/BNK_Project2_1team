@@ -1858,7 +1858,10 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
               Navigator.pushNamed(
                 context,
                 DepositStep1Screen.routeName,
-                arguments: widget.dpstId,
+                arguments: DepositStep1Args(
+                  dpstId: widget.dpstId,
+                  product: product,
+                ),
               );
             },
             style: ElevatedButton.styleFrom(

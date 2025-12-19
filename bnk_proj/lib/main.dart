@@ -68,8 +68,15 @@ class MyApp extends StatelessWidget {
         // 예금 가입 Step 1 (약관동의)
         // -------------------------
         DepositStep1Screen.routeName: (context) {
-          final dpstId =
-          ModalRoute.of(context)!.settings.arguments as String;
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is DepositStep1Args) {
+            return DepositStep1Screen(
+              dpstId: args.dpstId,
+              product: args.product,
+            );
+          }
+
+          final dpstId = args as String;
 
           return DepositStep1Screen(dpstId: dpstId);
         },
