@@ -63,6 +63,7 @@ jobs:
         gcloud beta compute scp "$JAR_FILE" bnk-api-server:/tmp/app.jar --project=${{ secrets.GCP_PROJECT_ID }} --zone=asia-northeast3-a
         gcloud beta compute scp backend/Dockerfile bnk-api-server:/tmp/Dockerfile --project=${{ secrets.GCP_PROJECT_ID }} --zone=asia-northeast3-a
         gcloud beta compute scp backend/docker-compose.yml bnk-api-server:/tmp/docker-compose.yml --project=${{ secrets.GCP_PROJECT_ID }} --zone=asia-northeast3-a
+        gcloud beta compute scp backend/nginx/default.conf bnk-api-server:/tmp/default.conf --project=${{ secrets.GCP_PROJECT_ID }} --zone=asia-northeast3-a
 
     - name: 서버 배포 및 실행 (Docker Compose)
       run: |
@@ -73,12 +74,19 @@ jobs:
             # 1. 배포 폴더 준비 (/opt/flobank-backend)
             sudo mkdir -p /opt/flobank-backend
             sudo mkdir -p /opt/flobank-backend/files
+
+            # Nginx 설정 파일을 담을 폴더 생성
+            sudo mkdir -p /opt/flobank-backend/nginx
+
             sudo chown -R \$USER:\$USER /opt/flobank-backend
 
             # 2. 전송된 파일 이동
             mv /tmp/app.jar /opt/flobank-backend/app.jar
             mv /tmp/Dockerfile /opt/flobank-backend/Dockerfile
             mv /tmp/docker-compose.yml /opt/flobank-backend/docker-compose.yml
+
+            # Nginx 설정 파일 제자리로 이동
+            mv /tmp/default.conf /opt/flobank-backend/nginx/default.conf
 
             cd /opt/flobank-backend
 
