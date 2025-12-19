@@ -76,6 +76,18 @@ class DepositStep3Screen extends StatelessWidget {
                   : "미입력"],
               ["신규 금액", amountLabel],
               ["가입기간", periodLabel],
+              [
+                "적용 금리",
+                application.appliedRate != null
+                    ? "${application.appliedRate}%"
+                    : "미입력",
+              ],
+              [
+                "적용 환율",
+                application.appliedFxRate != null
+                    ? application.appliedFxRate.toString()
+                    : "미입력",
+              ],
             ]),
 
             const SizedBox(height: 28),
@@ -85,6 +97,36 @@ class DepositStep3Screen extends StatelessWidget {
               ["연장 주기", application.autoRenew == "apply"
                   ? "${application.autoRenewCycle ?? '-'}개월"
                   : "-"],
+              [
+                "연장 횟수",
+                application.autoRenew == "apply"
+                    ? (application.autoRenewCount?.toString() ?? "-")
+                    : "-",
+              ],
+              [
+                "만기 자동 해지",
+                application.autoRenew == "apply" &&
+                    application.autoTerminateAtMaturity
+                    ? "예"
+                    : "아니오",
+              ],
+            ]),
+
+            const SizedBox(height: 28),
+            _sectionTitle("추가 옵션"),
+            _infoCard([
+              [
+                "추가납입",
+                application.addPaymentEnabled
+                    ? "가능 (${application.addPaymentCount ?? '-'}회)"
+                    : "불가",
+              ],
+              [
+                "일부출금",
+                application.partialWithdrawEnabled
+                    ? "가능 (${application.partialWithdrawCount ?? '-'}회)"
+                    : "불가",
+              ],
             ]),
 
             const SizedBox(height: 28),

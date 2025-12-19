@@ -44,6 +44,9 @@ class DepositDraftService {
       autoRenewYn: application.autoRenew == 'apply',
       autoRenewTerm:
           application.autoRenew == 'apply' ? application.autoRenewCycle : null,
+      autoTerminationYn: application.autoRenew == 'apply'
+          ? application.autoTerminateAtMaturity
+          : false,
       updatedAt: DateTime.now(),
       application: application,
     );

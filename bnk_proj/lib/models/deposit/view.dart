@@ -31,6 +31,7 @@ class DepositProduct {
   final String dpstPartWdrwYn; // Y / N
   final String dpstAddPayYn; // 추가납입 가능 여부
   final int? addPayMaxCnt;     // 추가입금 최대 횟수
+  final String dpstAutoRenewYn;
 
   final List<DepositLimit> limits;
   final int? minPeriodMonth;
@@ -58,6 +59,7 @@ class DepositProduct {
     this.deliberationStartDate = '',
     this.dpstAddPayYn = 'N',
     this.addPayMaxCnt,
+    this.dpstAutoRenewYn = 'Y',
 
   });
 
@@ -77,6 +79,8 @@ class DepositProduct {
       dpstAddPayYn: json['dpstAddPayYn']?.toString() ?? 'N',
 
       addPayMaxCnt: _tryParseInt(json['dpstAddPayMaxCnt']),
+
+      dpstAutoRenewYn: json['dpstAutoRenewYn']?.toString() ?? 'Y',
 
 
       limits: (json['limits'] as List<dynamic>?)
