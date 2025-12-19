@@ -28,51 +28,11 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
   final DepositService _service = DepositService();
   final DepositDraftService _draftService = const DepositDraftService();
-  static const List<_TableField> _headerFields = [
-    _TableField('예금 계좌번호', 'dpst_hdr_acct_no', isRequired: true,
-        note: '트리거를 통해 자동 생성 (예: 8888-상품ID뒤2자리-시퀀스-고객코드뒤4자리)'),
-    _TableField('예금 계좌 ID', 'dpst_hdr_dpst_id', isRequired: true,
-        note: '상품 코드와 매핑'),
-    _TableField('비밀번호', 'dpst_hdr_pw', isRequired: false,
-        note: '정기예금 비밀번호(암호화 저장 가정)'),
-    _TableField('고객코드', 'dpst_hdr_cust_code', isRequired: true),
-    _TableField('예치월수', 'dpst_hdr_month', isRequired: false,
-        note: '가입 월수'),
-    _TableField('개설일자', 'dpst_hdr_start_dy'),
-    _TableField('만기일자', 'dpst_hdr_fin_dy'),
-    _TableField('통화', 'dpst_hdr_currency'),
-    _TableField('통화표기', 'dpst_hdr_currency_exp'),
-    _TableField('예치금액', 'dpst_hdr_balance'),
-    _TableField('거치이자', 'dpst_hdr_interest'),
-    _TableField('이자율', 'dpst_hdr_rate'),
-    _TableField('가입상태', 'dpst_hdr_status', isRequired: false, note: '기본값 1'),
-    _TableField('출금계좌번호', 'dpst_hdr_linked_acct_no'),
-    _TableField('자동연장 여부', 'dpst_hdr_auto_renew_yn', isRequired: false, note: "기본값 'n'"),
-    _TableField('자동연장 횟수', 'dpst_hdr_auto_renew_cnt'),
-    _TableField('자동연장 기간', 'dpst_hdr_auto_renew_term'),
-    _TableField('자동해지 여부', 'dpst_hdr_auto_termi_yn', isRequired: false, note: "기본값 'n'"),
-    _TableField('추가납입 횟수', 'dpst_hdr_add_pay_cnt', isRequired: false, note: '기본값 0'),
-    _TableField('중도인출 횟수', 'dpst_hdr_part_wdrw_cnt'),
-    _TableField('동의 여부', 'dpst_hdr_info_agree_yn'),
-    _TableField('동의 일시', 'dpst_hdr_info_agree_dt'),
-    _TableField('계약 일시', 'dpst_hdr_contract_dt'),
-    _TableField('만기지정계좌', 'dpst_hdr_exp_acct_no'),
-    _TableField('연결계좌 구분', 'dpst_hdr_linked_acct_type'),
-  ];
 
-  static const List<_TableField> _detailFields = [
-    _TableField('거래번호', 'dpst_dtl_no', isRequired: true, note: 'IDENTITY 컬럼'),
-    _TableField('거래 종류', 'dpst_dtl_type'),
-    _TableField('거래금액', 'dpst_dtl_amount', isRequired: true),
-    _TableField('거래일자', 'dpst_tran_dt'),
-    _TableField('헤더 계좌번호', 'dpst_dtl_hdr_no', isRequired: true,
-        note: 'TB_DPST_ACCT_HDR.dpst_hdr_acct_no FK'),
-    _TableField('전자서명 여부', 'dpst_dtl_esign_yn'),
-    _TableField('전자서명 일자', 'dpst_dtl_esign_dt'),
-    _TableField('적용이율', 'dpst_dtl_applied_rate'),
-  ];
+
   late Future<_Step2Data> _initFuture;
   final NumberFormat _amountFormat = NumberFormat.decimalPattern();
+  final DateFormat _ymd = DateFormat('yyyyMMdd');
   _Step2Data? _cachedData;
 
   DepositContext? _context;
@@ -204,8 +164,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
             _passwordSection(),
             const SizedBox(height: 40),
 
-            _blockTitle("가입 테이블 구조"),
-            _tableReferenceSection(),
+            _blockTitle("가입 정보 확인"),
+            _applicationSummary(),
             const SizedBox(height: 40),
 
             _buttons(context),
@@ -394,9 +354,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ],
         ),
 
-        _schemaHint(
-          '선택한 출금계좌가 DPST_HDR_LINKED_ACCT_NO, 출금유형이 DPST_HDR_LINKED_ACCT_TYPE(원화=0/외화=1)로 저장됩니다.',
-        ),
+
+
 
         if (withdrawType == "krw") _krwAccountFields(),
         if (withdrawType == "fx") _fxAccountFields(product),
@@ -451,7 +410,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
                   color: AppColors.pointDustyNavy.withOpacity(0.6), fontSize: 12),
             ),
           ),
-        _schemaHint('원화 출금 선택 시 DPST_HDR_LINKED_ACCT_TYPE=0 으로 저장됩니다.'),
+
         const SizedBox(height: 20),
 
         const Text("계좌 비밀번호",
@@ -472,7 +431,6 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ),
         ),
 
-        _schemaHint('계좌 인증 비밀번호는 출금 확인용이며, 본 예금 비밀번호(DPST_HDR_PW)와 구분됩니다.'),
 
         if (!isKrwPwValid)
           const Text(
@@ -533,7 +491,6 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
                   color: AppColors.pointDustyNavy.withOpacity(0.6), fontSize: 12)),
         const SizedBox(height: 20),
 
-        _schemaHint('외화 출금 선택 시 DPST_HDR_LINKED_ACCT_TYPE=1 으로 저장됩니다.'),
 
         const Text("비밀번호",
             style: TextStyle(color: AppColors.pointDustyNavy)),
@@ -652,7 +609,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           },
 
         ),
-        _schemaHint('신규 통화는 DPST_HDR_CURRENCY 및 DPST_HDR_CURRENCY_EXP에 반영됩니다.'),
+
         const SizedBox(height: 20),
 
         const Text("신규 금액",
@@ -670,7 +627,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
             },
           ),
         ),
-        _schemaHint('입력 금액은 DPST_HDR_BALANCE(헤더)와 거래내역 DPST_DTL_AMOUNT에 전달됩니다.'),
+
         if (_findLimitFor(newCurrency, product) != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -693,7 +650,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ),
         ),
 
-        _schemaHint('선택한 가입기간은 DPST_HDR_MONTH에 저장되며 만기일(DPST_HDR_FIN_DY) 산정에 활용됩니다.'),
+
 
         const SizedBox(height: 10),
 
@@ -846,7 +803,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
         const SizedBox(height: 16),
 
-        _schemaHint('자동연장 선택은 DPST_HDR_AUTO_RENEW_YN / DPST_HDR_AUTO_RENEW_CNT / DPST_HDR_AUTO_RENEW_TERM, 자동해지 여부는 DPST_HDR_AUTO_TERMI_YN에 매핑됩니다.'),
+
+
 
         // --------------------- 연장 주기 ---------------------
         if (autoRenew == "apply") ...[
@@ -946,7 +904,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           ),
         ),
 
-        _schemaHint('정기예금 비밀번호는 DPST_HDR_PW에 저장됩니다.'),
+
 
         const SizedBox(height: 20),
         const Text("비밀번호 확인",
@@ -981,85 +939,151 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     );
   }
 
-  Widget _tableReferenceSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 12),
-        Text(
-          '※ 백엔드 API 수정 없이 화면에서만 참고용 스키마를 보여줍니다.',
-          style: TextStyle(
-            color: AppColors.pointDustyNavy.withOpacity(0.75),
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 10),
-        _buildTableCard('TB_DPST_ACCT_HDR (예금 계좌 헤더)', _headerFields),
-        const SizedBox(height: 16),
-        _buildTableCard('TB_DPST_ACCT_DTL (예금 거래 내역)', _detailFields),
-      ],
-    );
-  }
+  Widget _applicationSummary() {
+    final start = _deriveStartDate();
+    final maturity = _deriveMaturityDate(start);
+    final linkedAccount =
+    withdrawType == 'fx' ? selectedFxAccount : selectedKrwAccount;
 
-  Widget _buildTableCard(String title, List<_TableField> fields) {
+    final withdrawLabel = linkedAccount != null
+        ? '${withdrawType == 'fx' ? '외화' : '원화'} $linkedAccount'
+        : '출금 계좌를 선택해주세요';
+
+    final autoRenewLabel = autoRenew == 'apply'
+        ? '${autoRenewCycle ?? '-'}개월 자동연장'
+        : '자동연장 안함';
+
+    final signatureLabel = widget.application.signatureImage != null
+        ? '전자서명 완료'
+        : '전자서명 필요';
+
+    final amountLabel = newAmount.isEmpty
+        ? '-'
+        : (int.tryParse(newAmount) != null
+        ? _amountFormat.format(int.parse(newAmount))
+        : newAmount);
+
+
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.mainPaleBlue.withOpacity(0.6)),
+        borderRadius: BorderRadius.circular(16),
+
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          )
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+
+          Row(
+            children: const [
+              Icon(Icons.receipt_long, color: AppColors.pointDustyNavy),
+              SizedBox(width: 8),
+              Text(
+                '입력 내용 한눈에 보기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.pointDustyNavy,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _infoRow('출금 계좌', withdrawLabel),
+          _infoRow('출금 통화',
+              withdrawType == 'fx' ? (fxWithdrawCurrency ?? '-') : 'KRW'),
+          _infoRow('가입 통화', newCurrency.isEmpty ? '-' : newCurrency),
+          _infoRow('가입 금액', amountLabel),
+          _infoRow('가입 기간', newPeriod != null ? '$newPeriod개월' : '-'),
+          _infoRow('만기 예정일', _formatYmd(maturity)),
+          _infoRow('자동연장', autoRenewLabel),
+          _infoRow('전자서명', signatureLabel),
+          _infoRow('예금 비밀번호',
+              depositPw.isNotEmpty ? '입력 완료' : '4자리 비밀번호를 입력하세요'),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+
+
+
+
+
             child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: AppColors.pointDustyNavy,
+
+              label,
+              style: TextStyle(
+                color: AppColors.pointDustyNavy.withOpacity(0.8),
+                fontWeight: FontWeight.w700,
+
+
               ),
             ),
           ),
-          const Divider(height: 1),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: MaterialStateColor.resolveWith(
-                      (_) => AppColors.mainPaleBlue.withOpacity(0.2)),
-              columns: const [
-                DataColumn(label: Text('항목')),
-                DataColumn(label: Text('컬럼명')),
-                DataColumn(label: Text('필수')),
-                DataColumn(label: Text('비고')),
-              ],
-              rows: fields
-                  .map(
-                    (f) => DataRow(
-                  cells: [
-                    DataCell(Text(f.label)),
-                    DataCell(Text(f.column)),
-                    DataCell(Text(f.isRequired ? 'Y' : 'N')),
-                    DataCell(Text(f.note ?? '-')),
-                  ],
+
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.mainPaleBlue.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: AppColors.pointDustyNavy,
+                  fontWeight: FontWeight.w600,
+
+
+
+
+
+
+
                 ),
-              )
-                  .toList(),
+
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+  DateTime _deriveStartDate() {
+    if (widget.application.dpstHdrStartDy != null) {
+      try {
+        return _ymd.parse(widget.application.dpstHdrStartDy!);
+      } catch (_) {}
+    }
+    return DateTime.now();
+  }
+
+  DateTime _deriveMaturityDate(DateTime start) {
+    final months = int.tryParse(newPeriod ?? '') ?? 1;
+    return DateTime(start.year, start.month + months, start.day);
+  }
+
+  String _formatYmd(DateTime date) => _ymd.format(date);
 
   Widget _schemaHint(String text) {
     return Padding(
@@ -1092,6 +1116,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newCurrency.isEmpty) return false;
     if (newAmount.isEmpty) return false;
     if (newPeriod == null) return false;
+    if (autoRenew == 'apply' && autoRenewCycle == null) return false;
 
     if (depositPw.length != 4) return false;
     if (depositPwCheck.length != 4) return false;
@@ -1117,6 +1142,9 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newCurrency.isEmpty) return _err("신규 통화를 선택해주세요.");
     if (newAmount.isEmpty) return _err("신규 금액을 입력해주세요.");
     if (newPeriod == null) return _err("가입 기간을 선택해주세요.");
+    if (autoRenew == 'apply' && autoRenewCycle == null) {
+      return _err('자동연장을 신청할 때는 주기를 선택해주세요.');
+    }
 
     final selectedProduct = widget.application.product;
     final limit = selectedProduct != null
@@ -1380,6 +1408,12 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   }
 
   void _saveToApplication() {
+
+    final startDate = _deriveStartDate();
+    final maturityDate = _deriveMaturityDate(startDate);
+    final linkedAccount =
+    withdrawType == 'fx' ? selectedFxAccount : selectedKrwAccount;
+
     widget.application
       ..product = widget.application.product
       ..customerCode = _context?.customerCode ?? widget.application.customerCode
@@ -1393,7 +1427,29 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
       ..newPeriodMonths = int.tryParse(newPeriod ?? '')
       ..autoRenew = autoRenew
       ..autoRenewCycle = autoRenew == 'apply' ? autoRenewCycle : null
-      ..depositPassword = depositPw;
+      ..depositPassword = depositPw
+      ..dpstHdrStartDy = _formatYmd(startDate)
+      ..dpstHdrFinDy = _formatYmd(maturityDate)
+      ..dpstHdrCurrencyExp = newCurrency
+      ..dpstHdrLinkedAcctNo = linkedAccount
+      ..dpstHdrLinkedAcctType = withdrawType == 'fx' ? 2 : 1
+      ..dpstHdrAutoRenewYn = autoRenew == 'apply' ? 'Y' : 'N'
+      ..dpstHdrAutoRenewCnt = 0
+      ..dpstHdrAutoRenewTerm = autoRenew == 'apply' ? autoRenewCycle : null
+      ..dpstHdrInfoAgreeYn = widget.application.finalAgree ? 'Y' : 'N'
+      ..dpstHdrInfoAgreeDt = DateTime.now()
+      ..dpstHdrContractDt = DateTime.now()
+      ..dpstHdrExpAcctNo = linkedAccount
+      ..dpstHdrAddPayCnt = 0
+      ..dpstHdrPartWdrwCnt = 0
+      ..dpstHdrLinkedAcctBal = withdrawType == 'fx'
+          ? _selectedFxBalance()
+          : _selectedKrwBalance()?.toDouble()
+      ..dpstDtlType = 1
+      ..dpstDtlEsignYn = widget.application.signatureImage != null ? 'Y' : null
+      ..dpstDtlEsignDt = widget.application.signatureImage != null
+          ? widget.application.signedAt ?? DateTime.now()
+          : null;
   }
 
 }
@@ -1405,12 +1461,4 @@ class _Step2Data {
   const _Step2Data({required this.product, required this.context});
 }
 
-class _TableField {
-  final String label;
-  final String column;
-  final bool isRequired;
-  final String? note;
-
-  const _TableField(this.label, this.column, {this.isRequired = false, this.note});
-}
 

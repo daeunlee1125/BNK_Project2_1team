@@ -38,6 +38,28 @@ class DepositApplication {
 
   String depositPassword = '';
 
+  // DB 컬럼 매핑용 추가 필드
+  String? dpstHdrStartDy;
+  String? dpstHdrFinDy;
+  String? dpstHdrCurrencyExp;
+  String? dpstHdrLinkedAcctNo;
+  int? dpstHdrLinkedAcctType;
+  String dpstHdrAutoRenewYn = 'N';
+  int dpstHdrAutoRenewCnt = 0;
+  int? dpstHdrAutoRenewTerm;
+  String? dpstHdrInfoAgreeYn;
+  DateTime? dpstHdrInfoAgreeDt;
+  DateTime? dpstHdrContractDt;
+  String? dpstHdrExpAcctNo;
+  int dpstHdrAddPayCnt = 0;
+  int? dpstHdrPartWdrwCnt;
+  double? dpstHdrLinkedAcctBal;
+
+  int dpstDtlType = 1;
+  String? dpstDtlEsignYn;
+  DateTime? dpstDtlEsignDt;
+
+
   // Product meta for UI/flow
   DepositProduct? product;
 
@@ -73,6 +95,24 @@ class DepositApplication {
       'autoRenew': autoRenew,
       'autoRenewCycle': autoRenewCycle,
       'depositPassword': depositPassword,
+      'dpstHdrStartDy': dpstHdrStartDy,
+      'dpstHdrFinDy': dpstHdrFinDy,
+      'dpstHdrCurrencyExp': dpstHdrCurrencyExp,
+      'dpstHdrLinkedAcctNo': dpstHdrLinkedAcctNo,
+      'dpstHdrLinkedAcctType': dpstHdrLinkedAcctType,
+      'dpstHdrAutoRenewYn': dpstHdrAutoRenewYn,
+      'dpstHdrAutoRenewCnt': dpstHdrAutoRenewCnt,
+      'dpstHdrAutoRenewTerm': dpstHdrAutoRenewTerm,
+      'dpstHdrInfoAgreeYn': dpstHdrInfoAgreeYn,
+      'dpstHdrInfoAgreeDt': dpstHdrInfoAgreeDt?.toIso8601String(),
+      'dpstHdrContractDt': dpstHdrContractDt?.toIso8601String(),
+      'dpstHdrExpAcctNo': dpstHdrExpAcctNo,
+      'dpstHdrAddPayCnt': dpstHdrAddPayCnt,
+      'dpstHdrPartWdrwCnt': dpstHdrPartWdrwCnt,
+      'dpstHdrLinkedAcctBal': dpstHdrLinkedAcctBal,
+      'dpstDtlType': dpstDtlType,
+      'dpstDtlEsignYn': dpstDtlEsignYn,
+      'dpstDtlEsignDt': dpstDtlEsignDt?.toIso8601String(),
       'signature': signatureImage != null
           ? base64Encode(signatureImage!)
           : null,
@@ -108,6 +148,31 @@ class DepositApplication {
       ..autoRenew = json['autoRenew']?.toString() ?? 'no'
       ..autoRenewCycle = json['autoRenewCycle'] as int?
       ..depositPassword = json['depositPassword']?.toString() ?? ''
+      ..dpstHdrStartDy = json['dpstHdrStartDy']?.toString()
+      ..dpstHdrFinDy = json['dpstHdrFinDy']?.toString()
+      ..dpstHdrCurrencyExp = json['dpstHdrCurrencyExp']?.toString()
+      ..dpstHdrLinkedAcctNo = json['dpstHdrLinkedAcctNo']?.toString()
+      ..dpstHdrLinkedAcctType = json['dpstHdrLinkedAcctType'] as int?
+      ..dpstHdrAutoRenewYn = json['dpstHdrAutoRenewYn']?.toString() ?? 'N'
+      ..dpstHdrAutoRenewCnt = json['dpstHdrAutoRenewCnt'] as int? ?? 0
+      ..dpstHdrAutoRenewTerm = json['dpstHdrAutoRenewTerm'] as int?
+      ..dpstHdrInfoAgreeYn = json['dpstHdrInfoAgreeYn']?.toString()
+      ..dpstHdrInfoAgreeDt = json['dpstHdrInfoAgreeDt'] != null
+          ? DateTime.tryParse(json['dpstHdrInfoAgreeDt'].toString())
+          : null
+      ..dpstHdrContractDt = json['dpstHdrContractDt'] != null
+          ? DateTime.tryParse(json['dpstHdrContractDt'].toString())
+          : null
+      ..dpstHdrExpAcctNo = json['dpstHdrExpAcctNo']?.toString()
+      ..dpstHdrAddPayCnt = json['dpstHdrAddPayCnt'] as int? ?? 0
+      ..dpstHdrPartWdrwCnt = json['dpstHdrPartWdrwCnt'] as int?
+      ..dpstHdrLinkedAcctBal =
+      (json['dpstHdrLinkedAcctBal'] as num?)?.toDouble()
+      ..dpstDtlType = json['dpstDtlType'] as int? ?? 1
+      ..dpstDtlEsignYn = json['dpstDtlEsignYn']?.toString()
+      ..dpstDtlEsignDt = json['dpstDtlEsignDt'] != null
+          ? DateTime.tryParse(json['dpstDtlEsignDt'].toString())
+          : null
       ..signatureImage = _decodeSignature(json['signature'])
       ..signatureMethod = json['signatureMethod']?.toString()
       ..signedAt = json['signedAt'] != null
