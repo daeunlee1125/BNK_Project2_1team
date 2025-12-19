@@ -28,32 +28,43 @@ import 'package:test_main/screens/deposit/recommend.dart';
 import 'package:test_main/screens/deposit/survey.dart';
 import 'package:test_main/screens/main/menu/review_write.dart';
 
-final navigatorKey = GlobalKey<NavigatorState>(
-
+final navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // (기존 로직) 기기 ID 확보
   final deviceId = await DeviceManager.getDeviceId();
   debugPrint("[App Start] 기기 고유 ID 확보 완료: $deviceId");
+
+  // (기존 로직) 날짜 포맷 로딩
   await initializeDateFormatting();
+
+  // (FCM 로직) Firebase 초기화
   await Firebase.initializeApp();
+
+  // 알림 권한 요청 (iOS 필수, Android는 보통 자동 허용)
   await FirebaseMessaging.instance.requestPermission();
 
-  final token = await FirebaseMessaging.instance.getToken();
+  // 토픽 구독 + 토큰 확인
   await FirebaseMessaging.instance.subscribeToTopic('notice');
-  print('Subscribed to topic: notice');  
-  print('FCM token: $token');
+  debugPrint('Subscribed to topic: notice');
 
-  // 토큰 갱신(나중에 서버에 업데이트)
+  final token = await FirebaseMessaging.instance.getToken();
+  debugPrint('FCM token: $token');
+
+  // 토큰 갱신 리스너 (서버에 업데이트할 때 사용)
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-    print('FCM token refreshed: $newToken');
+    debugPrint('FCM token refreshed: $newToken');
   });
 
-   // 앱이 "종료 상태"에서 푸시 눌러 켜진 경우
+  // 앱이 "종료 상태"에서 푸시 눌러 켜진 경우
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage != null) {
     final route = initialMessage.data['route'];
     if (route != null) {
+      // runApp 이후에 네비게이션 가능하니, 필요하면 여기서는 저장만 해두고
+      // WidgetsBinding.instance.addPostFrameCallback에서 처리하는 방식 추천
     }
   }
 
@@ -61,10 +72,9 @@ Future<void> main() async {
   FirebaseMessaging.onMessageOpenedApp.listen((m) {
     final route = m.data['route'];
     if (route != null) {
-      // navigatorKey로 pushNamed
+      navigatorKey.currentState?.pushNamed(route);
     }
   });
-
 
   runApp(const MyApp());
 }
@@ -112,7 +122,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: 'FLOBANK',
       theme: ThemeData(useMaterial3: true),
-      home: const LoginPage(),
+
       routes: {
         // -------------------------
         // 예금 상품 상세
