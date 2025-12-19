@@ -14,6 +14,31 @@ class ApiService {
 
   static const _storage = FlutterSecureStorage();
 
+  /// [STEP 0] 기기 ID 일치 여부 확인 (스플래시 화면용)
+  static Future<bool> checkDeviceMatch(String userid, String deviceId) async {
+    final url = Uri.parse('$currentUrl/member/check-device');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "userid": userid,
+          "deviceId": deviceId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        return body['status'] == 'MATCH';
+      }
+      return false; // 통신 실패나 에러면 불일치로 간주
+    } catch (e) {
+      print("기기 확인 오류: $e");
+      return false;
+    }
+  }
+
   /// 로그인 요청
   static Future<Map<String, dynamic>> login(String userid, String password, String deviceId) async {
     final url = Uri.parse('$currentUrl/member/login');

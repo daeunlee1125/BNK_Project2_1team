@@ -43,6 +43,28 @@ public class MobileMemberController {
         private String deviceId;
     }
 
+    /*
+     * [STEP 0] 스플래시 화면용 기기 일치 여부 확인
+     * 로그인 전에 저장된 아이디와 현재 기기 ID가 DB와 일치하는지 단순 확인
+     */
+    @PostMapping("/check-device")
+    public ResponseEntity<?> checkDevice(@RequestBody Map<String, String> request) {
+        String userId = request.get("userid");
+        String deviceId = request.get("deviceId");
+
+        // 1. 사용자 정보 조회
+        CustInfoDTO user = mobileMemberService.getCustInfoByCustId(userId);
+
+        // 2. 기기 ID 비교
+        if (user != null && deviceId.equals(user.getCustDeviceId())) {
+            // 일치함 (기존 기기)
+            return ResponseEntity.ok(Map.of("status", "MATCH"));
+        } else {
+            // 불일치 (다른 기기이거나 유저 없음)
+            return ResponseEntity.ok(Map.of("status", "MISMATCH"));
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> mobileLogin(@RequestBody LoginRequest request) {
         log.info("모바일 로그인 요청 - ID: {}, DeviceID: {}", request.getUserid(), request.getDeviceId());
@@ -262,4 +284,5 @@ public class MobileMemberController {
             return ResponseEntity.status(401).body(Map.of("message", "비밀번호가 틀렸습니다."));
         }
     }
+
 }
