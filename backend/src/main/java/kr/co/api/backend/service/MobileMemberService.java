@@ -5,6 +5,7 @@ import kr.co.api.backend.dto.CustInfoDTO;
 import kr.co.api.backend.mapper.MobileCustInfoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,5 +28,14 @@ public class MobileMemberService {
 
     public void modifyCustInfoByDeviceId(String userId, String deviceId){
         mobileCustInfo.updateDeviceIdByCustInfo(deviceId, userId);
+    }
+
+    /**
+     * 생체인증 사용 여부 변경
+     * @param userId 사용자 ID
+     * @param useYn  사용 여부 ('Y' or 'N')
+     */
+    public void updateBioAuth(String userId, String useYn) {
+        mobileCustInfo.updateBioAuthYn(userId, useYn);
     }
 }

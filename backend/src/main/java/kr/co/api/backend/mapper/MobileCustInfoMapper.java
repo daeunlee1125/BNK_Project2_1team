@@ -11,4 +11,5 @@ public interface MobileCustInfoMapper {
     CustInfoDTO selectUserIdByCustInfo(String custId);
     void updateCustInfoByPIN(String custId, String custPin);
     void updateCustInfoByBIO(String custId, String bioAuthYn);
+    void updateBioAuthYn(String userId, String useYn);
 }

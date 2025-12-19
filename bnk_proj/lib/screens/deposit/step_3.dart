@@ -3,11 +3,13 @@ import 'package:test_main/screens/app_colors.dart';
 
 import 'package:test_main/models/deposit/application.dart';
 import 'package:intl/intl.dart';
+import 'package:test_main/services/deposit_draft_service.dart';
 
 class DepositStep3Screen extends StatelessWidget {
   static const routeName = "/deposit-step3";
 
   final DepositApplication application;
+  final DepositDraftService _draftService = const DepositDraftService();
 
   const DepositStep3Screen({
     super.key,
@@ -86,14 +88,11 @@ class DepositStep3Screen extends StatelessWidget {
             ]),
 
             const SizedBox(height: 28),
-            _sectionTitle("비밀번호 및 서류 수령방법"),
+            _sectionTitle("비밀번호"),
             _infoCard([
               ["정기예금 비밀번호", application.depositPassword.isNotEmpty
                   ? "입력완료"
                   : "미입력"],
-              ["상품서류 수령방법", application.receiveMethod == "sms"
-                  ? "문자"
-                  : "이메일"],
             ]),
 
             const SizedBox(height: 40),
@@ -262,12 +261,7 @@ class DepositStep3Screen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () {
-            Navigator.pushNamed(
-              context,
-              "/deposit-signature",
-              arguments: application,            );
-          },
+          onPressed: () => _goToSignature(context),
           child: const Text(
             "가입하기",
             style: TextStyle(
@@ -277,6 +271,22 @@ class DepositStep3Screen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _goToSignature(BuildContext context) async {
+    await _draftService.saveDraft(
+      application,
+      step: 3,
+      customerCode: application.customerCode,
+    );
+
+    if (!context.mounted) return;
+
+    Navigator.pushNamed(
+      context,
+      "/deposit-signature",
+      arguments: application,
     );
   }
 }

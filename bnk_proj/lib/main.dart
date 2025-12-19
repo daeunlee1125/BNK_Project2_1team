@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:test_main/screens/auth/pin_login_screen.dart';
 import 'package:test_main/screens/member/signup_1.dart';
 import 'package:test_main/services/api_service.dart';
+import 'package:test_main/screens/auth/pin_setup_screen.dart';
 
 import 'screens/app_colors.dart';
 import 'screens/main/bank_homepage.dart';
@@ -68,8 +69,15 @@ class MyApp extends StatelessWidget {
         // 예금 가입 Step 1 (약관동의)
         // -------------------------
         DepositStep1Screen.routeName: (context) {
-          final dpstId =
-          ModalRoute.of(context)!.settings.arguments as String;
+          final args = ModalRoute.of(context)!.settings.arguments;
+          if (args is DepositStep1Args) {
+            return DepositStep1Screen(
+              dpstId: args.dpstId,
+              product: args.product,
+            );
+          }
+
+          final dpstId = args as String;
 
           return DepositStep1Screen(dpstId: dpstId);
         },
@@ -315,15 +323,39 @@ class _LoginFormState extends State<_LoginForm> {
               if (!mounted) return;
 
               if (result['status'] == 'SUCCESS') {
-                print("✅ 로그인 성공");
+                print("✅ 로그인 성공 -> PIN 검증 단계로 이동");
 
-                // ★ 추가: 간편인증을 위해 현재 로그인한 ID를 로컬에 저장해둡니다.
+                // ID 저장 (필수)
                 await const FlutterSecureStorage().write(key: 'saved_userid', value: id);
 
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const BankHomePage())
-                );
+                // 서버에서 받은 hasPin 값 확인
+                bool hasPin = result['hasPin'] ?? false;
+
+                if (hasPin) {
+                  // ★ [수정] 바로 BankHomePage로 가지 않고, PinLoginScreen으로 이동하여 검증 유도
+                  // (PinLoginScreen에서 인증 성공해야 BankHomePage로 넘어가게 됨)
+                  if (!mounted) return;
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => PinLoginScreen(
+                              userId: id,
+                              autoBioAuth: true // ★ (선택) ID/PW 쳤으니 지문은 생략할지, 띄울지 선택 (보통 true 추천)
+                          )
+                      )
+                  );
+                } else {
+                  // PIN이 없으면 설정 화면으로 이동
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('보안을 위해 간편 비밀번호 설정이 필요합니다.'))
+                  );
+
+                  Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => PinSetupScreen(userId: id))
+                  );
+                }
               }
               else if (result['status'] == 'NEW_DEVICE') {
                 // ★ 새로운 기기 감지 -> 인증 화면 이동

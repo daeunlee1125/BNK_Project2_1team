@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_main/screens/main/menu/security_settings_screen.dart';
 import '../app_colors.dart';
 import 'package:test_main/screens/main/menu/review_write.dart';
 
@@ -285,7 +286,13 @@ class _MyPageShortcutGrid extends StatelessWidget {
         icon: Icons.lock_outline,
         label: '인증/보안',
         hasBadge: false,
-        onTap: () {},
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const SecuritySettingsScreen(),
+            ),
+          );
+        },
       ),
     ];
 

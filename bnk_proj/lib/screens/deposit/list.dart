@@ -245,7 +245,9 @@ class _DepositListPageState extends State<DepositListPage> {
                                             Navigator.pushNamed(
                                               context,
                                               DepositStep1Screen.routeName,
-                                              arguments: item.id,
+                                              arguments: DepositStep1Args(
+                                                dpstId: item.id,
+                                              ),
                                             );
                                           },
                                           style: ElevatedButton.styleFrom(

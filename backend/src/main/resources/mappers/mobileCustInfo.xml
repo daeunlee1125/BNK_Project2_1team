@@ -34,4 +34,10 @@
         WHERE CUST_ID = #{custId}
     </update>
 
+    <update id="updateBioAuthYn">
+        UPDATE TB_CUST_INFO
+        SET BIO_AUTH_YN = #{useYn}
+        WHERE CUST_ID = #{userId}
+    </update>
+
 </mapper>

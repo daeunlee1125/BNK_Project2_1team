@@ -14,6 +14,35 @@ class ApiService {
 
   static const _storage = FlutterSecureStorage();
 
+  /// [STEP 0] 기기 상태 및 일치 여부 확인 (스플래시 화면용)
+  /// 반환값: { "status": "MATCH", "hasPin": true, "useBio": false } 형태의 Map
+  static Future<Map<String, dynamic>> checkDeviceStatus(String userid, String deviceId) async {
+    final url = Uri.parse('$currentUrl/member/check-device');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "userid": userid,
+          "deviceId": deviceId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // 서버에서 받은 JSON 그대로 리턴 (status, hasPin, useBio 포함)
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      }
+
+      // 통신은 성공했으나 200이 아닌 경우
+      return {"status": "ERROR", "message": "서버 응답 오류"};
+
+    } catch (e) {
+      print("기기 확인 오류: $e");
+      return {"status": "ERROR", "message": "통신 오류"};
+    }
+  }
+
   /// 로그인 요청
   static Future<Map<String, dynamic>> login(String userid, String password, String deviceId) async {
     final url = Uri.parse('$currentUrl/member/login');
@@ -49,7 +78,8 @@ class ApiService {
             'status': 'SUCCESS',
             'token': responseBody['token'],
             'custName': responseBody['custName'],
-            'message': responseBody['message']
+            'message': responseBody['message'],
+            'hasPin': responseBody['hasPin'] ?? false,
           };
         }
 
@@ -157,8 +187,8 @@ class ApiService {
     }
   }
 
-  /// [STEP 5] 생체인증 사용 여부 설정
-  static Future<bool> toggleBioAuth(String userid, bool useYn) async {
+  /// [STEP 5] 생체인증 사용 여부 설정 (통합 수정본)
+  static Future<bool> toggleBioAuth(String userid, bool useBio) async {
     final url = Uri.parse('$currentUrl/member/auth/toggle-bio');
 
     try {
@@ -167,12 +197,23 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "userid": userid,
-          "useYn": useYn ? "Y" : "N",
+          // JSON 표준인 true/false로 보냅니다. (백엔드에서 Boolean으로 받음)
+          "useBio": useBio,
         }),
       );
-      final result = jsonDecode(utf8.decode(response.bodyBytes));
-      return result['status'] == 'SUCCESS';
+
+      // 응답 코드와 내용을 모두 확인하여 안정성 확보
+      if (response.statusCode == 200) {
+        // 혹시 백엔드가 { "status": "SUCCESS" } 형태를 준다면 파싱, 아니면 그냥 true
+        if (response.body.isNotEmpty) {
+          final result = jsonDecode(utf8.decode(response.bodyBytes));
+          return result['status'] == 'SUCCESS';
+        }
+        return true; // 내용 없이 200 OK만 오는 경우
+      }
+      return false;
     } catch (e) {
+      print("생체인증 설정 오류: $e");
       return false;
     }
   }
@@ -205,4 +246,6 @@ class ApiService {
       return {'status': 'ERROR', 'message': '서버 연결 실패'};
     }
   }
+
+
 }

@@ -149,7 +149,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: _buildBottomButtons(context),
+              child: _buildBottomButtons(context, product),
             ),
           ),
         );
@@ -1848,17 +1848,22 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   // ------------------------------------------------------------
   // 하단 버튼 : 가입하기 / 목록
   // ------------------------------------------------------------
-  Widget _buildBottomButtons(BuildContext context) {
+  Widget _buildBottomButtons(
+      BuildContext context,
+      model.DepositProduct product,
+      ) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              // 가입하기 → Step1으로
               Navigator.pushNamed(
                 context,
                 DepositStep1Screen.routeName,
-                arguments: widget.dpstId,
+                arguments: DepositStep1Args(
+                  dpstId: widget.dpstId,
+                  product: product,
+                ),
               );
             },
             style: ElevatedButton.styleFrom(

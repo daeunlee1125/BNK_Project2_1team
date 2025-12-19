@@ -7,7 +7,12 @@ import '../app_colors.dart';
 
 class PinLoginScreen extends StatefulWidget {
   final String userId;
-  const PinLoginScreen({super.key, required this.userId});
+  final bool autoBioAuth;
+  const PinLoginScreen({
+    super.key,
+    required this.userId,
+    this.autoBioAuth = false // 기본값 false
+  });
 
   @override
   State<PinLoginScreen> createState() => _PinLoginScreenState();
@@ -16,6 +21,17 @@ class PinLoginScreen extends StatefulWidget {
 class _PinLoginScreenState extends State<PinLoginScreen> {
   String _pin = "";
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 자동 생체인증이 켜져있으면 화면 켜지자마자 실행
+    if (widget.autoBioAuth) {
+      // 지문인증 함수 호출 (나중에 구현할 함수)
+      // _authenticateBio();
+      print("지문 인식 팝업 자동 실행!");
+    }
+  }
 
   // 번호 입력 (이름을 _onKeyTap으로 통일)
   void _onKeyTap(String value) {

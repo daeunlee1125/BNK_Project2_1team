@@ -43,6 +43,38 @@ public class MobileMemberController {
         private String deviceId;
     }
 
+
+
+    /*
+     * [STEP 0] 스플래시 화면용 기기 일치 여부 확인
+     * 로그인 전에 저장된 아이디와 현재 기기 ID가 DB와 일치하는지 단순 확인
+     */
+    @PostMapping("/check-device")
+    public ResponseEntity<?> checkDevice(@RequestBody Map<String, String> request) {
+        String userId = request.get("userid");
+        String deviceId = request.get("deviceId");
+
+        CustInfoDTO user = mobileMemberService.getCustInfoByCustId(userId);
+
+        if (user != null && deviceId.equals(user.getCustDeviceId())) {
+            // 성공 시 상세 정보(Flags) 함께 반환
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "MATCH");
+
+            // 1. PIN 존재 여부 (null이 아니고 비어있지 않으면 true)
+            boolean hasPin = user.getCustPin() != null && !user.getCustPin().isEmpty();
+            response.put("hasPin", hasPin);
+
+            // 2. 생체인증 동의 여부 ('Y'이면 true)
+            boolean useBio = "Y".equals(user.getBioAuthYn());
+            response.put("useBio", useBio);
+
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.ok(Map.of("status", "MISMATCH"));
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> mobileLogin(@RequestBody LoginRequest request) {
         log.info("모바일 로그인 요청 - ID: {}, DeviceID: {}", request.getUserid(), request.getDeviceId());
@@ -53,11 +85,11 @@ public class MobileMemberController {
             Boolean checkId = mobileMemberService.login(request);
             Map<String, Object> response = new HashMap<>();
 
-            // PIN 존재 여부 확인 로직
-            // custPin이 null이 아니면 true, null이면 false
+            // PIN 존재 여부 확인 (공통 변수)
             boolean hasPin = custInfoDTO.getCustPin() != null && !custInfoDTO.getCustPin().isEmpty();
 
             if(checkId){
+                // [Case 1] 기존 기기 (로그인 성공)
                 log.info("인증 성공. 토큰 생성 중...");
                 String token = jwtTokenProvider.createToken(custInfoDTO.getCustCode(), "USER", custInfoDTO.getCustName());
 
@@ -66,16 +98,16 @@ public class MobileMemberController {
                 response.put("custName", custInfoDTO.getCustName());
                 response.put("message", "로그인 성공");
 
+                // 성공 시에도 PIN이 있는지 알려줘야 함!
+                response.put("hasPin", hasPin);
+
                 custInfoService.saveLastLogin(custInfoDTO.getCustId());
                 return ResponseEntity.ok(response);
             } else {
-                log.info("다른 기기로 접근하여 추가 인증이 필요합니다.");
+                // [Case 2] 새로운 기기
+                // ... (기존 코드와 동일)
                 response.put("status", "NEW_DEVICE");
-                response.put("message", "등록되지 않은 기기입니다. 추가 인증이 필요합니다.");
-
-                // PIN 번호 존재 여부 확인 (null이 아니고 빈 문자열이 아니면 true)
-                response.put("hasPin", hasPin);
-
+                response.put("hasPin", hasPin); // 여기는 이미 있음
                 return ResponseEntity.ok(response);
             }
         } else {
@@ -219,19 +251,35 @@ public class MobileMemberController {
         }
     }
 
-    /*
-     * [STEP 5] 생체인증 사용 여부 설정
+    /**
+     * [설정] 생체인증 사용 여부 토글 (DB 반영)
      */
     @PostMapping("/auth/toggle-bio")
-    public ResponseEntity<?> toggleBio(@RequestBody Map<String, String> request) {
-        String userId = request.get("userid");
-        String useYn = request.get("useYn"); // 'Y' 또는 'N'
-
+    public ResponseEntity<?> toggleBio(@RequestBody Map<String, Object> request) {
         try {
-            mobileAuthService.updateBioAuth(userId, useYn);
-            return ResponseEntity.ok(Map.of("status", "SUCCESS"));
+            String userId = (String) request.get("userid");
+
+            // 앱에서 온 true/false를 'Y'/'N'으로 변환
+            Boolean useBio = (Boolean) request.get("useBio");
+            String useYn = (useBio != null && useBio) ? "Y" : "N";
+
+            log.info("생체인증 설정 변경 요청: User={}, Status={}", userId, useYn);
+
+            // 서비스 호출하여 DB 업데이트
+            mobileMemberService.updateBioAuth(userId, useYn);
+
+            // 성공 응답
+            return ResponseEntity.ok(Map.of(
+                    "status", "SUCCESS",
+                    "message", "설정이 저장되었습니다."
+            ));
+
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("message", "설정 변경 실패"));
+            log.error("생체인증 설정 실패", e);
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "ERROR",
+                    "message", "서버 오류가 발생했습니다."
+            ));
         }
     }
 
@@ -262,4 +310,5 @@ public class MobileMemberController {
             return ResponseEntity.status(401).body(Map.of("message", "비밀번호가 틀렸습니다."));
         }
     }
+
 }
