@@ -98,7 +98,7 @@ class _CurrencySectionHeader extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 18,
             fontWeight: FontWeight.w800,
             color: Colors.black87,
           ),
@@ -122,7 +122,7 @@ class _CurrencySectionHeader extends StatelessWidget {
 class _FxDepositCompactTile extends StatelessWidget {
   const _FxDepositCompactTile({
     required this.item,
-    required this.onManage,
+    required this.onManage, // 호출 안 해도 됨(그냥 남겨둠)
   });
 
   final _FxDeposit item;
@@ -131,95 +131,57 @@ class _FxDepositCompactTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 160),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18), // 좀 더 둥글게
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 왼쪽 빨간 원(1번 스샷 느낌)
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: Color(0xFFD32F2F),
-              shape: BoxShape.circle,
-            ),
-            child: const Text(
-              'BNK',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // 가운데 텍스트
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.productName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: onManage,
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        '관리',
-                        style: TextStyle(fontSize: 11),
-                      ),
-                    ),
-                  ],
+                Text(
+                  item.productName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black87,
+                  ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 10),
                 Text(
                   item.accountNo,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 13,
                     color: Colors.black54,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(width: 10),
 
-          // 오른쪽 금액
+
           Text(
-            item.balance,
+            '${item.currencyCode} ${_stripSymbol(item.balance)}',
+            textAlign: TextAlign.right,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
               color: Colors.black87,
             ),
           ),
@@ -227,7 +189,18 @@ class _FxDepositCompactTile extends StatelessWidget {
       ),
     );
   }
+
+  // "$ 1,000" / "€ 10,000" / "¥ 100,000" -> "1,000" / "10,000" / "100,000"
+  static String _stripSymbol(String s) {
+    return s
+        .replaceAll('\$', '')
+        .replaceAll('€', '')
+        .replaceAll('¥', '')
+        .replaceAll('₩', '')
+        .trim();
+  }
 }
+
 
 
 /// 카드 1개 (원화계좌 UI 느낌으로 간소화)

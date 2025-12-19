@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:test_main/screens/auth/pin_login_screen.dart';
 import 'package:test_main/screens/member/signup_1.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:test_main/services/api_service.dart';
 import 'package:test_main/screens/auth/pin_setup_screen.dart';
 
@@ -9,6 +11,12 @@ import 'screens/app_colors.dart';
 import 'screens/main/bank_homepage.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:test_main/screens/auth/auth_verification_screen.dart';
+
+import 'package:test_main/utils/device_manager.dart';
+import 'package:http/http.dart' as http;
+import 'package:test_main/models/deposit/application.dart';
+
+import 'package:test_main/screens/splash_screen.dart';
 
 import 'package:test_main/screens/deposit/view.dart';
 import 'package:test_main/screens/deposit/step_1.dart';
@@ -20,38 +28,91 @@ import 'package:test_main/screens/deposit/recommend.dart';
 import 'package:test_main/screens/deposit/survey.dart';
 import 'package:test_main/screens/main/menu/review_write.dart';
 
-import 'package:test_main/utils/device_manager.dart';
-import 'package:http/http.dart' as http;
-import 'package:test_main/models/deposit/application.dart';
-
-import 'package:test_main/screens/splash_screen.dart';
+final navigatorKey = GlobalKey<NavigatorState>(
 
 
-void main() async{
-  // 1. 플러터 엔진 초기화 (비동기 작업 전 필수)
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. 앱 실행 시점에 UUID 생성/확인
-  // 저장소에 기기 ID가 없으면 새로 만들고, 있으면 가져옴
-  String deviceId = await DeviceManager.getDeviceId();
+  final deviceId = await DeviceManager.getDeviceId();
   debugPrint("[App Start] 기기 고유 ID 확보 완료: $deviceId");
-
   await initializeDateFormatting();
+  await Firebase.initializeApp();
+  await FirebaseMessaging.instance.requestPermission();
+
+  final token = await FirebaseMessaging.instance.getToken();
+  await FirebaseMessaging.instance.subscribeToTopic('notice');
+  print('Subscribed to topic: notice');  
+  print('FCM token: $token');
+
+  // 토큰 갱신(나중에 서버에 업데이트)
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    print('FCM token refreshed: $newToken');
+  });
+
+   // 앱이 "종료 상태"에서 푸시 눌러 켜진 경우
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    final route = initialMessage.data['route'];
+    if (route != null) {
+    }
+  }
+
+  // 앱이 "백그라운드"에서 푸시 눌러 열린 경우
+  FirebaseMessaging.onMessageOpenedApp.listen((m) {
+    final route = m.data['route'];
+    if (route != null) {
+      // navigatorKey로 pushNamed
+    }
+  });
+
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initPushTapRouting();
+  }
+
+  void _initPushTapRouting() async {
+    // 1) 종료 상태에서 알림 눌러 켠 경우
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _routeFromData(initial.data);
+      });
+    }
+
+    // 2) 백그라운드에서 알림 눌러 열린 경우
+    FirebaseMessaging.onMessageOpenedApp.listen((m) {
+      _routeFromData(m.data);
+    });
+  }
+
+  void _routeFromData(Map<String, dynamic> data) {
+    final route = data['route'] as String?;
+    if (route == null) return;
+
+    navigatorKey.currentState?.pushNamed(route, arguments: data);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'FLOBANK',
       theme: ThemeData(useMaterial3: true),
-
-
-      //예금 가입하기 관련 페이지 이동
+      home: const LoginPage(),
       routes: {
         // -------------------------
         // 예금 상품 상세
@@ -118,11 +179,14 @@ class MyApp extends StatelessWidget {
         DepositSurveyScreen.routeName: (_) => const DepositSurveyScreen(),
         DepositReviewWriteScreen.routeName: (_) =>
         const DepositReviewWriteScreen(),
+        '/tx/detail': (_) => const TxDetailScreen(),
+        '/notice/detail': (_) => const NoticeDetailScreen(),
       },
       home: const SplashScreen(),
     );
   }
 }
+
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -488,3 +552,31 @@ class _ShortcutButton extends StatelessWidget {
     );
   }
 }
+///////////////////////////
+class TxDetailScreen extends StatelessWidget {
+  const TxDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    return Scaffold(
+      appBar: AppBar(title: const Text('거래 상세')),
+      body: Center(child: Text('args: $args')),
+    );
+  }
+}
+
+class NoticeDetailScreen extends StatelessWidget {
+  const NoticeDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    return Scaffold(
+      appBar: AppBar(title: const Text('공지 상세')),
+      body: Center(child: Text('args: $args')),
+    );
+  }
+}
+
+
