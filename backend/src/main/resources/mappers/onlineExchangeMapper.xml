@@ -170,19 +170,7 @@
           AND acct_status = 1
           AND acct_currency = 'KRW'
     </select>
-
-    <!-- =========================
-         내 외화 모계좌
-         ========================= -->
-    <select id="selectMyFrgnAccount"
-            resultType="kr.co.api.backend.dto.FrgnAcctDTO">
-        SELECT
-            frgn_acct_no   AS frgnAcctNo,
-            frgn_acct_name AS frgnAcctName
-        FROM TB_FRGN_ACCT
-        WHERE frgn_cust_code = #{custCode}
-          AND frgn_status = 1
-    </select>
+    
 
     <!-- =========================
          통화별 외화 자식 계좌
