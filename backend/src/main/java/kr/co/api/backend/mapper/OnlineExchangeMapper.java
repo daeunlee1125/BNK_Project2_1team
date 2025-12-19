@@ -66,4 +66,23 @@ public interface OnlineExchangeMapper {
        6. 온라인 환전 INSERT
        ========================= */
     int insertOnlineExchange(FrgnExchOnlineDTO dto);
+
+
+    // 내 원화 계좌
+    CustAcctDTO selectMyKrwAccount(@Param("custCode") String custCode);
+
+    // 내 외화 모계좌
+    FrgnAcctDTO selectMyFrgnAccount(@Param("custCode") String custCode);
+
+    // 통화별 외화 자식 계좌
+    FrgnAcctBalanceDTO selectMyFrgnBalance(
+            @Param("frgnAcctNo") String frgnAcctNo,
+            @Param("currency") String currency
+    );
+
+
+
+
 }
+
+

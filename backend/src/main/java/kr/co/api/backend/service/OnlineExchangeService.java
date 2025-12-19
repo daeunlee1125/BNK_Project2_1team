@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -146,8 +148,8 @@ public class OnlineExchangeService {
         }
 
         // =========================
-// 4-1. 계좌이체 이력 저장
-// =========================
+        // 4-1. 계좌이체 이력 저장
+        // =========================
         if ("B".equals(dto.getExchType())) {
 
             // 원화 출금
@@ -203,4 +205,39 @@ public class OnlineExchangeService {
 
         onlineExchangeMapper.insertOnlineExchange(dto);
     }
+
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getMyExchangeAccounts(String userId, String currency) {
+
+        // 1. userId → custCode
+        String custCode = onlineExchangeMapper.selectCustCodeByUserId(userId);
+        if (custCode == null) {
+            throw new IllegalStateException("고객 정보를 찾을 수 없습니다.");
+        }
+
+        // 2. 원화 계좌 (1개)
+        CustAcctDTO krwAcct =
+                onlineExchangeMapper.selectMyKrwAccount(custCode);
+
+        FrgnAcctDTO frgnAcct =
+                onlineExchangeMapper.selectMyFrgnAccount(custCode);
+
+        FrgnAcctBalanceDTO frgnBalance =
+                onlineExchangeMapper.selectMyFrgnBalance(
+                        frgnAcct.getFrgnAcctNo(),
+                        currency
+                );
+
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("krwAccount", krwAcct);
+        result.put("frgnAccount", frgnAcct);
+        result.put("frgnBalance", frgnBalance);
+
+        return result;
+    }
+
+
+
 }

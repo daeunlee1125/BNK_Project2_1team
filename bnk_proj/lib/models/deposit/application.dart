@@ -35,6 +35,17 @@ class DepositApplication {
 
   String autoRenew = 'no';
   int? autoRenewCycle;
+  int? autoRenewCount;
+  bool autoTerminateAtMaturity = false;
+
+  double? appliedRate;
+  double? appliedFxRate;
+
+  bool addPaymentEnabled = false;
+  int? addPaymentCount;
+
+  bool partialWithdrawEnabled = false;
+  int? partialWithdrawCount;
 
   String depositPassword = '';
 
@@ -94,6 +105,14 @@ class DepositApplication {
       'newPeriodMonths': newPeriodMonths,
       'autoRenew': autoRenew,
       'autoRenewCycle': autoRenewCycle,
+      'autoRenewCount': autoRenewCount,
+      'autoTerminateAtMaturity': autoTerminateAtMaturity,
+      'appliedRate': appliedRate,
+      'appliedFxRate': appliedFxRate,
+      'addPaymentEnabled': addPaymentEnabled,
+      'addPaymentCount': addPaymentCount,
+      'partialWithdrawEnabled': partialWithdrawEnabled,
+      'partialWithdrawCount': partialWithdrawCount,
       'depositPassword': depositPassword,
       'dpstHdrStartDy': dpstHdrStartDy,
       'dpstHdrFinDy': dpstHdrFinDy,
@@ -147,6 +166,17 @@ class DepositApplication {
       ..newPeriodMonths = json['newPeriodMonths'] as int?
       ..autoRenew = json['autoRenew']?.toString() ?? 'no'
       ..autoRenewCycle = json['autoRenewCycle'] as int?
+      ..autoRenewCount = json['autoRenewCount'] as int?
+      ..autoTerminateAtMaturity = json['autoTerminateAtMaturity'] == true ||
+          json['autoTerminateAtMaturity']?.toString().toUpperCase() == 'Y'
+      ..appliedRate = _tryParseDouble(json['appliedRate'])
+      ..appliedFxRate = _tryParseDouble(json['appliedFxRate'])
+      ..addPaymentEnabled = json['addPaymentEnabled'] == true ||
+          json['addPaymentEnabled']?.toString().toUpperCase() == 'Y'
+      ..addPaymentCount = json['addPaymentCount'] as int?
+      ..partialWithdrawEnabled = json['partialWithdrawEnabled'] == true ||
+          json['partialWithdrawEnabled']?.toString().toUpperCase() == 'Y'
+      ..partialWithdrawCount = json['partialWithdrawCount'] as int?
       ..depositPassword = json['depositPassword']?.toString() ?? ''
       ..dpstHdrStartDy = json['dpstHdrStartDy']?.toString()
       ..dpstHdrFinDy = json['dpstHdrFinDy']?.toString()
@@ -187,6 +217,11 @@ class DepositApplication {
     } catch (_) {
       return null;
     }
+  }
+
+  static double? _tryParseDouble(dynamic value) {
+    if (value == null) return null;
+    return double.tryParse(value.toString());
   }
 }
 

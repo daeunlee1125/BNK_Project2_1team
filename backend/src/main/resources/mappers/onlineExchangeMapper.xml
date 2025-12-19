@@ -156,6 +156,37 @@
     </select>
 
 
+    <!-- =========================
+     내 원화 계좌
+     ========================= -->
+    <select id="selectMyKrwAccount"
+            resultType="kr.co.api.backend.dto.CustAcctDTO">
+        SELECT
+            acct_no        AS acctNo,
+            acct_balance   AS acctBalance,
+            acct_name      AS acctName
+        FROM TB_CUST_ACCT
+        WHERE acct_cust_code = #{custCode}
+          AND acct_status = 1
+          AND acct_currency = 'KRW'
+    </select>
+    
+
+    <!-- =========================
+         통화별 외화 자식 계좌
+         ========================= -->
+    <select id="selectMyFrgnAccount"
+            resultType="kr.co.api.backend.dto.FrgnAcctDTO">
+        SELECT
+            frgn_acct_no   AS frgnAcctNo,
+            frgn_cust_code AS frgnCustCode,
+            frgn_reg_dt    AS frgnRegDt
+        FROM TB_FRGN_ACCT
+        WHERE frgn_cust_code = #{custCode}
+    </select>
+
+
+
 
 
 </mapper>

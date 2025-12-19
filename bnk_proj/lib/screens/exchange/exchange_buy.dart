@@ -16,8 +16,35 @@ class ExchangeBuyPage extends StatefulWidget {
   State<ExchangeBuyPage> createState() => _ExchangeBuyPageState();
 }
 
+
 class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
   String foreignAmount = "1";
+
+  int krwBalance = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyAccounts();
+  }
+
+  Future<void> _loadMyAccounts() async {
+    try {
+      final data = await ExchangeService.fetchMyExchangeAccounts(
+        currency: widget.rate.code,
+      );
+
+      setState(() {
+        krwBalance = data['krwBalance']; // 서버 응답 키
+        isLoading = false;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("계좌 조회 실패: $e")),
+      );
+    }
+  }
 
   void _onKeyTap(String value) {
     setState(() {
@@ -132,7 +159,7 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
             title: "대한민국 원",
             amount: "$krwAmount KRW",
             isActive: false,
-            balance: "잔액 3,810원",
+            balance: "잔액 ${krwBalance.toString()}원",
           ),
 
           const Spacer(),

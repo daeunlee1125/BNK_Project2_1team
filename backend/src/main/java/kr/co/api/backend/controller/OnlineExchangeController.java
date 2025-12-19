@@ -9,6 +9,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/exchange")
 @RequiredArgsConstructor
@@ -52,4 +54,36 @@ public class OnlineExchangeController {
            ========================= */
         return ResponseEntity.ok("온라인 환전이 정상적으로 처리되었습니다.");
     }
+
+
+
+    @GetMapping("/accounts")
+    public ResponseEntity<?> getMyExchangeAccounts(
+            @RequestParam String currency
+    ) {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null ||
+                !(authentication.getPrincipal() instanceof CustomUserDetails)) {
+            return ResponseEntity.status(401).body("인증 정보가 없습니다.");
+        }
+
+        String userId =
+                ((CustomUserDetails) authentication.getPrincipal()).getUsername();
+
+        Map<String, Object> result =
+                onlineExchangeService.getMyExchangeAccounts(userId, currency);
+
+        return ResponseEntity.ok(result);
+    }
+
+
+
+
+
+
+
+
+
 }

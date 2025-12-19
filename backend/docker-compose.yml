@@ -15,3 +15,17 @@ services:
     # 파일 저장소 연결 (서버의 ./files 폴더를 컨테이너의 /app/uploads와 연결)
     volumes:
       - ./files:/app/uploads
+
+  nginx:
+    image: nginx:latest
+    container_name: flobank-nginx
+    ports:
+      - "80:80"    # HTTP 포트
+      - "443:443"  # HTTPS 포트
+    volumes:
+      # 1. 위에서 만든 설정 파일을 컨테이너 내부로 연결
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      # 2. 서버에 있는 인증서 폴더를 컨테이너가 읽을 수 있게 통째로 연결
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - flobank-api  # API 서버가 켜진 뒤에 실행

@@ -11,7 +11,7 @@ class ExchangeService {
     required String currency,
   }) async {
     final url =
-    Uri.parse("$baseUrl/api/exchange/my-accounts?currency=$currency");
+    Uri.parse("$baseUrl/api/exchange/accounts?currency=$currency");
 
     final response = await http.get(
       url,
