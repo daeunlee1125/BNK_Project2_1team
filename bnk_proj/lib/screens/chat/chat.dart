@@ -157,8 +157,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // --------------------------
           // 메시지들
           // --------------------------
-          SizedBox(
-            height: 420,
+          Expanded(
             child: ListView.builder(
               controller: _scrollController,
               itemCount: _messages.length + (_isLoading ? 1 : 0),
@@ -238,7 +237,8 @@ class _ChatScreenState extends State<ChatScreen> {
               )
 
             ],
-          )
+          ),
+          SizedBox(height: 30,)
         ],
       ),
     );

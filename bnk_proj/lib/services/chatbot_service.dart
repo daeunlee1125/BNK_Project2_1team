@@ -5,6 +5,7 @@ import '../models/chatbot_hist.dart';
 
 class ChatbotService {
   final String baseUrl = 'http://34.64.124.33:8080/backend';
+  final String base2Url = "http://192.168.0.209:8080/backend";
 
   ChatbotService();
 

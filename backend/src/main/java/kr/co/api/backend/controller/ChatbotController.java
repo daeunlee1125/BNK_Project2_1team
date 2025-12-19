@@ -59,7 +59,8 @@ public class ChatbotController {
     ) {
 
         String q = req.get("question");
-        String sessId = req.get("sessId");
+
+
 
         // 질문 저장
         ChatbotHistDTO qHistDTO = new ChatbotHistDTO();
@@ -91,9 +92,12 @@ public class ChatbotController {
                 String queryResult = whiteListService.queryAndFormat(query);
                 contextBuilder.append("\n\n").append(queryResult);
             }
+            
+            log.info("🛒 화이트리스트 sql 실행 완");
 
             // 질문 타입 분류 + RAG
             String type = typeClassifier.detectTypeByGPT(q);
+            log.info("🔈 타입 : " + type);
             if (type != null && !"null".equals(type)) {
 
                 List<Double> qEmbedding = embeddingService.embedText(q);

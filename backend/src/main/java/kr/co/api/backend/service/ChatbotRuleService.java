@@ -36,6 +36,8 @@ public class ChatbotRuleService {
         List<ChatbotBadWordDTO> badWords = chatbotRuleMapper.getActiveWords(); // BAD_USE_YN='Y'
         List<ChatbotBadTypeDTO> badTypes = chatbotRuleMapper.selectBadTypeList(); // type→answer 맵핑
 
+        log.info("✨ Select Badword");
+
         for (ChatbotBadWordDTO w : badWords) {
             if (w.getBadType() == 1) {
                 // 욕설/비속어 : 단순 포함 체크
