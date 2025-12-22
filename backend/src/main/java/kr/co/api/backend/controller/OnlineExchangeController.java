@@ -23,63 +23,50 @@ public class OnlineExchangeController {
      */
     @PostMapping("/online")
     public ResponseEntity<?> onlineExchange(
-            @RequestBody FrgnExchOnlineDTO dto
+            @RequestBody FrgnExchOnlineDTO dto,
+            Authentication authentication
     ) {
-        /* =========================
-           1. 로그인 사용자(userId) 조회
-           ========================= */
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null ||
-                !(authentication.getPrincipal() instanceof CustomUserDetails)) {
-            return ResponseEntity
-                    .status(401)
-                    .body("인증 정보가 없습니다.");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
 
-        CustomUserDetails user =
-                (CustomUserDetails) authentication.getPrincipal();
-
-        // JWT subject = 로그인 userId
-        String userId = user.getUsername();
-
-        /* =========================
-           2. 온라인 환전 처리
-           ========================= */
+        String userId = authentication.getName(); // 여기 하나로 끝
         onlineExchangeService.processOnlineExchange(dto, userId);
 
-        /* =========================
-           3. 응답
-           ========================= */
         return ResponseEntity.ok("온라인 환전이 정상적으로 처리되었습니다.");
     }
 
 
 
+
+
     @GetMapping("/accounts")
     public ResponseEntity<?> getMyExchangeAccounts(
-            @RequestParam String currency
+            @RequestParam String currency,
+            Authentication authentication
     ) {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null ||
-                !(authentication.getPrincipal() instanceof CustomUserDetails)) {
-            return ResponseEntity.status(401).body("인증 정보가 없습니다.");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
 
-        String userId =
-                ((CustomUserDetails) authentication.getPrincipal()).getUsername();
+        Object principal = authentication.getPrincipal();
 
-        Map<String, Object> result =
-                onlineExchangeService.getMyExchangeAccounts(userId, currency);
+        String userId;
+        if (principal instanceof CustomUserDetails user) {
+            userId = user.getUsername();
+        } else if (principal instanceof String s) {
+            // principal이 String으로 들어오는 케이스 대응
+            userId = s;
+            if ("anonymousUser".equals(userId)) {
+                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+            }
+        } else {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+        }
 
+        Map<String, Object> result = onlineExchangeService.getMyExchangeAccounts(userId, currency);
         return ResponseEntity.ok(result);
     }
-
-
-
 
 
 

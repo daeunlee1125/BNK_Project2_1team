@@ -175,14 +175,31 @@
     <!-- =========================
          통화별 외화 자식 계좌
          ========================= -->
-    <select id="selectMyFrgnAccount"
-            resultType="kr.co.api.backend.dto.FrgnAcctDTO">
+    <select id="selectMyFrgnAccount" resultType="kr.co.api.backend.dto.FrgnAcctDTO">
         SELECT
-            frgn_acct_no   AS frgnAcctNo,
-            frgn_cust_code AS frgnCustCode,
-            frgn_reg_dt    AS frgnRegDt
-        FROM TB_FRGN_ACCT
-        WHERE frgn_cust_code = #{custCode}
+            frgn_acct_no        AS frgnAcctNo,
+            frgn_acct_cust_code AS frgnCustCode,
+            frgn_acct_reg_dt    AS frgnRegDt
+        FROM TB_CUST_FRGN_ACCT
+        WHERE frgn_acct_cust_code = #{custCode}
+          AND frgn_acct_status = 1
+    </select>
+
+
+    <!-- =========================
+         통화별 외화 자식 계좌 잔액
+         ========================= -->
+    <select id="selectMyFrgnBalance"
+            resultType="kr.co.api.backend.dto.FrgnAcctBalanceDTO">
+        SELECT
+            bal_no           AS balNo,
+            bal_currency     AS balCurrency,
+            bal_balance      AS balBalance,
+            bal_reg_dt       AS balRegDt,
+            bal_frgn_acct_no AS balFrgnAcctNo
+        FROM TB_FRGN_ACCT_BALANCE
+        WHERE bal_frgn_acct_no = #{frgnAcctNo}
+          AND bal_currency = #{currency}
     </select>
 
 

@@ -210,33 +210,41 @@ public class OnlineExchangeService {
     @Transactional(readOnly = true)
     public Map<String, Object> getMyExchangeAccounts(String userId, String currency) {
 
-        // 1. userId → custCode
         String custCode = onlineExchangeMapper.selectCustCodeByUserId(userId);
         if (custCode == null) {
             throw new IllegalStateException("고객 정보를 찾을 수 없습니다.");
         }
 
-        // 2. 원화 계좌 (1개)
-        CustAcctDTO krwAcct =
-                onlineExchangeMapper.selectMyKrwAccount(custCode);
+        CustAcctDTO krwAcct = onlineExchangeMapper.selectMyKrwAccount(custCode);
+        FrgnAcctDTO frgnAcct = onlineExchangeMapper.selectMyFrgnAccount(custCode);
 
-        FrgnAcctDTO frgnAcct =
-                onlineExchangeMapper.selectMyFrgnAccount(custCode);
+        long krwBalance = (krwAcct != null && krwAcct.getAcctBalance() != null)
+                ? krwAcct.getAcctBalance()
+                : 0L;
 
-        FrgnAcctBalanceDTO frgnBalance =
-                onlineExchangeMapper.selectMyFrgnBalance(
-                        frgnAcct.getFrgnAcctNo(),
-                        currency
-                );
+        long frgnBalanceAmount = 0L;
 
+        if (frgnAcct != null && frgnAcct.getFrgnAcctNo() != null) {
+            FrgnAcctBalanceDTO frgnBalance = onlineExchangeMapper.selectMyFrgnBalance(
+                    frgnAcct.getFrgnAcctNo(),
+                    currency
+            );
+
+            frgnBalanceAmount = (frgnBalance != null && frgnBalance.getBalBalance() != null)
+                    ? frgnBalance.getBalBalance()
+                    : 0L;
+        }
 
         Map<String, Object> result = new HashMap<>();
-        result.put("krwAccount", krwAcct);
-        result.put("frgnAccount", frgnAcct);
-        result.put("frgnBalance", frgnBalance);
+        result.put("krwBalance", krwBalance);
+        result.put("frgnBalance", frgnBalanceAmount);
+        // 필요하면 계좌번호도 같이
+        result.put("krwAcctNo", krwAcct != null ? krwAcct.getAcctNo() : null);
+        result.put("frgnAcctNo", frgnAcct != null ? frgnAcct.getFrgnAcctNo() : null);
 
         return result;
     }
+
 
 
 

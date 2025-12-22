@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:test_main/screens/deposit/list.dart';
 import 'package:test_main/screens/main/search.dart';
+import '../../services/api_service.dart';
 import '../app_colors.dart';
 import '../../main.dart';
 import '../mypage/transaction_history.dart';
@@ -46,11 +47,32 @@ class RateDTO {
 }
 
 Future<List<RateDTO>> fetchLatestRates() async {
-  final response = await http.get(
-    Uri.parse('http://34.64.124.33:8080/backend/api/exchange/rates'),
-  );
+  final headers = await ApiService.getAuthHeaders();
 
-  final List list = jsonDecode(response.body);
+  final baseUrl =
+  ApiService.currentUrl.replaceFirst('/api/mobile', '/api/exchange');
+
+  final url = Uri.parse('$baseUrl/rates');
+
+  print("📌 headers = $headers");
+  print("📌 rates url = $url");
+
+  final req = http.Request('GET', url)
+    ..headers.addAll(headers)
+    ..followRedirects = false; // ✅ 리다이렉트 추적 끔
+
+  final streamed = await http.Client().send(req);
+  final res = await http.Response.fromStream(streamed);
+
+  print("📌 status = ${res.statusCode}");
+  print("📌 location = ${res.headers['location']}"); // ✅ 302면 여기 찍힘
+  print("📌 body = ${res.body}");
+
+  if (res.statusCode != 200) {
+    throw Exception("환율 조회 실패: ${res.statusCode} ${res.body}");
+  }
+
+  final List list = jsonDecode(utf8.decode(res.bodyBytes));
   return list.map((e) => RateDTO.fromJson(e)).toList();
 }
 
