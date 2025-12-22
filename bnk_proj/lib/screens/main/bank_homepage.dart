@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:test_main/screens/deposit/list.dart';
 import 'package:test_main/screens/main/search.dart';
+import '../../services/api_service.dart';
 import '../app_colors.dart';
 import '../../main.dart';
 import '../mypage/transaction_history.dart';
@@ -46,11 +47,18 @@ class RateDTO {
 }
 
 Future<List<RateDTO>> fetchLatestRates() async {
+  final headers = await ApiService.getAuthHeaders();
+
   final response = await http.get(
     Uri.parse('http://34.64.124.33:8080/backend/api/exchange/rates'),
+    headers: headers,
   );
 
-  final List list = jsonDecode(response.body);
+  if (response.statusCode != 200) {
+    throw Exception("환율 조회 실패: ${response.statusCode} ${response.body}");
+  }
+
+  final List list = jsonDecode(utf8.decode(response.bodyBytes));
   return list.map((e) => RateDTO.fromJson(e)).toList();
 }
 
