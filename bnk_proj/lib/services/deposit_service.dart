@@ -66,6 +66,35 @@ class DepositService {
     return DepositProduct.fromJson(data);
   }
 
+
+  /// 상품 금리 조회
+  Future<double?> fetchRate({
+    required String dpstId,
+    required String currency,
+    required int months,
+  }) async {
+    final uri = Uri.parse('$baseUrl/products/$dpstId/rate').replace(
+      queryParameters: {
+        'currency': currency,
+        'month': months.toString(),
+      },
+    );
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode != 200) {
+      throw Exception('금리 조회 실패 (${response.statusCode})');
+    }
+
+    final Map<String, dynamic> data =
+    jsonDecode(utf8.decode(response.bodyBytes));
+
+    final num? rate = data['rate'] as num?;
+    return rate?.toDouble();
+  }
+
+
+
   /// 사용자 컨텍스트
   Future<DepositContext> fetchContext() async {
     final token = await _storage.read(key: 'auth_token');

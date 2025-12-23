@@ -1204,6 +1204,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           onPressed: canNext
               ? () async {
                   if (_validateInputs()) {
+                    await _applyRateForCurrentSelection();
                     _saveToApplication();
                     await _draftService.saveDraft(
                       widget.application,
@@ -1470,6 +1471,65 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
 
   }
+
+
+  Future<void> _applyRateForCurrentSelection() async {
+    final months = int.tryParse(newPeriod ?? '');
+    final currency = newCurrency.isNotEmpty
+        ? newCurrency
+        : (_currencyOptions.isNotEmpty ? _currencyOptions.first : '');
+
+    if (months == null || currency.isEmpty) {
+      return;
+    }
+
+    try {
+      final fetchedRate = await _service.fetchRate(
+        dpstId: widget.application.dpstId,
+        currency: currency,
+        months: months,
+      );
+
+      if (fetchedRate != null) {
+        setState(() {
+          appliedRate = fetchedRate;
+          _appliedRateController.text = fetchedRate.toString();
+        });
+        return;
+      }
+    } catch (e, stack) {
+      debugPrint('[DepositStep2] 금리 조회 실패: $e');
+      debugPrintStack(stackTrace: stack);
+    }
+
+    final fallbackRate = _fallbackRateByMonth(months, currency);
+    if (fallbackRate != null) {
+      setState(() {
+        appliedRate = fallbackRate;
+        _appliedRateController.text = fallbackRate.toString();
+      });
+    }
+  }
+
+  double? _fallbackRateByMonth(int months, String currency) {
+    if (currency.toUpperCase() != 'USD') return null;
+
+    const Map<int, double> usdRates = {
+      1: 3.272520,
+      2: 3.28870,
+      3: 3.30220,
+      4: 3.33550,
+      5: 3.36880,
+      6: 3.40220,
+      7: 3.40510,
+      8: 3.40810,
+      9: 3.41100,
+      10: 3.41400,
+    };
+
+    return usdRates[months];
+  }
+
 
   DateTime _deriveStartDate() {
     return DateTime.now();
