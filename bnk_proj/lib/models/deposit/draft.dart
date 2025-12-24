@@ -11,6 +11,9 @@ class DepositDraft {
   final int? month;
   final int step;
   final String? linkedAccountNo;
+  final String? withdrawPassword;
+  final String? depositPassword;
+  final int? amount;
   final bool autoRenewYn;
   final int? autoRenewTerm;
   final bool autoTerminationYn;
@@ -25,6 +28,9 @@ class DepositDraft {
     this.month,
     required this.step,
     this.linkedAccountNo,
+    this.withdrawPassword,
+    this.depositPassword,
+    this.amount,
     this.autoRenewYn = false,
     this.autoRenewTerm,
     this.autoTerminationYn = false,
@@ -40,6 +46,9 @@ class DepositDraft {
     int? month,
     int? step,
     String? linkedAccountNo,
+    String? withdrawPassword,
+    String? depositPassword,
+    int? amount,
     bool? autoRenewYn,
     int? autoRenewTerm,
     bool? autoTerminationYn,
@@ -54,6 +63,9 @@ class DepositDraft {
       month: month ?? this.month,
       step: step ?? this.step,
       linkedAccountNo: linkedAccountNo ?? this.linkedAccountNo,
+      withdrawPassword: withdrawPassword ?? this.withdrawPassword,
+      depositPassword: depositPassword ?? this.depositPassword,
+      amount: amount ?? this.amount,
       autoRenewYn: autoRenewYn ?? this.autoRenewYn,
       autoRenewTerm: autoRenewTerm ?? this.autoRenewTerm,
       autoTerminationYn: autoTerminationYn ?? this.autoTerminationYn,
@@ -71,6 +83,9 @@ class DepositDraft {
       'month': month,
       'step': step,
       'linkedAccountNo': linkedAccountNo,
+      'withdrawPassword': withdrawPassword,
+      'depositPassword': depositPassword,
+      'amount': amount,
       'autoRenewYn': autoRenewYn,
       'autoRenewTerm': autoRenewTerm,
       'autoTerminationYn': autoTerminationYn,
@@ -88,6 +103,9 @@ class DepositDraft {
       month: _parseInt(json['month']),
       step: _parseInt(json['step']) ?? 1,
       linkedAccountNo: json['linkedAccountNo']?.toString(),
+      withdrawPassword: json['withdrawPassword']?.toString(),
+      depositPassword: json['depositPassword']?.toString(),
+      amount: _parseInt(json['amount']),
       autoRenewYn: json['autoRenewYn'] == true ||
           json['autoRenewYn']?.toString().toUpperCase() == 'Y',
       autoRenewTerm: _parseInt(json['autoRenewTerm']),

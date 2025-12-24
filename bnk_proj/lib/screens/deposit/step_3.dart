@@ -9,9 +9,9 @@ class DepositStep3Screen extends StatelessWidget {
   static const routeName = "/deposit-step3";
 
   final DepositApplication application;
-  final DepositDraftService _draftService = const DepositDraftService();
+  final DepositDraftService _draftService = DepositDraftService();
 
-  const DepositStep3Screen({
+   DepositStep3Screen({
     super.key,
     required this.application,
   });
@@ -21,6 +21,11 @@ class DepositStep3Screen extends StatelessWidget {
   Widget build(BuildContext context) {
     final productName = application.product?.name ?? application.dpstId;
     final formatter = NumberFormat.decimalPattern();
+
+    final krwAmountLabel = _resolveKrwDepositAmountLabel(
+      application,
+      formatter,
+    );
 
     final withdrawAccountLabel = application.withdrawType == "fx"
         ? (application.selectedFxAccount ?? "미입력")
@@ -37,6 +42,9 @@ class DepositStep3Screen extends StatelessWidget {
     final periodLabel = application.newPeriodMonths != null
         ? "${application.newPeriodMonths}개월"
         : "미입력";
+
+    final rateLabel = _resolveRateLabel(application);
+    final maturityLabel = _resolveMaturityLabel(application);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundOffWhite,
@@ -75,7 +83,10 @@ class DepositStep3Screen extends StatelessWidget {
                   ? application.newCurrency
                   : "미입력"],
               ["신규 금액", amountLabel],
+              ["원화 환산 금액", krwAmountLabel],
               ["가입기간", periodLabel],
+              ["예금이율", rateLabel],
+              ["만기일", maturityLabel],
 
             ]),
 
@@ -83,40 +94,16 @@ class DepositStep3Screen extends StatelessWidget {
             _sectionTitle("만기자동연장"),
             _infoCard([
               ["자동연장 여부", application.autoRenew == "apply" ? "신청" : "미신청"],
-              ["연장 주기", application.autoRenew == "apply"
-                  ? "${application.autoRenewCycle ?? '-'}개월"
-                  : "-"],
-              [
-                "연장 횟수",
-                application.autoRenew == "apply"
-                    ? (application.autoRenewCount?.toString() ?? "-")
-                    : "-",
-              ],
+
               [
                 "만기 자동 해지",
-                application.autoRenew == "apply" &&
-                    application.autoTerminateAtMaturity
+                application.autoTerminateAtMaturity
                     ? "예"
                     : "아니오",
               ],
             ]),
 
-            const SizedBox(height: 28),
-            _sectionTitle("추가 옵션"),
-            _infoCard([
-              [
-                "추가납입",
-                application.addPaymentEnabled
-                    ? "가능 (${application.addPaymentCount ?? '-'}회)"
-                    : "불가",
-              ],
-              [
-                "일부출금",
-                application.partialWithdrawEnabled
-                    ? "가능 (${application.partialWithdrawCount ?? '-'}회)"
-                    : "불가",
-              ],
-            ]),
+
 
             const SizedBox(height: 28),
             _sectionTitle("비밀번호"),
@@ -320,4 +307,58 @@ class DepositStep3Screen extends StatelessWidget {
       arguments: application,
     );
   }
+
+  String _resolveRateLabel(DepositApplication application) {
+    final rate = application.appliedRate;
+    if (rate != null) {
+      return "${rate.toStringAsFixed(2)}%";
+    }
+
+    return "확인중";
+  }
+
+  String _resolveMaturityLabel(DepositApplication application) {
+    final maturity = application.dpstHdrFinDy;
+    if (maturity != null && maturity.isNotEmpty) {
+      final parsedMaturity = DateTime.tryParse(maturity);
+      if (parsedMaturity != null) {
+        return DateFormat('yyyy.MM.dd').format(parsedMaturity);
+      }
+
+      return maturity.replaceAll('-', '.');
+    }
+
+    if (application.newPeriodMonths != null) {
+      final today = DateTime.now();
+      final derived = DateTime(
+        today.year,
+        today.month + application.newPeriodMonths!,
+        today.day,
+      );
+
+      return DateFormat('yyyy.MM.dd').format(derived);
+    }
+
+    return "-";
+  }
+
+  String _resolveKrwDepositAmountLabel(
+      DepositApplication application,
+      NumberFormat formatter,
+      ) {
+    final amount = application.newAmount?.toDouble();
+    if (amount == null) return "미입력";
+
+    final currency = application.newCurrency.toUpperCase();
+    if (currency == "KRW" || currency.isEmpty) {
+      return "KRW ${formatter.format(amount)}";
+    }
+
+    final rate = application.appliedFxRate;
+    if (rate == null) return "미입력";
+
+    final krwAmount = amount * rate;
+    return "KRW ${formatter.format(krwAmount)}";
+  }
+
 }

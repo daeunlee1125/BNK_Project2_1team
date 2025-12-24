@@ -23,6 +23,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import kr.co.api.backend.service.RateQueryService;
+import java.math.RoundingMode;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/deposit")
@@ -33,6 +36,7 @@ public class MobileDepositController {
     private final MemberMapper memberMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final RateQueryService rateQueryService;
 
     @GetMapping("/context")
     public ResponseEntity<Map<String, Object>> getDepositContext(HttpServletRequest request) {
@@ -76,6 +80,74 @@ public class MobileDepositController {
         return ResponseEntity.ok(payload);
     }
 
+    @GetMapping("/drafts/{dpstId}")
+    public ResponseEntity<Map<String, Object>> getDepositDraft(
+            @PathVariable String dpstId,
+            HttpServletRequest request
+    ) {
+        CustInfoDTO user = resolveUser(request);
+        DpstAcctDraftDTO draft = depositMapper.findDepositDraft(dpstId, user.getCustCode());
+
+        if (draft == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(toDraftPayload(draft));
+    }
+
+    @PutMapping("/drafts/{dpstId}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> saveDepositDraft(
+            @PathVariable String dpstId,
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest servletRequest
+    ) {
+        CustInfoDTO user = resolveUser(servletRequest);
+
+        DpstAcctDraftDTO draft = Optional.ofNullable(
+                depositMapper.findDepositDraft(dpstId, user.getCustCode())
+        ).orElseGet(DpstAcctDraftDTO::new);
+
+        draft.setDpstDraftDpstId(dpstId);
+        draft.setDpstDraftCustCode(user.getCustCode());
+        draft.setDpstDraftPw(asString(request.get("depositPassword")));
+        draft.setDpstDraftMonth(parseInt(request.get("month")));
+        draft.setDpstDraftStep(parseInt(request.get("step")));
+        draft.setDpstDraftCurrency(asString(request.get("currency")));
+        draft.setDpstDraftLinkedAcctNo(asString(request.get("linkedAccountNo")));
+        draft.setDpstDraftAutoRenewYn(asBooleanFlag(request.get("autoRenewYn")));
+        draft.setDpstDraftAutoRenewTerm(parseInt(request.get("autoRenewTerm")));
+        draft.setDpstDraftAutoTermiYn(asBooleanFlag(request.get("autoTerminationYn")));
+        draft.setDpstDraftWdrwPw(asString(request.get("withdrawPassword")));
+        draft.setDpstDraftAmount(parseNullableBigDecimal(request.get("amount")));
+
+        if (draft.getDpstDraftNo() == null) {
+            depositMapper.insertDepositDraft(draft);
+        } else {
+            depositMapper.updateDepositDraft(draft);
+        }
+
+        DpstAcctDraftDTO saved = depositMapper.findDepositDraft(dpstId, user.getCustCode());
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDraftPayload(saved));
+    }
+
+    /**
+     * 전자서명 완료 후 이어가기 임시 저장본을 완전히 제거한다.
+     * <p>
+     * 프런트엔드에서 가입 완료 시점에 이 엔드포인트를 호출하며,
+     * 고객 코드까지 함께 체크해서 다른 사용자의 초안이 지워지지 않도록 방지한다.
+     */
+    @DeleteMapping("/drafts/{dpstId}")
+    @Transactional
+    public ResponseEntity<Void> deleteDepositDraft(
+            @PathVariable String dpstId,
+            HttpServletRequest servletRequest
+    ) {
+        CustInfoDTO user = resolveUser(servletRequest);
+        depositMapper.deleteDepositDraft(dpstId, user.getCustCode());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/applications")
     @Transactional
     public ResponseEntity<Map<String, Object>> applyDeposit(
@@ -104,6 +176,7 @@ public class MobileDepositController {
         String newCurrency = asString(request.get("newCurrency"));
         Integer periodMonths = parseInt(request.get("newPeriodMonths"));
         BigDecimal amount = parseBigDecimal(request.get("newAmount"));
+        BigDecimal withdrawAmount = amount;
 
         if (withdrawAccount.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금 계좌를 선택해주세요.");
@@ -120,7 +193,10 @@ public class MobileDepositController {
                 : "KRW";
 
         if ("krw".equalsIgnoreCase(withdrawType)) {
-            validateAndWithdrawKrw(user.getCustCode(), withdrawAccount, withdrawPassword, amount);
+            if (!"KRW".equalsIgnoreCase(newCurrency)) {
+                withdrawAmount = convertToKrw(newCurrency, amount);
+            }
+            validateAndWithdrawKrw(user.getCustCode(), withdrawAccount, withdrawPassword, withdrawAmount);
         } else {
             validateAndWithdrawFx(user.getCustCode(), withdrawAccount, withdrawPassword, effectiveWithdrawCurrency, amount);
         }
@@ -157,7 +233,7 @@ public class MobileDepositController {
         header.setDpstHdrInfoAgreeDt(LocalDateTime.now());
         header.setDpstHdrRate(appliedRate);
         header.setDpstHdrExpAcctNo(withdrawAccount);
-        header.setDpstHdrLinkedAcctBal(amount);
+        header.setDpstHdrLinkedAcctBal(withdrawAmount);
 
         depositMapper.insertDpstAcctHdr(header);
         DpstAcctHdrDTO inserted = depositMapper.selectInsertedAcct(user.getCustCode(), dpstId);
@@ -179,7 +255,10 @@ public class MobileDepositController {
         history.setTranAcctNo(withdrawAccount);
         history.setTranCustName(user.getCustName());
         history.setTranType(1);
-        history.setTranAmount(amount);
+        history.setTranAmount("krw".equalsIgnoreCase(withdrawType)
+                ? withdrawAmount
+                : amount);
+
         history.setTranRecAcctNo(inserted.getDpstHdrAcctNo());
         history.setTranRecName(product.getDpstName());
         history.setTranRecBkCode("BNK");
@@ -202,7 +281,10 @@ public class MobileDepositController {
         response.put("amount", formatAmount(amount, newCurrency));
         response.put("withdrawalAccount", withdrawAccount);
         response.put("withdrawCurrency", effectiveWithdrawCurrency);
-        response.put("withdrawAmount", formatAmount(amount, effectiveWithdrawCurrency));
+        response.put("withdrawAmount", formatAmount(
+                "krw".equalsIgnoreCase(withdrawType) ? withdrawAmount : amount,
+                effectiveWithdrawCurrency
+        ));
         response.put("rate", appliedRate != null ? appliedRate + "%" : null);
         response.put("maturityDate", inserted.getDpstHdrFinDy());
         response.put("periodLabel", periodMonths != null ? periodMonths + "개월" : "-");
@@ -268,6 +350,32 @@ public class MobileDepositController {
         depositMapper.updateBalBalance(balance);
     }
 
+    private Map<String, Object> toDraftPayload(DpstAcctDraftDTO draft) {
+        Map<String, Object> payload = new HashMap<>();
+        if (draft == null) {
+            return payload;
+        }
+
+        payload.put("draftNo", draft.getDpstDraftNo());
+        payload.put("dpstId", draft.getDpstDraftDpstId());
+        payload.put("customerCode", draft.getDpstDraftCustCode());
+        payload.put("currency", draft.getDpstDraftCurrency());
+        payload.put("month", draft.getDpstDraftMonth());
+        payload.put("step", draft.getDpstDraftStep());
+        payload.put("linkedAccountNo", draft.getDpstDraftLinkedAcctNo());
+        payload.put("autoRenewYn", draft.getDpstDraftAutoRenewYn());
+        payload.put("autoRenewTerm", draft.getDpstDraftAutoRenewTerm());
+        payload.put("autoTerminationYn", draft.getDpstDraftAutoTermiYn());
+        payload.put("withdrawPassword", draft.getDpstDraftWdrwPw());
+        payload.put("depositPassword", draft.getDpstDraftPw());
+        payload.put("amount", draft.getDpstDraftAmount());
+        payload.put("updatedAt", draft.getDpstDraftUpdatedDt() != null
+                ? draft.getDpstDraftUpdatedDt().toString()
+                : null);
+
+        return payload;
+    }
+
     private boolean matchesAccountPassword(String inputPw, String storedPw) {
         if (inputPw == null || storedPw == null) {
             return false;
@@ -301,6 +409,28 @@ public class MobileDepositController {
         }
         return jwtTokenProvider.resolveToken(request);
     }
+
+
+
+    /**
+     * TB_EXCH_RATE_HIST 에 적재된 최신 매매기준율(rhist_base_rate)을 사용해
+     * 예금 가입 금액을 원화 출금액으로 환산한다.
+     * - 가장 최근 고시일 데이터를 조회하여 적용하며,
+     * - 환율 데이터가 없을 경우 고객에게 재시도를 요청하는 오류를 반환한다.
+     */
+    private BigDecimal convertToKrw(String currency, BigDecimal amount) {
+        RateDTO rate = rateQueryService.getLatestRateForCurrency(currency);
+        if (rate == null || rate.getRhistBaseRate() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "환율 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요."
+            );
+        }
+
+        BigDecimal baseRate = BigDecimal.valueOf(rate.getRhistBaseRate());
+        return amount.multiply(baseRate).setScale(0, RoundingMode.HALF_UP);
+    }
+
 
     private BigDecimal resolveRate(InterestRateDTO rateInfo, Integer months) {
         if (rateInfo == null || months == null) {
@@ -357,5 +487,22 @@ public class MobileDepositController {
         } catch (NumberFormatException e) {
             return BigDecimal.ZERO;
         }
+    }
+
+    private BigDecimal parseNullableBigDecimal(Object value) {
+        if (value == null) return null;
+        try {
+            return new BigDecimal(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String asBooleanFlag(Object value) {
+        if (value == null) return "N";
+        String normalized = value.toString().trim();
+        return ("Y".equalsIgnoreCase(normalized) || "TRUE".equalsIgnoreCase(normalized) || "1".equals(normalized))
+                ? "Y"
+                : "N";
     }
 }

@@ -7,6 +7,7 @@ import 'package:test_main/models/deposit/context.dart';
 import 'package:test_main/models/deposit/view.dart';
 import 'package:test_main/services/deposit_service.dart';
 import 'package:test_main/services/deposit_draft_service.dart';
+import 'package:test_main/services/exchange_api.dart';
 
 
 class DepositStep2Screen extends StatefulWidget {
@@ -27,7 +28,7 @@ class DepositStep2Screen extends StatefulWidget {
 class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
   final DepositService _service = DepositService();
-  final DepositDraftService _draftService = const DepositDraftService();
+  final DepositDraftService _draftService =  DepositDraftService();
   late Future<_Step2Data> _initFuture;
   final NumberFormat _amountFormat = NumberFormat.decimalPattern();
   final DateFormat _ymd = DateFormat('yyyyMMdd');
@@ -50,6 +51,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   bool partialWithdrawEnabled = false;
   int? partialWithdrawCount;
 
+  Map<String, double> _latestFxRates = {};
 
   bool isPwMatched = true;
   bool isKrwPwValid = true;
@@ -184,9 +186,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
             _autoRenewSection(product),
             const SizedBox(height: 25),
 
-            _blockTitle("추가납입 / 일부출금"),
-            _additionalOptionsSection(product),
-            const SizedBox(height: 40),
+            const SizedBox(height: 15),
 
             _blockTitle("정기예금 비밀번호"),
             _passwordSection(),
@@ -629,10 +629,38 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
               if (withdrawType == 'krw' && newCurrency != 'KRW') {
                 withdrawType = 'fx';
               }
+              _syncAppliedFxRate();
             });
           },
 
         ),
+        if (newCurrency.isNotEmpty && newCurrency.toUpperCase() != 'KRW')
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                const Text(
+                  "적용 환율",
+                  style: TextStyle(color: AppColors.pointDustyNavy),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    appliedFxRate != null
+                        ? '1 $newCurrency = ${appliedFxRate!.toStringAsFixed(4)} KRW'
+                        : (_latestFxRates.isEmpty
+                        ? '환율 정보를 불러오지 못했습니다.'
+                        : '환율 정보를 불러오는 중입니다.'),
+                    style: TextStyle(
+                      color: appliedFxRate != null
+                          ? AppColors.pointDustyNavy
+                          : AppColors.pointDustyNavy.withOpacity(0.7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
         const SizedBox(height: 20),
 
@@ -651,6 +679,13 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
             },
           ),
         ),
+
+        if (newAmount.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _krwEstimateText(),
+          ),
+
 
         if (_findLimitFor(newCurrency, product) != null)
           Padding(
@@ -799,7 +834,6 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   // ③ 자동 연장 선택
   // ----------------------------------------
   Widget _autoRenewSection(DepositProduct product) {
-    final List<int> cycleOptions = [1, 2, 3, 6];
     final bool autoRenewAllowed =
         product.dpstAutoRenewYn.toUpperCase() == 'Y';
 
@@ -807,255 +841,47 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
 
-
-        // --------------------- 라디오 ---------------------
-        Row(
-          children: [
-            Radio<String>(
-              value: "apply",
-              groupValue: autoRenew,
-              activeColor: AppColors.pointDustyNavy,
-              onChanged: (value) => setState(() => autoRenew = value!),
-            ),
-            const Text("신청 (월 단위)"),
-            const SizedBox(width: 16),
-
-            Radio<String>(
-              value: "no",
-              groupValue: autoRenew,
-              activeColor: AppColors.pointDustyNavy,
-              onChanged: (value) {
-                setState(() {
-                  autoRenew = value!;
-                  autoRenewCycle = null;
-                  autoRenewCount = null;
-                  _autoRenewCountController.clear();
-                });
-              },
-            ),
-            const Text("미신청"),
-          ],
-        ),
-
-
-        const SizedBox(height: 16),
-
-        if (!autoRenewAllowed)
-          const Text(
-            '이 상품은 자동연장을 지원하지 않습니다.',
-            style: TextStyle(color: Colors.red, fontSize: 12),
-          ),
-
-
-        // --------------------- 연장 주기 ---------------------
-        if (autoRenew == "apply" && autoRenewAllowed) ...[
-          const Text(
-            "연장 주기",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.pointDustyNavy,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // ============= 전체를 감싸는 하나의 네모 =============
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.pointDustyNavy,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: cycleOptions.map((month) {
-                bool isSelected = (autoRenewCycle == month);
-                int index = cycleOptions.indexOf(month);
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => autoRenewCycle = month),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.pointDustyNavy
-                            : Colors.white,
-                        borderRadius: BorderRadius.horizontal(
-                          left: index == 0 ? const Radius.circular(8) : Radius.zero,
-                          right: index == cycleOptions.length - 1
-                              ? const Radius.circular(8)
-                              : Radius.zero,
-                        ),
-                        border: Border(
-                          right: index != cycleOptions.length - 1
-                              ? BorderSide(color: AppColors.pointDustyNavy, width: 1)
-                              : BorderSide.none,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        "$month개월",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected ? Colors.white : AppColors.pointDustyNavy,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          const Text(
-            "자동연장 횟수",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.pointDustyNavy,
-            ),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _autoRenewCountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              hintText: '예: 3',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            onChanged: (value) {
-              setState(() {
-                autoRenewCount = int.tryParse(value);
-              });
-            },
-          ),
-],
-          const SizedBox(height: 16),
-
-          SwitchListTile(
-            title: const Text('만기 시 자동 해지'),
-            value: autoTerminateAtMaturity,
-            activeColor: AppColors.pointDustyNavy,
-            onChanged: (v) => setState(() => autoTerminateAtMaturity = v),
-          ),
-
-      ],
-    );
-  }
-
-  Widget _additionalOptionsSection(DepositProduct product) {
-    final bool addPayAllowed = product.dpstAddPayYn.toUpperCase() == 'Y';
-    final bool partWithdrawAllowed = product.dpstPartWdrwYn.toUpperCase() == 'Y';
-
-    return Column(
-      children: [
-        const SizedBox(height: 10),
-
         SwitchListTile(
-          title: const Text('추가납입'),
-          subtitle: Text(addPayAllowed
-              ? 'DPST_HDR_ADD_PAY_CNT/DPST_DTL 내역으로 저장됩니다.'
-              : '상품에서 추가납입을 허용하지 않습니다.'),
-          value: addPaymentEnabled && addPayAllowed,
+
+          title: const Text('만기 자동연장'),
+          subtitle: Text(autoRenewAllowed
+              ? '만기 시 동일 조건으로 자동연장합니다.'
+              : '이 상품은 자동연장을 지원하지 않습니다.'),
+          value: autoRenew == 'apply' && autoRenewAllowed,
+
+
+
+
           activeColor: AppColors.pointDustyNavy,
-          onChanged: addPayAllowed
+          onChanged: autoRenewAllowed
               ? (v) {
-                  setState(() {
-                    addPaymentEnabled = v;
+            setState(() {
+                    autoRenew = v ? 'apply' : 'no';
                     if (!v) {
-                      addPaymentCount = null;
-                      _addPayCountController.clear();
+                      autoRenewCycle = null;
+                      autoRenewCount = null;
+                      _autoRenewCountController.clear();
+
+
                     }
                   });
                 }
               : null,
         ),
 
-        if (addPaymentEnabled && addPayAllowed) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '추가납입 횟수 (최대 ${product.addPayMaxCnt ?? '제한 없음'})',
-              style: const TextStyle(
-                color: AppColors.pointDustyNavy,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _addPayCountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              hintText: '예: 2',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            onChanged: (value) {
-              setState(() {
-                addPaymentCount = int.tryParse(value);
-              });
-            },
-          ),
-          const SizedBox(height: 20),
-        ],
+
 
         SwitchListTile(
-          title: const Text('일부출금'),
-          subtitle: Text(partWithdrawAllowed
-              ? '허용 시 DPST_HDR_PART_WDRW_CNT 등을 채웁니다.'
-              : '상품에서 일부출금을 허용하지 않습니다.'),
-          value: partialWithdrawEnabled && partWithdrawAllowed,
+          title: const Text('만기 시 자동 해지'),
+          subtitle: const Text('만기 시 자동으로 해지합니다.'),
+          value: autoTerminateAtMaturity,
+
           activeColor: AppColors.pointDustyNavy,
-          onChanged: partWithdrawAllowed
-              ? (v) {
-                  setState(() {
-                    partialWithdrawEnabled = v;
-                    if (!v) {
-                      partialWithdrawCount = null;
-                      _partialWithdrawCountController.clear();
-                    }
-                  });
-                }
-              : null,
+          onChanged: (v) => setState(() => autoTerminateAtMaturity = v),
+
         ),
 
-        if (partialWithdrawEnabled && partWithdrawAllowed) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '일부출금 횟수',
-              style: const TextStyle(
-                color: AppColors.pointDustyNavy,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _partialWithdrawCountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              hintText: '예: 1',
-              border: OutlineInputBorder(),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            onChanged: (value) {
-              setState(() {
-                partialWithdrawCount = int.tryParse(value);
-              });
-            },
-          ),
-        ],
+
       ],
     );
   }
@@ -1155,6 +981,82 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     );
   }
 
+
+  void _syncAppliedFxRate({Map<String, double>? rates}) {
+    final Map<String, double> rateSource = rates ?? _latestFxRates;
+    final upperCurrency = newCurrency.toUpperCase();
+
+    if (rateSource.isEmpty) {
+      _appliedFxRateController.text =
+      appliedFxRate != null ? appliedFxRate.toString() : '';
+      return;
+    }
+
+    appliedFxRate = upperCurrency.isEmpty || upperCurrency == 'KRW'
+        ? null
+        : (rateSource[upperCurrency] ?? appliedFxRate);
+
+    _appliedFxRateController.text =
+    appliedFxRate != null ? appliedFxRate.toString() : '';
+  }
+
+
+  double? _effectiveFxRate() {
+
+    return appliedFxRate;
+  }
+
+
+  double? _krwEquivalentAmount() {
+    if (newAmount.isEmpty) return null;
+
+    final parsedAmount = double.tryParse(newAmount);
+    if (parsedAmount == null) return null;
+
+    if (newCurrency.toUpperCase() == 'KRW') return parsedAmount.toDouble();
+
+    final rate = _effectiveFxRate();
+    if (rate == null) return null;
+
+    return parsedAmount * rate;
+  }
+
+  Widget _krwEstimateText() {
+    final upperCurrency = newCurrency.toUpperCase();
+    if (upperCurrency.isEmpty) return const SizedBox.shrink();
+
+    final krwAmount = _krwEquivalentAmount();
+
+    if (krwAmount == null) {
+      if (upperCurrency != 'KRW') {
+        return Text(
+          '환율 정보를 불러오는 중입니다.',
+          style: TextStyle(color: AppColors.pointDustyNavy.withOpacity(0.7)),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+
+    final label = upperCurrency == 'KRW' ? '입력 금액' : '환율 적용 금액';
+
+    return Text(
+      '원화 환산 금액($label): ${_amountFormat.format(krwAmount)} KRW',
+      style: const TextStyle(
+        color: AppColors.pointDustyNavy,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+
+  double _withdrawAmountForValidation(double baseAmount) {
+    if (withdrawType == 'krw' && newCurrency.toUpperCase() != 'KRW') {
+      final fxRate = _effectiveFxRate() ?? 1.0;
+      return baseAmount * fxRate;
+    }
+    return baseAmount;
+  }
+
   // ----------------------------------------
   // 다음 버튼 활성 조건
   // ----------------------------------------
@@ -1173,17 +1075,16 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newCurrency.isEmpty) return false;
     if (newAmount.isEmpty) return false;
     if (newPeriod == null) return false;
-    if (autoRenew == 'apply' && autoRenewCycle == null) return false;
 
 
 
-    if (autoRenew == 'apply') {
-      if (autoRenewCycle == null) return false;
-      if (autoRenewCount == null) return false;
+
+    final product = widget.application.product;
+    if (autoRenew == 'apply' &&
+        product != null && product.dpstAutoRenewYn.toUpperCase() == 'N') {
+      return false;
     }
 
-    if (addPaymentEnabled && addPaymentCount == null) return false;
-    if (partialWithdrawEnabled && partialWithdrawCount == null) return false;
 
     if (depositPw.length != 4) return false;
     if (depositPwCheck.length != 4) return false;
@@ -1209,9 +1110,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newCurrency.isEmpty) return _err("신규 통화를 선택해주세요.");
     if (newAmount.isEmpty) return _err("신규 금액을 입력해주세요.");
     if (newPeriod == null) return _err("가입 기간을 선택해주세요.");
-    if (autoRenew == 'apply' && autoRenewCycle == null) {
-      return _err('자동연장을 신청할 때는 주기를 선택해주세요.');
-    }
+
 
     final selectedProduct = widget.application.product;
     final limit = selectedProduct != null
@@ -1230,11 +1129,20 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
     if (parsedAmount <= 0) return _err('유효한 금액을 입력해주세요.');
 
+    final fxRate = _effectiveFxRate();
+    if (withdrawType == 'krw' && newCurrency.toUpperCase() != 'KRW' &&
+        fxRate == null) {
+      return _err('환율 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
+
     final availableBalance = withdrawType == 'krw'
         ? _selectedKrwBalance()?.toDouble()
         : _selectedFxBalance();
 
-    if (availableBalance != null && parsedAmount > availableBalance) {
+    final double convertedWithdrawAmount = _withdrawAmountForValidation(parsedAmount);
+
+    if (availableBalance != null && convertedWithdrawAmount > availableBalance) {
+
       return _err('출금가능금액을 초과했습니다.');
     }
 
@@ -1244,35 +1152,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           selectedProduct.dpstAutoRenewYn.toUpperCase() == 'N') {
         return _err('이 상품은 자동연장을 지원하지 않습니다.');
       }
-      if (autoRenewCycle == null) return _err('자동연장 주기를 선택해주세요.');
-      if (autoRenewCount == null || autoRenewCount! <= 0) {
-        return _err('자동연장 횟수를 입력해주세요.');
-      }
-    }
 
-    if (addPaymentEnabled) {
-      if (selectedProduct != null &&
-          selectedProduct.dpstAddPayYn.toUpperCase() != 'Y') {
-        return _err('이 상품은 추가납입을 허용하지 않습니다.');
-      }
-      if (addPaymentCount == null || addPaymentCount! <= 0) {
-        return _err('추가납입 횟수를 입력해주세요.');
-      }
-      if (selectedProduct?.addPayMaxCnt != null &&
-          addPaymentCount != null &&
-          addPaymentCount! > selectedProduct!.addPayMaxCnt!) {
-        return _err('추가납입 횟수는 ${selectedProduct.addPayMaxCnt}회 이하로 입력해주세요.');
-      }
-    }
 
-    if (partialWithdrawEnabled) {
-      if (selectedProduct != null &&
-          selectedProduct.dpstPartWdrwYn.toUpperCase() != 'Y') {
-        return _err('이 상품은 일부출금을 허용하지 않습니다.');
-      }
-      if (partialWithdrawCount == null || partialWithdrawCount! <= 0) {
-        return _err('일부출금 횟수를 입력해주세요.');
-      }
     }
 
     if (depositPw.length != 4) return _err("정기예금 비밀번호 4자리를 입력해주세요.");
@@ -1323,6 +1204,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
           onPressed: canNext
               ? () async {
                   if (_validateInputs()) {
+                    await _applyRateForCurrentSelection();
                     _saveToApplication();
                     await _draftService.saveDraft(
                       widget.application,
@@ -1359,13 +1241,11 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     try {
       final fetched = await _service.fetchProductDetail(widget.application.dpstId);
       product = fetched;
-      debugPrint('[DepositStep2] 상품 상세 조회 성공: ${product.name}');
     } catch (e, stack) {
       debugPrint('[DepositStep2] 상품 상세 조회 실패: $e');
       debugPrintStack(stackTrace: stack);
 
       if (product == null) {
-        debugPrint('[DepositStep2] 사용할 기존 상품 정보가 없어 예외를 발생시킵니다.');
         throw Exception('상품 정보를 불러오지 못했습니다.');
       }
 
@@ -1375,17 +1255,30 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     DepositContext context;
     try {
       context = await _service.fetchContext();
-      debugPrint('[DepositStep2] 사용자 컨텍스트 조회 성공: ${context.customerName}');
     } catch (e, stack) {
       debugPrint('[DepositStep2] 사용자 컨텍스트 조회 실패: $e');
       debugPrintStack(stackTrace: stack);
       rethrow;
     }
 
+    Map<String, double> fetchedFxRates = {};
+    try {
+      final rates = await ExchangeApi.fetchRates();
+      fetchedFxRates = {
+        for (final rate in rates) rate.code.toUpperCase(): rate.rate,
+      };
+    } catch (e, stack) {
+      debugPrint('[DepositStep2] 환율 조회 실패: $e');
+      debugPrintStack(stackTrace: stack);
+    }
+
+
+
     widget.application.product = product;
     widget.application.customerName ??= context.customerName;
     widget.application.customerCode ??= context.customerCode;
     _context = context;
+    _latestFxRates = fetchedFxRates;
 
     _currencyOptions = _parseCurrencies(product);
     _periodOptions = _buildPeriodOptions(product);
@@ -1425,6 +1318,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
       if (limit != null) newAmount = limit.min.toString();
     }
 
+    _syncAppliedFxRate();
+
     return _Step2Data(product: product, context: context);
   }
 
@@ -1450,10 +1345,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     newPeriod = widget.application.newPeriodMonths?.toString();
     appliedRate = widget.application.appliedRate;
     appliedFxRate = widget.application.appliedFxRate;
-    addPaymentEnabled = widget.application.addPaymentEnabled;
-    addPaymentCount = widget.application.addPaymentCount;
-    partialWithdrawEnabled = widget.application.partialWithdrawEnabled;
-    partialWithdrawCount = widget.application.partialWithdrawCount;
+
     depositPw = widget.application.depositPassword;
     depositPwCheck = widget.application.depositPassword;
 
@@ -1461,13 +1353,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
         appliedRate != null ? appliedRate.toString() : '';
     _appliedFxRateController.text =
         appliedFxRate != null ? appliedFxRate.toString() : '';
-    _autoRenewCountController.text =
-        autoRenewCount != null ? autoRenewCount.toString() : '';
-    _addPayCountController.text =
-        addPaymentCount != null ? addPaymentCount.toString() : '';
-    _partialWithdrawCountController.text = partialWithdrawCount != null
-        ? partialWithdrawCount.toString()
-        : '';
+
+
 
     if (newPeriod == null && product.fixedPeriodMonth != null) {
       newPeriod = product.fixedPeriodMonth.toString();
@@ -1479,26 +1366,12 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
       autoRenew = 'no';
       autoRenewCycle = null;
       autoRenewCount = null;
-      autoTerminateAtMaturity = false;
       _autoRenewCountController.clear();
     }
 
-    if (product.dpstAddPayYn.toUpperCase() != 'Y') {
-      addPaymentEnabled = false;
-      addPaymentCount = null;
-      _addPayCountController.clear();
-    } else if (product.addPayMaxCnt != null &&
-        addPaymentCount != null &&
-        addPaymentCount! > product.addPayMaxCnt!) {
-      addPaymentCount = product.addPayMaxCnt;
-      _addPayCountController.text = product.addPayMaxCnt.toString();
-    }
 
-    if (product.dpstPartWdrwYn.toUpperCase() != 'Y') {
-      partialWithdrawEnabled = false;
-      partialWithdrawCount = null;
-      _partialWithdrawCountController.clear();
-    }
+
+
   }
 
   List<String> _parseCurrencies(DepositProduct product) {
@@ -1558,6 +1431,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   }
 
   void _saveToApplication() {
+    appliedFxRate = _effectiveFxRate();
 
     final startDate = _deriveStartDate();
     final maturityDate = _deriveMaturityDate(startDate);
@@ -1576,20 +1450,86 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
       ..newAmount = int.tryParse(newAmount)
       ..newPeriodMonths = int.tryParse(newPeriod ?? '')
       ..autoRenew = autoRenew
-      ..autoRenewCycle = autoRenew == 'apply' ? autoRenewCycle : null
-      ..autoRenewCount = autoRenew == 'apply' ? autoRenewCount : null
-      ..autoTerminateAtMaturity = autoRenew == 'apply' && autoTerminateAtMaturity
+      ..autoRenewCycle = null
+      ..autoRenewCount = null
+
+      ..autoTerminateAtMaturity = autoTerminateAtMaturity
+
       ..appliedRate = appliedRate
       ..appliedFxRate = appliedFxRate
-      ..addPaymentEnabled = addPaymentEnabled
-      ..addPaymentCount = addPaymentEnabled ? addPaymentCount : null
-      ..partialWithdrawEnabled = partialWithdrawEnabled
-      ..partialWithdrawCount =
-          partialWithdrawEnabled ? partialWithdrawCount : null
+
+      ..addPaymentEnabled = false
+      ..addPaymentCount = null
+      ..partialWithdrawEnabled = false
+      ..partialWithdrawCount = null
+      ..dpstHdrCurrencyExp = newCurrency
+      ..dpstHdrLinkedAcctBal = _withdrawAmountForValidation(
+        double.tryParse(newAmount) ?? 0,
+      )
+
       ..depositPassword = depositPw;
 
 
   }
+
+
+  Future<void> _applyRateForCurrentSelection() async {
+    final months = int.tryParse(newPeriod ?? '');
+    final currency = newCurrency.isNotEmpty
+        ? newCurrency
+        : (_currencyOptions.isNotEmpty ? _currencyOptions.first : '');
+
+    if (months == null || currency.isEmpty) {
+      return;
+    }
+
+    try {
+      final fetchedRate = await _service.fetchRate(
+        dpstId: widget.application.dpstId,
+        currency: currency,
+        months: months,
+      );
+
+      if (fetchedRate != null) {
+        setState(() {
+          appliedRate = fetchedRate;
+          _appliedRateController.text = fetchedRate.toString();
+        });
+        return;
+      }
+    } catch (e, stack) {
+      debugPrint('[DepositStep2] 금리 조회 실패: $e');
+      debugPrintStack(stackTrace: stack);
+    }
+
+    final fallbackRate = _fallbackRateByMonth(months, currency);
+    if (fallbackRate != null) {
+      setState(() {
+        appliedRate = fallbackRate;
+        _appliedRateController.text = fallbackRate.toString();
+      });
+    }
+  }
+
+  double? _fallbackRateByMonth(int months, String currency) {
+    if (currency.toUpperCase() != 'USD') return null;
+
+    const Map<int, double> usdRates = {
+      1: 3.272520,
+      2: 3.28870,
+      3: 3.30220,
+      4: 3.33550,
+      5: 3.36880,
+      6: 3.40220,
+      7: 3.40510,
+      8: 3.40810,
+      9: 3.41100,
+      10: 3.41400,
+    };
+
+    return usdRates[months];
+  }
+
 
   DateTime _deriveStartDate() {
     return DateTime.now();

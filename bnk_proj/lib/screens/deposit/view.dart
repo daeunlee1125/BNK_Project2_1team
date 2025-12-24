@@ -6,6 +6,8 @@ import 'package:test_main/services/deposit_service.dart';
 import 'package:test_main/models/terms.dart';
 import 'package:test_main/services/terms_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:test_main/screens/deposit/step_3.dart';
+import 'package:test_main/services/deposit_draft_service.dart';
 
 class DepositViewArgs {
   final String dpstId;
@@ -37,12 +39,15 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   late Future<model.DepositProduct> _futureProduct;
   final TermsService _termsService = TermsService();
   late Future<List<TermsDocument>> _futureTerms;
+  final DepositDraftService _draftService = DepositDraftService();
+  bool _canResume = false;
 
   @override
   void initState() {
     super.initState();
     _futureProduct = _service.fetchProductDetail(widget.dpstId);
     _futureTerms = _termsService.fetchTerms(status: 4);
+    _checkDraftAvailability();
   }
 
 
@@ -51,6 +56,8 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
       _futureProduct = _service.fetchProductDetail(widget.dpstId);
       _futureTerms = _termsService.fetchTerms(status: 4);
     });
+
+    _checkDraftAvailability();
   }
 
 
@@ -62,7 +69,17 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
     ]);
   }
 
+  Future<void> _checkDraftAvailability() async {
+    final draft = await _draftService.loadDraft(widget.dpstId);
+    final hasDraft =
+        draft != null && draft.application != null && (draft.step) >= 2;
 
+    if (mounted) {
+      setState(() {
+        _canResume = hasDraft;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +151,8 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_canResume) _buildResumeBanner(),
+                  if (_canResume) const SizedBox(height: 12),
                   _buildHeader(product),
                   const SizedBox(height: 20),
                   _buildTabs(),
@@ -315,6 +334,36 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   }
 
 
+
+
+  Widget _buildResumeBanner() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.mainPaleBlue.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.mainPaleBlue),
+      ),
+      child: Row(
+        children: const [
+          Icon(
+            Icons.play_circle_fill,
+            color: AppColors.pointDustyNavy,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '이전에 진행한 가입 내역이 있어 이어서 진행할 수 있습니다.',
+              style: TextStyle(
+                color: AppColors.pointDustyNavy,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
 
 
@@ -1671,7 +1720,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   Widget _productGuideRow(model.DepositProduct product, String pdfPath) {
     return _documentRow(
       title: '${product.name} 상품설명서',
-      subtitle: '상품 안내서',
+      subtitle: 'v${product.infoPdfVersion} · 상품 안내서',
       onOpen: () => _openProductGuide(pdfPath, product.name),
       onDownload: () => _downloadProductGuide(pdfPath, product.name),
     );
@@ -1812,8 +1861,18 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
     if (parsed.hasScheme) return parsed;
 
     final Uri base = Uri.parse(TermsService.baseUrl);
-    final String relativePath = raw.startsWith('/') ? raw.substring(1) : raw;
-    return base.resolve(relativePath);
+
+    // 1) 절대 경로 형태("/uploads/..." or "/api/pdf/products/...") → 앞의 슬래시 제거 후 resolve
+    if (raw.startsWith('/')) {
+      return base.resolve(raw.substring(1));
+    }
+
+    // 2) 파일명만 내려오는 경우 → 신규 PdfController 경로로 prefix
+    final String normalized = raw.contains('/')
+        ? raw
+        : 'api/pdf/products/$raw';
+
+    return base.resolve(normalized);
   }
 
   Uri? _buildTermsUri(TermsDocument terms) {
@@ -1873,16 +1932,8 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
       children: [
         Expanded(
           child: ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                DepositStep1Screen.routeName,
-                arguments: DepositStep1Args(
-                  dpstId: widget.dpstId,
-                  product: product,
-                ),
-              );
-            },
+            onPressed: () => _handleJoin(context, product),
+
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.pointDustyNavy,
               foregroundColor: Colors.white,
@@ -1927,6 +1978,67 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
       ],
     );
   }
+
+  Future<void> _handleJoin(
+      BuildContext context,
+      model.DepositProduct product,
+      ) async {
+    final draft = await _draftService.loadDraft(widget.dpstId);
+
+    final canResume =
+        draft != null && draft.application != null && (draft.step) >= 2;
+
+    if (canResume) {
+      final resume = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('이어서 진행할까요?'),
+            content: const Text('이전에 진행한 가입 내역이 있습니다. 이어서 진행하시겠어요?'),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await _draftService.clearDraft(widget.dpstId);
+                  if (mounted) Navigator.of(context).pop(false);
+                },
+                child: const Text('새로 시작'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('이어하기'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (resume == true) {
+        final application = draft!.application!;
+        application.product ??= product;
+
+        if (!mounted) return;
+
+        Navigator.pushNamed(
+          context,
+          DepositStep3Screen.routeName,
+          arguments: application,
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushNamed(
+      context,
+      DepositStep1Screen.routeName,
+      arguments: DepositStep1Args(
+        dpstId: widget.dpstId,
+        product: product,
+      ),
+    );
+  }
+
 }
 
 // --------------------------------------------------------------

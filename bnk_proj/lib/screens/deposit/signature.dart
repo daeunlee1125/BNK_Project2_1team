@@ -38,7 +38,7 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
   String? _selectedMethod;
   Uint8List? _certificateImage;
 
-  final DepositDraftService _draftService = const DepositDraftService();
+  final DepositDraftService _draftService =  DepositDraftService();
 
   bool _agreeAll = false;
 
@@ -403,21 +403,30 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
 
-    final result =
-    await DepositService().submitApplication(widget.application);
+    try {
+      final result =
+      await DepositService().submitApplication(widget.application);
 
-    await _draftService.clearDraft(widget.application.dpstId);
+      // 전자서명과 계좌 생성이 끝났으면 이어가기 임시 테이블(TB_DPST_ACCT_DRAFT)도 정리한다.
+      // 서버/DB 삭제 요청은 실패해도 가입 완료 이동은 막지 않도록 best-effort 로 수행한다.
+      await _draftService.clearDraft(widget.application.dpstId);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.pushReplacementNamed(
-      context,
-      DepositStep4Screen.routeName,
-      arguments: DepositCompletionArgs(
-        application: widget.application,
-        result: result,
-      ),
-    );
+      Navigator.pushReplacementNamed(
+        context,
+        DepositStep4Screen.routeName,
+        arguments: DepositCompletionArgs(
+          application: widget.application,
+          result: result,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
+
   }
 }
 

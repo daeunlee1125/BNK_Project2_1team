@@ -5,6 +5,9 @@ import 'package:test_main/screens/deposit/recommend.dart';
 import 'package:test_main/screens/app_colors.dart';
 import 'package:test_main/models/deposit/list.dart';
 import 'package:test_main/services/deposit_service.dart';
+import 'package:test_main/screens/deposit/step_3.dart';
+import 'package:test_main/services/deposit_draft_service.dart';
+import 'package:test_main/models/deposit/view.dart';
 
 class DepositListPage extends StatefulWidget {
   const DepositListPage({super.key});
@@ -15,6 +18,7 @@ class DepositListPage extends StatefulWidget {
 
 class _DepositListPageState extends State<DepositListPage> {
   final DepositService _service = DepositService();
+  final DepositDraftService _draftService =  DepositDraftService();
   late Future<List<DepositProductList>> _futureProducts;
 
   @override
@@ -32,6 +36,78 @@ class _DepositListPageState extends State<DepositListPage> {
   Future<void> _refreshProducts() async {
     _reload();
     await _futureProducts;
+  }
+
+
+  Future<void> _handleJoin(DepositProductList productList) async {
+    final dpstId = productList.id;
+    final draft = await _draftService.loadDraft(dpstId);
+
+    final canResume =
+        draft != null && draft.application != null && (draft.step) >= 2;
+
+    if (canResume) {
+      final resume = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('이어서 진행할까요?'),
+            content: const Text('이전에 진행한 가입 내역이 있습니다. 이어서 진행하시겠어요?'),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await _draftService.clearDraft(dpstId);
+                  if (mounted) Navigator.of(context).pop(false);
+                },
+                child: const Text('새로 시작'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('이어하기'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (resume == true && mounted) {
+        final application = draft!.application!;
+
+        try {
+          final product = await _service.fetchProductDetail(dpstId);
+          application.product ??= product;
+        } catch (_) {
+          // 상세 정보를 불러오지 못해도 이어가기는 가능하도록 둡니다.
+        }
+
+
+        Navigator.pushNamed(
+          context,
+          DepositStep3Screen.routeName,
+          arguments: application,
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    DepositProduct? product;
+    try {
+      product = await _service.fetchProductDetail(dpstId);
+    } catch (_) {
+      // 상세 조회 실패 시 상품 정보 없이도 신규 가입을 진행합니다.
+    }
+
+
+    Navigator.pushNamed(
+      context,
+      DepositStep1Screen.routeName,
+      arguments: DepositStep1Args(
+        dpstId: dpstId,
+        product: product,
+      ),
+    );
   }
 
   @override
@@ -241,15 +317,7 @@ class _DepositListPageState extends State<DepositListPage> {
 
                                         // 가입하기 버튼
                                         ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.pushNamed(
-                                              context,
-                                              DepositStep1Screen.routeName,
-                                              arguments: DepositStep1Args(
-                                                dpstId: item.id,
-                                              ),
-                                            );
-                                          },
+                                          onPressed: () => _handleJoin(item),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
                                             AppColors.pointDustyNavy,
