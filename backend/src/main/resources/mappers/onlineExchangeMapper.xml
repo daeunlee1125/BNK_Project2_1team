@@ -48,13 +48,9 @@
     <select id="selectFrgnBalanceForUpdate"
             resultType="kr.co.api.backend.dto.FrgnAcctBalanceDTO">
         SELECT
-            bal_no           AS balNo,
-            bal_currency     AS balCurrency,
-            bal_balance      AS balBalance,
-            bal_reg_dt       AS balRegDt,
-            bal_frgn_acct_no AS balFrgnAcctNo
+            *
         FROM TB_FRGN_ACCT_BALANCE
-        WHERE bal_no = #{balNo}
+        WHERE bal_frgn_acct_no = #{balNo} and BAL_CURRENCY = #{currency}
             FOR UPDATE
     </select>
 

@@ -16,6 +16,10 @@ class ApiService {
   static const _storage = FlutterSecureStorage();
   static Future<Map<String, String>> getAuthHeaders() async {
     String? token = await _storage.read(key: 'auth_token');
+    print("🚩 [DEBUG] 현재 저장된 토큰: $token");
+    if (token == null) {
+      print("🚩 [ERROR] 토큰이 없습니다. 로그인이 필요합니다.");
+    }
     return {
       "Content-Type": "application/json",
       "Authorization": "Bearer $token", // ★ 여기가 핵심! 서버에 출입증 제시

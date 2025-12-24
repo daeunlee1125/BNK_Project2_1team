@@ -72,7 +72,8 @@ public class OnlineExchangeService {
         dto.setExchFrgnBalNo(frgnAcctDTO.getFrgnAcctNo());
         FrgnAcctBalanceDTO frgnBalance =
                 onlineExchangeMapper.selectFrgnBalanceForUpdate(
-                        dto.getExchFrgnBalNo()
+                        dto.getExchFrgnBalNo(),
+                        dto.getExchToCurrency()
                 );
 
         if (frgnBalance == null) {
@@ -148,7 +149,7 @@ public class OnlineExchangeService {
         // 4-1. 계좌이체 이력 저장
         // =========================
         if ("B".equals(dto.getExchType())) {
-
+            log.info("@@@@@@@@@@@@@@@@dto: {}, krwAcct: {}",dto.toString(), krwAcct.getAcctNo());
             // 원화 출금
             onlineExchangeMapper.insertCustTranHist(
                     krwAcct.getAcctNo(),

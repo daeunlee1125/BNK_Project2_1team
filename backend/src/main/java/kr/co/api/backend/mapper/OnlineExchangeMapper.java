@@ -38,7 +38,7 @@ public interface OnlineExchangeMapper {
        3. 외화 자식 계좌 조회 (FOR UPDATE)
        ========================= */
     FrgnAcctBalanceDTO selectFrgnBalanceForUpdate(
-            @Param("balNo") String balNo
+            @Param("balNo") String balNo, String currency
     );
 
 
