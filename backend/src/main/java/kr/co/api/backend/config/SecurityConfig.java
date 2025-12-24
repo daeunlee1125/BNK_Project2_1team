@@ -51,7 +51,8 @@ public class SecurityConfig {
                         // 🔓 환율 조회 API는 로그인 없이 허용
                         .requestMatchers(
                                 "/api/mobile/exchange/rates",       // 전체 환율
-                                "/api/mobile/exchange/rates/**"     // 특정 통화 히스토리
+                                "/api/mobile/exchange/rates/**"   // 특정 통화 히스토리
+
                         ).permitAll()
 
                         // 🔐 나머지는 전부 인증 필요 (환전 신청, 계좌 조회 등)
@@ -80,7 +81,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/", "/member/**", "/css/**", "/js/**", "/images/**",
-                                "/uploads/**", "/api/register"
+                                "/uploads/**", "/api/register","/api/risk/**"
                         ).permitAll()
                         .requestMatchers("/admin/**").permitAll() // 개발용
                         .anyRequest().authenticated()
