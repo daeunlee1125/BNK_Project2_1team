@@ -3,8 +3,7 @@ import 'package:http/http.dart' as http;
 import 'api_service.dart';
 
 class ExchangeService {
-  static String get baseUrl =>
-      ApiService.currentUrl.replaceFirst('/api/mobile', '/api/exchange');
+  static String get baseUrl => "${ApiService.currentUrl}/exchange";
 
   static Future<Map<String, dynamic>> fetchMyExchangeAccounts({
     required String currency,

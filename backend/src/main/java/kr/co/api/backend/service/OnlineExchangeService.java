@@ -41,7 +41,6 @@ public class OnlineExchangeService {
         // DTO에 고객 코드 세팅 (필수)
         dto.setExchCustCode(custCode);
 
-
         String custName = onlineExchangeMapper.selectCustNameByCustCode(custCode);
 
         if (custName == null) {

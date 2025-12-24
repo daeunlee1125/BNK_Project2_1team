@@ -296,7 +296,16 @@ class _BankHomePageState extends State<BankHomePage> {
                 crossAxisCount: 4,
                 childAspectRatio: 0.9,
                 children: [
-                  _QuickMenu("환전", "images/flobankicon1.png"),
+                  _QuickMenu("환전", "images/flobankicon1.png",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ExchangeRateScreen(),
+                        ),
+                      );
+                    },
+                  ),
                   _QuickMenu(
                     "환율",
                     "images/flobankicon2.png",

@@ -6,8 +6,6 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface OnlineExchangeMapper {
 
-
-
     String selectCustNameByCustCode(@Param("custCode") String custCode);
 
 

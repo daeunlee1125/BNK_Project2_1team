@@ -52,41 +52,39 @@ public class OnlineExchangeController {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
 
-        String userId = authentication.getName(); // 여기 하나로 끝
+        // 1. ID 추출 통일
+        String userId = authentication.getName();
+
+        // 2. 로그 찍어서 확인해보기 (디버깅용)
+        System.out.println(">>> 환전 요청 userId: " + userId);
+
         onlineExchangeService.processOnlineExchange(dto, userId);
 
         return ResponseEntity.ok("온라인 환전이 정상적으로 처리되었습니다.");
     }
 
-
-
-
-
+    /**
+     * 내 환전 계좌 조회
+     */
     @GetMapping("/accounts")
     public ResponseEntity<?> getMyExchangeAccounts(
             @RequestParam String currency,
             Authentication authentication
     ) {
+        // 인증 체크
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
 
-        Object principal = authentication.getPrincipal();
+        // 1. 복잡한 instanceof 제거 -> getName()으로 통일
+        String userId = authentication.getName();
 
-        String userId;
-        if (principal instanceof CustomUserDetails user) {
-            userId = user.getUsername();
-        } else if (principal instanceof String s) {
-            // principal이 String으로 들어오는 케이스 대응
-            userId = s;
-            if ("anonymousUser".equals(userId)) {
-                return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
-            }
-        } else {
-            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
-        }
+        // 2. 로그 찍어서 확인해보기 (에러 원인 파악용)
+        System.out.println(">>> 계좌 조회 요청 userId: " + userId);
 
+        // 3. 서비스 호출
         Map<String, Object> result = onlineExchangeService.getMyExchangeAccounts(userId, currency);
+
         return ResponseEntity.ok(result);
     }
 
