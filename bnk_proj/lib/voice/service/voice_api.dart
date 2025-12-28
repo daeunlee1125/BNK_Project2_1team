@@ -28,7 +28,7 @@ class VoiceApi {
       body: jsonEncode({
         'text': text,
         'dpstId': productCode,
-        'intent': intent?.name,
+        'intent': intent?.name.toUpperCase(),
         'clientEndReason': clientEndReason?.name,
       }),
     );

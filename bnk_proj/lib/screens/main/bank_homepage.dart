@@ -122,18 +122,8 @@ class _BankHomePageState extends State<BankHomePage> {
 
     _voiceController = VoiceSessionScope.of(context);
 
-    if (!_listenerAttached) {
-      _voiceController.navCommand.addListener(_handleVoiceNav);
-      _listenerAttached = true;
-    }
   }
 
-  @override
-  void dispose() {
-    debugPrint("### BankHomePage dispose ${hashCode}");
-    _voiceController.navCommand.removeListener(_handleVoiceNav);
-    super.dispose();
-  }
 
   void _openVoiceOverlay() {
     _voiceController.attachOverlay(); // 최초 1회만 START
@@ -144,29 +134,6 @@ class _BankHomePageState extends State<BankHomePage> {
     );
   }
 
-
-  void _handleVoiceNav() {
-    debugPrint("### handleVoiceNav cmd=${_voiceController.navCommand.value}");
-    final cmd = _voiceController.navCommand.value;
-    if (cmd == null) return;
-
-    _voiceController.navCommand.value = null;
-
-    if (cmd.type == VoiceNavType.openDepositView) {
-      _openDepositFlow(cmd.productCode!);
-    }
-  }
-
-  void _openDepositFlow(String productCode) {
-    // 🔹 overlay는 건드리지 않는다
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context, rootNavigator: true).pushNamed(
-        DepositViewScreen.routeName,
-        arguments: DepositViewArgs(dpstId: productCode),
-      );
-    });
-  }
 
 
 

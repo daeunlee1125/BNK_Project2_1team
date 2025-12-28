@@ -3,6 +3,7 @@ enum VoiceNavType {
   openDepositView,
   selectDepositTab, // 상품/금리/약관
   openJoinFlow,
+  openInput
 }
 
 class VoiceNavCommand {

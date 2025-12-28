@@ -12,6 +12,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:test_main/services/api_service.dart';
 import 'package:test_main/screens/auth/pin_setup_screen.dart';
 import 'package:test_main/voice/controller/voice_session_controller.dart';
+import 'package:test_main/voice/core/voice_navigation_coordinator.dart';
 import 'package:test_main/voice/scope/voice_session_scope.dart';
 import 'package:test_main/voice/service/voice_stt_service.dart';
 import 'package:test_main/voice/service/voice_tts_service.dart';
@@ -217,10 +218,32 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  VoiceNavigationCoordinator? _voiceNav;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_voiceNav != null) return;
+
+    final voiceController = VoiceSessionScope.of(context);
+    _voiceNav = VoiceNavigationCoordinator(
+      navigatorKey: navigatorKey,
+      controller: voiceController,
+    );
+  }
+
+
   @override
   void initState() {
     super.initState();
     _initPushTapRouting();
+  }
+
+  @override
+  void dispose() {
+    _voiceNav?.dispose();
+    super.dispose();
   }
 
   void _initPushTapRouting() async {
@@ -287,10 +310,20 @@ class _MyAppState extends State<MyApp> {
         // 예금 가입 Step 2 (정보입력)
         // -------------------------
         DepositStep2Screen.routeName: (context) {
-          final application =
-          ModalRoute.of(context)!.settings.arguments as DepositApplication;
+          final args = ModalRoute.of(context)!.settings.arguments;
 
-          return DepositStep2Screen(application: application);        },
+          if (args is DepositApplication) {
+          
+            return DepositStep2Screen(application: args);
+          }
+
+          if (args is String) {
+            // 음성 플로우 (dpstId)
+            return DepositStep2Screen(dpstId: args);
+          }
+
+          return const DepositStep2Screen();
+        },
 
         // -------------------------
         // 예금 가입 Step 3 (확인)

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Intent;
 import 'package:test_main/screens/app_colors.dart';
 import 'package:test_main/screens/deposit/step_2.dart';
 import 'package:test_main/models/deposit/application.dart';
@@ -6,8 +6,12 @@ import 'package:test_main/models/deposit/application.dart';
 import 'package:test_main/models/terms.dart';
 import 'package:test_main/services/terms_service.dart';
 import 'package:test_main/services/deposit_draft_service.dart';
+import 'package:test_main/voice/controller/voice_session_controller.dart';
+import 'package:test_main/voice/scope/voice_session_scope.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:test_main/models/deposit/view.dart';
+
+import 'package:test_main/voice/core/voice_intent.dart';
 
 class DepositStep1Args {
   final String dpstId;
@@ -66,6 +70,14 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
     _termsFuture = _loadTerms();
   }
 
+
+  late VoiceSessionController _voiceController;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _voiceController = VoiceSessionScope.of(context);
+  }
 
 
   @override
@@ -619,11 +631,18 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
                   await _draftService.saveDraft(application, step: 1);
 
                   if (!mounted) return;
+                  if (_voiceController.isSessionActive) {
+                    await _voiceController.sendClientIntent(
+                      intent: Intent.confirm,
+                      productCode: widget.dpstId,
+                    );
+                  } else {
                   Navigator.pushNamed(
                     context,
                     DepositStep2Screen.routeName,
                     arguments: application,
                   );
+}
                 }
               : null,
           child: const Text(

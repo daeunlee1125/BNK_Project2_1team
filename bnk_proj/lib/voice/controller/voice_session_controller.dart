@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Intent;
 import 'package:uuid/uuid.dart';
 
 import '../core/end_reason.dart';
@@ -35,6 +35,9 @@ class VoiceSessionController {
   String? _sessionId;
 
   bool _started = false; // ⭐ 최초 idle 진입 여부
+
+  bool get isSessionActive => _sessionId != null && _started;
+
 
   void attachOverlay() {
     debugPrint("### attachOverlay called started=$_started sessionId=$_sessionId state=$_state");
@@ -95,24 +98,43 @@ class VoiceSessionController {
     await _handleServerResponse(res);
   }
 
+  Future<void> sendClientIntent({
+    required Intent intent,
+    String? productCode,
+    EndReason? clientEndReason,
+  }) async {
+    if (_sessionId == null) {
+      debugPrint("### sendClientIntent ignored: no active session");
+      return;
+    }
+
+    uiState.value = VoiceUiState.thinking;
+
+    final res = await VoiceApi.process(
+      sessionId: _sessionId!,
+      text: "", // 🔑 핵심: text 없이 intent만 보냄
+      intent: intent,
+      productCode: productCode,
+    );
+
+    await _handleServerResponse(res);
+  }
+
+
   /// 4️⃣ 서버 응답 처리
   Future<void> _handleServerResponse(VoiceResDTO res) async {
     _state = res.currentState;
 
-    if (res.currentState == VoiceState.s2ProductExplain &&
-        res.productCode != null) {
-          debugPrint("### emit navCommand openDepositView ${res.productCode}");
-
-      navCommand.value = VoiceNavCommand(
-        type: VoiceNavType.openDepositView,
-        productCode: res.productCode,
-      );
+    final nav = _resolveNav(res);
+    if (nav != null) {
+      navCommand.value = nav;
     }
+
 
     if (res.endReason != null) {
       uiState.value = VoiceUiState.speaking;
       await _playEnd(res);
-      _cleanup();
+      endSession();
       return;
     }
     debugPrint("### server res state=${res.currentState} intent=${res.intent} product=${res.productCode}");
@@ -130,6 +152,36 @@ class VoiceSessionController {
 
     uiState.value = VoiceUiState.idle;
   }
+
+  // 화면 이동 //
+  VoiceNavCommand? _resolveNav(VoiceResDTO res) {
+    switch (res.currentState) {
+      case VoiceState.s2ProductExplain:
+        if (res.productCode == null) return null;
+        return VoiceNavCommand(
+          type: VoiceNavType.openDepositView,
+          productCode: res.productCode,
+        );
+
+      case VoiceState.s4Terms:
+        if (res.productCode == null) return null;
+        return VoiceNavCommand(
+          type: VoiceNavType.openJoinFlow,
+          productCode: res.productCode,
+        );
+
+      case VoiceState.s4Input:
+        if (res.productCode == null) return null;
+        return VoiceNavCommand(
+          type: VoiceNavType.openInput,
+          productCode: res.productCode,
+        );
+
+      default:
+        return null;
+    }
+  }
+
 
 
   Future<void> _playScript({bool initial = false}) async {
@@ -170,6 +222,10 @@ class VoiceSessionController {
     if (script != null) {
       await _tts.speak(script);
     }
+  }
+
+  Future<void> endSession() async {
+    _cleanup();
   }
 
 

@@ -13,17 +13,20 @@ import 'package:test_main/services/exchange_api.dart';
 class DepositStep2Screen extends StatefulWidget {
   static const routeName = "/deposit-step2";
 
-  final DepositApplication application;
+  final DepositApplication? application;
+  final String? dpstId;
 
   const DepositStep2Screen({
     super.key,
-    required this.application,
+    this.application, this.dpstId,
   });
 
 
   @override
   State<DepositStep2Screen> createState() => _DepositStep2ScreenState();
 }
+
+
 
 class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
@@ -83,6 +86,23 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   final TextEditingController _addPayCountController = TextEditingController();
   final TextEditingController _partialWithdrawCountController = TextEditingController();
 
+  DepositApplication get _app {
+    if (widget.application != null) {
+      return widget.application!;
+    }
+
+    // 음성 플로우 진입
+    final dpstId = widget.dpstId;
+    if (dpstId == null) {
+      throw Exception('DepositStep2Screen requires application or dpstId');
+    }
+
+    // ⬇️ 여기서 "임시 application"을 만든다
+    return DepositApplication(dpstId: dpstId);
+  }
+
+  late DepositApplication application;
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -100,9 +120,27 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_initialized) return;
+    _initialized = true;
+
+    if (widget.application != null) {
+      application = widget.application!;
+    } else if (widget.dpstId != null) {
+      application = DepositApplication(dpstId: widget.dpstId!);
+    } else {
+      throw Exception('DepositStep2Screen requires application or dpstId');
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
+    
     return FutureBuilder<_Step2Data>(
       future: _initFuture,
       builder: (context, snapshot) {
@@ -1079,7 +1117,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
 
 
-    final product = widget.application.product;
+    final product = application.product;
     if (autoRenew == 'apply' &&
         product != null && product.dpstAutoRenewYn.toUpperCase() == 'N') {
       return false;
@@ -1112,7 +1150,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     if (newPeriod == null) return _err("가입 기간을 선택해주세요.");
 
 
-    final selectedProduct = widget.application.product;
+    final selectedProduct = application.product;
     final limit = selectedProduct != null
         ? _findLimitFor(newCurrency, selectedProduct)
         : null;
@@ -1207,7 +1245,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
                     await _applyRateForCurrentSelection();
                     _saveToApplication();
                     await _draftService.saveDraft(
-                      widget.application,
+                      application,
                       step: 2,
                       customerCode: _context?.customerCode,
                     );
@@ -1231,15 +1269,15 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   }
 
   Future<_Step2Data> _loadData() async {
-    debugPrint('[DepositStep2] _loadData start (dpstId: ${widget.application.dpstId})');
-    DepositProduct? product = widget.application.product;
+    debugPrint('[DepositStep2] _loadData start (dpstId: ${application.dpstId})');
+    DepositProduct? product = application.product;
 
     if (product != null) {
       debugPrint('[DepositStep2] 기존 상품 정보 사용 가능: ${product.name}');
     }
 
     try {
-      final fetched = await _service.fetchProductDetail(widget.application.dpstId);
+      final fetched = await _service.fetchProductDetail(application.dpstId);
       product = fetched;
     } catch (e, stack) {
       debugPrint('[DepositStep2] 상품 상세 조회 실패: $e');
@@ -1251,6 +1289,8 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
       debugPrint('[DepositStep2] 네트워크 오류로 기존 상품 정보를 그대로 사용합니다.');
     }
+
+    application.product = product;
 
     DepositContext context;
     try {
@@ -1274,9 +1314,9 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
 
 
-    widget.application.product = product;
-    widget.application.customerName ??= context.customerName;
-    widget.application.customerCode ??= context.customerCode;
+    application.product = product;
+    application.customerName ??= context.customerName;
+    application.customerCode ??= context.customerCode;
     _context = context;
     _latestFxRates = fetchedFxRates;
 
@@ -1324,30 +1364,30 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
   }
 
   void _loadFromApplication(DepositProduct product) {
-    withdrawType = widget.application.withdrawType;
-    autoRenew = widget.application.autoRenew;
-    autoRenewCycle = widget.application.autoRenewCycle;
-    autoRenewCount = widget.application.autoRenewCount;
-    autoTerminateAtMaturity = widget.application.autoTerminateAtMaturity;
-    selectedKrwAccount = widget.application.selectedKrwAccount;
-    selectedFxAccount = widget.application.selectedFxAccount;
-    fxWithdrawCurrency = widget.application.fxWithdrawCurrency;
+    withdrawType = application.withdrawType;
+    autoRenew = application.autoRenew;
+    autoRenewCycle =application.autoRenewCycle;
+    autoRenewCount =application.autoRenewCount;
+    autoTerminateAtMaturity = application.autoTerminateAtMaturity;
+    selectedKrwAccount = application.selectedKrwAccount;
+    selectedFxAccount = application.selectedFxAccount;
+    fxWithdrawCurrency = application.fxWithdrawCurrency;
 
-    krwPassword = widget.application.withdrawType == 'krw'
-        ? (widget.application.withdrawPassword ?? '')
+    krwPassword =application.withdrawType == 'krw'
+        ? (application.withdrawPassword ?? '')
         : '';
-    fxPassword = widget.application.withdrawType == 'fx'
-        ? (widget.application.withdrawPassword ?? '')
+    fxPassword =application.withdrawType == 'fx'
+        ? (application.withdrawPassword ?? '')
         : '';
 
-    newCurrency = widget.application.newCurrency;
-    newAmount = widget.application.newAmount?.toString() ?? '';
-    newPeriod = widget.application.newPeriodMonths?.toString();
-    appliedRate = widget.application.appliedRate;
-    appliedFxRate = widget.application.appliedFxRate;
+    newCurrency = application.newCurrency;
+    newAmount = application.newAmount?.toString() ?? '';
+    newPeriod = application.newPeriodMonths?.toString();
+    appliedRate = application.appliedRate;
+    appliedFxRate = application.appliedFxRate;
 
-    depositPw = widget.application.depositPassword;
-    depositPwCheck = widget.application.depositPassword;
+    depositPw = application.depositPassword;
+    depositPwCheck = application.depositPassword;
 
     _appliedRateController.text =
         appliedRate != null ? appliedRate.toString() : '';
@@ -1438,9 +1478,9 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     final linkedAccount =
     withdrawType == 'fx' ? selectedFxAccount : selectedKrwAccount;
 
-    widget.application
-      ..product = widget.application.product
-      ..customerCode = _context?.customerCode ?? widget.application.customerCode
+    application
+      ..product = application.product
+      ..customerCode = _context?.customerCode ?? application.customerCode
       ..withdrawType = withdrawType
       ..selectedKrwAccount = selectedKrwAccount
       ..selectedFxAccount = selectedFxAccount
@@ -1485,7 +1525,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
     try {
       final fetchedRate = await _service.fetchRate(
-        dpstId: widget.application.dpstId,
+        dpstId:application.dpstId,
         currency: currency,
         months: months,
       );
