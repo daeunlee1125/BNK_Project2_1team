@@ -8,14 +8,19 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:ui' as ui;
 
+import '../../services/exchange_api.dart';
+
 class LiveCameraPage extends StatefulWidget {
+
   const LiveCameraPage({super.key});
+
 
   @override
   State<LiveCameraPage> createState() => _LiveCameraPageState();
 }
 
 class _LiveCameraPageState extends State<LiveCameraPage> {
+  static const List<String> _supportedCurrencies = ['USD', 'JPY', 'CNH', 'EUR'];
   CameraController? _controller;
   final TextRecognizer _textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
   bool _isBusy = false;
@@ -28,17 +33,60 @@ class _LiveCameraPageState extends State<LiveCameraPage> {
   bool _showCurrencySelector = false;
   String _selectedCurrency = 'USD';
 
-  final Map<String, double> _exchangeRates = {
-    'USD': 1320.50,
-    'JPY': 9.12,
-    'EUR': 1430.20,
-    'CNY': 185.50,
-  };
+  final Map<String, double> _exchangeRates = {};     // 최신 환율(가공된 값)
+  final Map<String, String> _rateRegDtByCode = {};   // 통화별 기준일(regDt)
+  bool _ratesLoaded = false;
+  String? _rateError;
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
+    _loadExchangeRates();
+  }
+
+  Future<void> _loadExchangeRates() async {
+    try {
+      final rates = await ExchangeApi.fetchRates(); // List<CurrencyRate>
+
+      final map = <String, double>{};
+      final regMap = <String, String>{};
+
+      for (final r in rates) {
+        if (!_supportedCurrencies.contains(r.code)) continue; // ✅ 4개만
+
+        double normalized = r.rate;
+        if (r.code == 'JPY' && normalized > 100) normalized = normalized / 100;
+
+        map[r.code] = normalized;
+        regMap[r.code] = r.regDt;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _exchangeRates
+          ..clear()
+          ..addAll(map);
+
+        _rateRegDtByCode
+          ..clear()
+          ..addAll(regMap);
+
+        _ratesLoaded = true;
+        _rateError = null;
+      });
+
+      // 이미 금액을 인식한 상태라면 최신 환율로 재계산
+      if (_detectedAmount > 0 && _exchangeRates.containsKey(_selectedCurrency)) {
+        _calculateResult();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _rateError = e.toString();
+        _ratesLoaded = false;
+      });
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -103,8 +151,8 @@ class _LiveCameraPageState extends State<LiveCameraPage> {
           _detectedAmount = price;
           _selectedCurrency = 'USD';
           _showCurrencySelector = false;
-          _calculateResult();
         });
+        _calculateResult();
       }
     }
     else if (numberMatch != null && mounted) {
@@ -128,13 +176,31 @@ class _LiveCameraPageState extends State<LiveCameraPage> {
 
   //  [중요] 함수 이름이 _calculateResult 입니다.
   void _calculateResult() {
-    double rate = _exchangeRates[_selectedCurrency]!;
-    int krw = (_detectedAmount * rate).toInt();
+    if (_exchangeRates.isEmpty || !_exchangeRates.containsKey(_selectedCurrency)) {
+      setState(() {
+        _convertedPrice = _rateError != null
+            ? "환율 불러오기 실패"
+            : "환율 불러오는 중...";
+      });
+      return;
+    }
 
-    DateTime now = DateTime.now();
-    String today = "${now.year}.${now.month}.${now.day}";
+    final double rate = _exchangeRates[_selectedCurrency]!;
+    final int krw = (_detectedAmount * rate).toInt();
 
-    String symbol = _selectedCurrency == 'USD' ? '\$' : '';
+    // ✅ API 기준일(regDt) 우선 사용, 없으면 now
+    final String? regDtRaw = _rateRegDtByCode[_selectedCurrency];
+    String todayLabel;
+    if (regDtRaw != null && regDtRaw.isNotEmpty) {
+      // regDt 포맷이 "YYYY-MM-DD ..." 처럼 올 수 있어서 앞부분만 사용
+      final datePart = regDtRaw.split(' ').first.replaceAll('-', '.');
+      todayLabel = datePart;
+    } else {
+      final now = DateTime.now();
+      todayLabel = "${now.year}.${now.month}.${now.day}";
+    }
+
+    final String symbol = _selectedCurrency == 'USD' ? '\$' : '';
 
     setState(() {
       if (_selectedCurrency == 'USD') {
@@ -143,7 +209,7 @@ class _LiveCameraPageState extends State<LiveCameraPage> {
         _detectedText = "${_detectedAmount.toStringAsFixed(2)} ($_selectedCurrency)";
       }
 
-      _convertedPrice = "약 ${_formatCurrency(krw)}원\n($today 기준)";
+      _convertedPrice = "약 ${_formatCurrency(krw)}원\n($todayLabel 기준)";
     });
   }
 
@@ -161,6 +227,9 @@ class _LiveCameraPageState extends State<LiveCameraPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currencies = _exchangeRates.isEmpty
+        ? _supportedCurrencies
+        : _supportedCurrencies.where((c) => _exchangeRates.containsKey(c)).toList();
     if (_controller == null || !_controller!.value.isInitialized) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -258,46 +327,49 @@ class _LiveCameraPageState extends State<LiveCameraPage> {
 
                       const SizedBox(height: 16),
 
-                      // (2) 통화 선택 버튼 (Chips)
+                    // (2) 통화 선택 버튼 (Chips)
                       if (_showCurrencySelector) ...[
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: _exchangeRates.keys.map((currency) {
-                              bool isSelected = _selectedCurrency == currency;
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                                child: ChoiceChip(
-                                  label: Text(currency),
-                                  selected: isSelected,
-                                  showCheckmark: false,
-                                  selectedColor: const Color(0xFF3E5D9C),
-                                  // 칩 배경도 약간 투명하게
-                                  backgroundColor: Colors.white.withOpacity(0.7),
-                                  side: BorderSide.none,
-                                  labelStyle: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
+                        if (!_ratesLoaded && _exchangeRates.isEmpty)
+                          const Text("환율 불러오는 중...", style: TextStyle(fontSize: 13))
+                        else
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: currencies.map((currency) {
+                                final isSelected = _selectedCurrency == currency;
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                  child: ChoiceChip(
+                                    label: Text(currency),
+                                    selected: isSelected,
+                                    showCheckmark: false,
+                                    selectedColor: const Color(0xFF3E5D9C),
+                                    backgroundColor: Colors.white.withOpacity(0.7),
+                                    side: BorderSide.none,
+                                    labelStyle: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    onSelected: (selected) {
+                                      if (!selected) return;
+                                      setState(() => _selectedCurrency = currency);
+                                      _calculateResult();
+                                    },
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  onSelected: (bool selected) {
-                                    if (selected) {
-                                      setState(() {
-                                        _selectedCurrency = currency;
-                                        _calculateResult();
-                                      });
-                                    }
-                                  },
-                                ),
-                              );
-                            }).toList(),
+                                );
+                              }).toList(),
+                            ),
                           ),
-                        ),
                         const SizedBox(height: 16),
                       ],
+
 
                       // (3) 변환된 가격
                       if (_convertedPrice.isEmpty)
