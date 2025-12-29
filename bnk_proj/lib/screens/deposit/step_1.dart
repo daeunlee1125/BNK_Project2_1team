@@ -381,20 +381,37 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
   Widget _termTile(int index, TermsDocument term) {
     final checked = index < _termChecks.length ? _termChecks[index] : false;
 
-    return CheckboxListTile(
+    return ListTile(
       contentPadding: EdgeInsets.zero,
-      value: checked,
-      onChanged: (v) {
-        setState(() {
-          if (index < _termChecks.length) {
-            _termChecks[index] = v ?? false;
-            _syncLegacyAgreement(index, v ?? false);
-          }
-          _updateAllAgreeState();
-        });
-      },
-      activeColor: AppColors.pointDustyNavy,
-      controlAffinity: ListTileControlAffinity.leading,
+
+      leading: Checkbox(
+        value: checked,
+        activeColor: AppColors.pointDustyNavy,
+
+        // 약관 체크박스 직접 체크 방지 + 중앙 팝업 안내
+        onChanged: (_) {
+          if (!mounted) return;
+
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("안내"),
+              content: const Text(
+                "약관은 체크로 동의할 수 없습니다.\n"
+                    "약관을 열어 내용을 확인한 후 동의해 주세요.",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("확인"),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+
+
 
 
       title: Text(
@@ -404,20 +421,165 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
           fontWeight: FontWeight.w600,
         ),
       ),
+
       subtitle: Text(
         'v${term.version} · ${term.regDate ?? "등록일 미상"}',
-        style: TextStyle(color: AppColors.pointDustyNavy.withOpacity(0.6)),
+        style: TextStyle(color: Colors.black54),
       ),
-      secondary: IconButton(
-        onPressed: () => _downloadTerm(term),
-        icon: const Icon(Icons.download_outlined, color: AppColors.pointDustyNavy),
-        tooltip: '다운로드',
-      ),
+
+      //  여기서 팝업 뜸
+      onTap: () => _showTermDialog(index, term),
     );
   }
 
-  Future<void> _downloadTerm(TermsDocument term) async {
-    final uri = Uri.parse(term.downloadUrl);
+  /// 약관 상세 팝업
+  /// - 스크롤을 끝까지 내려야 '동의하기' 버튼 활성화
+  /// - 팝업 내부에서만 상태 관리 (StatefulBuilder)
+  /// - ScrollController 리스너는 다이얼로그 당 1번만 등록
+  Future<void> _showTermDialog(int index, TermsDocument term) async {
+
+    // 약관 본문이 있는지 여부 체크
+    final hasContent = term.content.trim().isNotEmpty;
+
+    // 다이얼로그 전용 스크롤 컨트롤러
+    final scrollController = ScrollController();
+
+    // 동의 가능 여부
+    bool canAgree = false;
+
+    // 리스너 중복 등록 방지
+    bool listenerAttached = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+
+            /// ================================
+            /// ⚠️ 스크롤 리스너는 단 1번만 등록
+            /// ================================
+            if (!listenerAttached) {
+              scrollController.addListener(() {
+                // 스크롤이 맨 아래 도달했을 때만 활성화
+                if (!canAgree &&
+                    scrollController.position.pixels >=
+                        scrollController.position.maxScrollExtent) {
+                  setState(() {
+                    canAgree = true;
+                  });
+                }
+              });
+
+              listenerAttached = true;
+            }
+
+            return AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 20,
+              ),
+
+              title: Text(term.title),
+
+              /// ================================
+              /// 약관 본문 영역
+              /// ================================
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.9,
+                height: MediaQuery.of(context).size.height * 0.65,
+                child: Scrollbar(
+                  controller: scrollController,
+                  thumbVisibility: true,   // 항상 스크롤바 표시
+
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'v${term.version} · ${term.regDate ?? "등록일 미상"}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        SelectableText(
+                          hasContent
+                              ? term.content
+                              : "약관 본문을 불러오지 못했습니다.",
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              /// ================================
+              /// 버튼 영역
+              /// ================================
+              actions: [
+                /// 동의 버튼 — 스크롤 끝까지 내려야 활성화
+                TextButton(
+                  onPressed: canAgree
+                      ? () {
+                    setState(() {
+                      _termChecks[index] = true;
+                      _syncLegacyAgreement(index, true);
+                      _updateAllAgreeState();
+                    });
+
+                    Navigator.pop(context);
+                  }
+                      : null,
+                  child: Text(
+                    "동의하기",
+                    style: TextStyle(
+                      color: canAgree ? Colors.blue : Colors.grey,
+                    ),
+                  ),
+                ),
+
+                /// 닫기 버튼
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("닫기"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    /// ================================
+    /// 다이얼로그가 닫히면 메모리 정리
+    /// ================================
+    scrollController.dispose();
+  }
+
+
+
+
+
+
+  Future<void> _openTermFile(TermsDocument term) async {
+    final uri = Uri.tryParse(term.downloadUrl);
+    if (uri == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('유효한 약관 경로가 없습니다: ${term.title}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      return;
+    }
+
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -525,60 +687,76 @@ class _DepositStep1ScreenState extends State<DepositStep1Screen> {
 
 
   // =============================
-  // 전체 동의 박스
-  // =============================
+// 전체 동의 박스
+// =============================
   Widget _buildAllAgreeBox() {
     return Transform.scale(
-      scale: 0.92,   // 체크박스까지 작아짐
+      scale: 0.92,
       child: CheckboxListTile(
         value: allAgree,
         dense: true,
         contentPadding: EdgeInsets.zero,
         visualDensity: const VisualDensity(
-          horizontal: -4,   // 가능한 최소 간격
+          horizontal: -4,
           vertical: -4,
         ),
         title: const Text(
           "모든 필수 항목에 동의합니다",
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 13,            // 더 작게
+            fontSize: 13,
             color: AppColors.pointDustyNavy,
           ),
         ),
         activeColor: AppColors.pointDustyNavy,
+
         onChanged: (v) {
           setState(() {
             allAgree = v!;
 
-            if (_termChecks.isNotEmpty) {
-              _termChecks = List<bool>.filled(_termChecks.length, v);
-              for (int i = 0; i < _termChecks.length; i++) {
-                _syncLegacyAgreement(i, v);
-              }
-            } else {
-              agree1 = v;
-              agree2 = v;
-              agree3 = v;
-            }
+            // ❌ 약관 자동동의 금지
+            // _termChecks / agree1~3 건드리지 않음
 
-
+            // ⭕ 확인 및 안내사항 자동 체크
             info1 = v;
             info2 = v;
             info3 = v;
 
+            // ⭕ 중요사항 자동 체크
             important1 = v;
             important2 = v;
             important3 = v;
 
+            // ⭕ 최종 동의 자동 체크
             finalAgree = v;
           });
+
+          // 팝업 안내 메시지
+          if (v == true && context.mounted && !_termsAgreementComplete) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text("안내"),
+                content: const Text(
+                  "약관은 전체동의로 체크되지 않습니다.\n"
+                      "각 약관을 열어 내용을 확인 후 동의해 주세요.",
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("확인"),
+                  ),
+                ],
+              ),
+            );
+          }
+
         },
+
         controlAffinity: ListTileControlAffinity.leading,
       ),
     );
   }
-
 
 
 

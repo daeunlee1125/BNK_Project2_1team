@@ -149,37 +149,42 @@ class DepositDraftService {
     return null;
   }
 
-  Future<void> _persistRemoteDraft(DepositDraft draft) async {
-    final token = await _storage.read(key: _tokenKey);
-    if (token == null) return;
 
-    try {
-      await _client.put(
-        Uri.parse('$_draftEndpoint/${draft.dpstId}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'customerCode': draft.customerCode,
-          'currency': draft.currency,
-          'month': draft.month,
-          'step': draft.step,
-          'linkedAccountNo': draft.linkedAccountNo,
-          'withdrawPassword': draft.withdrawPassword,
-          'depositPassword': draft.depositPassword,
-          'amount': draft.amount,
-          'autoRenewYn': draft.autoRenewYn,
-          'autoRenewTerm': draft.autoRenewTerm,
-          'autoTerminationYn': draft.autoTerminationYn,
-        }),
-      );
-    } catch (_) {
-      // 서버 저장 실패 시 로컬 저장된 초안만 유지합니다.
-    }
-  }
+   Future<void> _persistRemoteDraft(DepositDraft draft) async {
+     final token = await _storage.read(key: _tokenKey);
+     if (token == null) return;
 
-  DepositApplication _hydrateApplication(
+     try {
+       final response = await _client.put(
+         Uri.parse('$_draftEndpoint/${draft.dpstId}'),
+         headers: {
+           'Authorization': 'Bearer $token',
+           'Content-Type': 'application/json',
+         },
+         body: jsonEncode({
+           'customerCode': draft.customerCode,
+           'currency': draft.currency,
+           'month': draft.month,
+           'step': draft.step,
+           'linkedAccountNo': draft.linkedAccountNo,
+           'withdrawPassword': draft.withdrawPassword,
+           'depositPassword': draft.depositPassword,
+           'amount': draft.amount,
+           'autoRenewYn': draft.autoRenewYn,
+           'autoRenewTerm': draft.autoRenewTerm,
+           'autoTerminationYn': draft.autoTerminationYn,
+         }),
+       );
+
+
+     } catch (e) {
+       // 서버 저장 실패 시 로컬 저장된 초안만 유지합니다.
+
+     }
+   }
+
+
+   DepositApplication _hydrateApplication(
     DepositDraft draft, {
     DepositApplication? fallback,
   }) {

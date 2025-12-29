@@ -86,12 +86,18 @@ public class MobileDepositController {
             HttpServletRequest request
     ) {
         CustInfoDTO user = resolveUser(request);
+
+        log.info("[DepositDraft] Fetching draft | dpstId={}, custCode={}", dpstId, user.getCustCode());
+
         DpstAcctDraftDTO draft = depositMapper.findDepositDraft(dpstId, user.getCustCode());
 
         if (draft == null) {
+            log.warn("[DepositDraft] Draft not found | dpstId={}, custCode={}", dpstId, user.getCustCode());
+
             return ResponseEntity.notFound().build();
         }
 
+        logDraftState("[DepositDraft] Loaded draft", draft);
         return ResponseEntity.ok(toDraftPayload(draft));
     }
 
@@ -108,11 +114,20 @@ public class MobileDepositController {
                 depositMapper.findDepositDraft(dpstId, user.getCustCode())
         ).orElseGet(DpstAcctDraftDTO::new);
 
+        Integer requestedStep = parseInt(request.get("step"));
+        log.info(
+                "[DepositDraft] Saving draft | dpstId={}, custCode={}, incomingStep={}, existingDraftNo={}",
+                dpstId,
+                user.getCustCode(),
+                requestedStep,
+                draft.getDpstDraftNo()
+        );
+
         draft.setDpstDraftDpstId(dpstId);
         draft.setDpstDraftCustCode(user.getCustCode());
         draft.setDpstDraftPw(asString(request.get("depositPassword")));
         draft.setDpstDraftMonth(parseInt(request.get("month")));
-        draft.setDpstDraftStep(parseInt(request.get("step")));
+        draft.setDpstDraftStep(requestedStep);
         draft.setDpstDraftCurrency(asString(request.get("currency")));
         draft.setDpstDraftLinkedAcctNo(asString(request.get("linkedAccountNo")));
         draft.setDpstDraftAutoRenewYn(asBooleanFlag(request.get("autoRenewYn")));
@@ -121,13 +136,30 @@ public class MobileDepositController {
         draft.setDpstDraftWdrwPw(asString(request.get("withdrawPassword")));
         draft.setDpstDraftAmount(parseNullableBigDecimal(request.get("amount")));
 
+        logDraftState("[DepositDraft] Prepared draft for persistence", draft);
+
         if (draft.getDpstDraftNo() == null) {
             depositMapper.insertDepositDraft(draft);
+            log.info(
+                    "[DepositDraft] Inserted new draft | dpstId={}, custCode={}",
+                    dpstId,
+                    user.getCustCode()
+            );
+
         } else {
-            depositMapper.updateDepositDraft(draft);
+            int updated = depositMapper.updateDepositDraft(draft);
+            log.info(
+                    "[DepositDraft] Updated draft | draftNo={}, dpstId={}, custCode={}, updatedRows={}",
+                    draft.getDpstDraftNo(),
+                    dpstId,
+                    user.getCustCode(),
+                    updated
+            );
         }
 
         DpstAcctDraftDTO saved = depositMapper.findDepositDraft(dpstId, user.getCustCode());
+        logDraftState("[DepositDraft] Persisted draft", saved);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toDraftPayload(saved));
     }
 
@@ -144,7 +176,14 @@ public class MobileDepositController {
             HttpServletRequest servletRequest
     ) {
         CustInfoDTO user = resolveUser(servletRequest);
-        depositMapper.deleteDepositDraft(dpstId, user.getCustCode());
+        log.info("[DepositDraft] Deleting draft | dpstId={}, custCode={}", dpstId, user.getCustCode());
+        int deleted = depositMapper.deleteDepositDraft(dpstId, user.getCustCode());
+        log.info(
+                "[DepositDraft] Delete result | dpstId={}, custCode={}, deletedRows={}",
+                dpstId,
+                user.getCustCode(),
+                deleted
+        );
         return ResponseEntity.noContent().build();
     }
 
@@ -505,4 +544,27 @@ public class MobileDepositController {
                 ? "Y"
                 : "N";
     }
+
+    private void logDraftState(String label, DpstAcctDraftDTO draft) {
+        if (draft == null) {
+            log.warn("{} | draft is null", label);
+            return;
+        }
+
+        log.info(
+                "{} | draftNo={}, dpstId={}, custCode={}, step={}, currency={}, linkedAcct={}, autoRenewYn={}, autoRenewTerm={}, autoTermiYn={}, amount={}",
+                label,
+                draft.getDpstDraftNo(),
+                draft.getDpstDraftDpstId(),
+                draft.getDpstDraftCustCode(),
+                draft.getDpstDraftStep(),
+                draft.getDpstDraftCurrency(),
+                draft.getDpstDraftLinkedAcctNo(),
+                draft.getDpstDraftAutoRenewYn(),
+                draft.getDpstDraftAutoRenewTerm(),
+                draft.getDpstDraftAutoTermiYn(),
+                draft.getDpstDraftAmount()
+        );
+    }
+
 }
