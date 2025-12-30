@@ -165,7 +165,6 @@ public class CustInfoService {
     /*
         회원가입 - 아이디 유효성 검사
      */
-    @Transactional(readOnly = true)
     public Boolean checkId(String custId) {
         CustInfoDTO dto = memberMapper.findByIdCustInfo(custId);
         if(dto != null){
@@ -178,7 +177,6 @@ public class CustInfoService {
     /*
     로그인 처리
      */
-    @Transactional(readOnly = true)
     public CustInfoDTO login(String custId, String rawPassword) {
         CustInfoDTO custInfoDTO = memberMapper.findByIdCustInfo(custId); // DB에서 ID 있는지 확인
 

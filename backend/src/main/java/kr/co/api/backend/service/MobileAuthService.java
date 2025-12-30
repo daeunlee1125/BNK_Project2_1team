@@ -24,8 +24,8 @@ public class MobileAuthService {
     private final MobileCustInfoMapper mobileCustInfoMapper;
 
     // 상수 정의 (정책)
-    private static final int DAILY_SEND_LIMIT = 5; // 하루 발송 제한
-    private static final int MAX_FAIL_COUNT = 5;   // 인증 실패 허용 횟수
+    private static final int DAILY_SEND_LIMIT = 10; // 하루 발송 제한
+    private static final int MAX_FAIL_COUNT = 10;   // 인증 실패 허용 횟수
 
     // PIN 암호화 용도
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();

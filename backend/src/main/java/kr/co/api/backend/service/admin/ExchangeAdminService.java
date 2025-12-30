@@ -37,7 +37,12 @@ public class ExchangeAdminService {
      */
     @PostConstruct
     public void init() {
-        refreshStats();
+        try {
+            refreshStats();
+            log.info(">>>> [ExchangeAdmin] 초기 환전 통계 데이터 로드 완료");
+        } catch (Exception e) {
+            log.warn(">>>> [ExchangeAdmin] 초기 통계 로드 실패 (DB 연결 불가). 나중에 다시 시도합니다. 오류: {}", e.getMessage());
+        }
     }
 
     /**

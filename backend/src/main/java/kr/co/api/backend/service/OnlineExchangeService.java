@@ -2,11 +2,13 @@ package kr.co.api.backend.service;
 
 import kr.co.api.backend.dto.*;
 import kr.co.api.backend.mapper.OnlineExchangeMapper;
+import kr.co.api.backend.service.async.LogProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -18,6 +20,8 @@ import java.util.Map;
 public class OnlineExchangeService {
 
     private final OnlineExchangeMapper onlineExchangeMapper;
+    private final LogProducer logProducer; // Redis Producer
+    private final ObjectMapper objectMapper; // Spring Boot에 기본 내장됨
 
     /**
      * 온라인 환전 처리
@@ -29,7 +33,7 @@ public class OnlineExchangeService {
             throw new IllegalStateException("고객 정보를 찾을 수 없습니다.");
         }
 
-        // DTO에 고객 코드 세팅 (필수)
+        // DTO에 고객 코드 세팅
         dto.setExchCustCode(custCode);
 
         log.info("환전 요청: " + dto.toString());
@@ -41,7 +45,7 @@ public class OnlineExchangeService {
         }
 
         /* =======================================================
-           [중요 수정 1] 기준 통화(외화) 결정 로직을 최상단으로 이동
+           기준 통화(외화) 결정 로직을 최상단으로 이동
            - 사기(B): 원화 -> 외화(To) => 외화 코드는 To
            - 팔기(S): 외화(From) -> 원화 => 외화 코드는 From
            ======================================================= */
@@ -50,9 +54,9 @@ public class OnlineExchangeService {
                 : dto.getExchFromCurrency();
 
         /* =========================
-           1. 환율 조회 (수정됨)
+           1. 환율 조회
            ========================= */
-        // [수정] dto.getExchToCurrency() 대신 위에서 구한 targetCurrency(외화코드) 사용
+        // dto.getExchToCurrency() 대신 위에서 구한 targetCurrency(외화코드) 사용
         RateDTO rate = onlineExchangeMapper.selectLatestRate(targetCurrency);
 
         if (rate == null) {
@@ -165,50 +169,91 @@ public class OnlineExchangeService {
         }
 
         // =========================
-        // 4-1. 계좌이체 이력 저장
+        // 4-1. 계좌이체 이력 저장 (Master DB 저장 & Slave 비동기 전송)
         // =========================
         if ("B".equals(dto.getExchType())) {
-            log.info("@@@@@@@@@@@@@@@@dto: {}, krwAcct: {}",dto.toString(), krwAcct.getAcctNo());
-            // 원화 출금
+            // [CASE 1] 외화 매수 (Buy)
+            // 1. 원화 출금 (Master DB 즉시 저장)
             onlineExchangeMapper.insertCustTranHist(
                     krwAcct.getAcctNo(),
                     custName,
-                    2,
+                    2, // 출금
                     dto.getExchKrwAmount(),
                     dto.getExchFrgnAcctNo(),
                     "외화 환전 출금"
             );
 
-            // 외화 입금
+            // 1-1. 원화 출금 로그 -> Redis 큐 전송 (Slave 동기화용)
+            Map<String, Object> logDataKrw = new HashMap<>();
+            logDataKrw.put("acctNo", krwAcct.getAcctNo());
+            logDataKrw.put("custName", custName);
+            logDataKrw.put("tranType", 2);
+            logDataKrw.put("amount", dto.getExchKrwAmount());
+            logDataKrw.put("recAcctNo", dto.getExchFrgnAcctNo());
+            logDataKrw.put("memo", "외화 환전 출금");
+            logProducer.sendLog(logDataKrw);
+
+            // 2. 외화 입금 (Master DB 즉시 저장)
             onlineExchangeMapper.insertCustTranHist(
                     dto.getExchFrgnAcctNo(),
                     custName,
-                    1,
+                    1, // 입금
                     dto.getExchFrgnAmount(),
                     krwAcct.getAcctNo(),
                     "외화 환전 입금"
             );
 
+            // 2-1. 외화 입금 로그 -> Redis 큐 전송
+            Map<String, Object> logDataFrgn = new HashMap<>();
+            logDataFrgn.put("acctNo", dto.getExchFrgnAcctNo());
+            logDataFrgn.put("custName", custName);
+            logDataFrgn.put("tranType", 1);
+            logDataFrgn.put("amount", dto.getExchFrgnAmount());
+            logDataFrgn.put("recAcctNo", krwAcct.getAcctNo());
+            logDataFrgn.put("memo", "외화 환전 입금");
+            logProducer.sendLog(logDataFrgn);
+
         } else if ("S".equals(dto.getExchType())) {
-            // [LOG 1] 외화 계좌 입장에서: 출금(WithDraw)
+            // [CASE 2] 외화 매도 (Sell)
+            // 1. 외화 출금 (Master DB 즉시 저장)
             onlineExchangeMapper.insertCustTranHist(
-                    dto.getExchFrgnAcctNo(), // 내 통장: 외화 계좌
+                    dto.getExchFrgnAcctNo(),
                     custName,
-                    2,                       // 거래 유형: 2 (출금)
-                    dto.getExchFrgnAmount(), // 금액: 외화 금액
-                    krwAcct.getAcctNo(),     // 상대 계좌: 내 원화 계좌
-                    "외화 환전 출금"            // 적요
+                    2, // 출금
+                    dto.getExchFrgnAmount(),
+                    krwAcct.getAcctNo(),
+                    "외화 환전 출금"
             );
 
-            // [LOG 2] 원화 계좌 입장에서: 입금(Deposit)
+            // 1-1. 외화 출금 로그 -> Redis 큐 전송
+            Map<String, Object> logDataFrgn = new HashMap<>();
+            logDataFrgn.put("acctNo", dto.getExchFrgnAcctNo());
+            logDataFrgn.put("custName", custName);
+            logDataFrgn.put("tranType", 2);
+            logDataFrgn.put("amount", dto.getExchFrgnAmount());
+            logDataFrgn.put("recAcctNo", krwAcct.getAcctNo());
+            logDataFrgn.put("memo", "외화 환전 출금");
+            logProducer.sendLog(logDataFrgn);
+
+            // 2. 원화 입금 (Master DB 즉시 저장)
             onlineExchangeMapper.insertCustTranHist(
-                    krwAcct.getAcctNo(),     // 내 통장: 원화 계좌
+                    krwAcct.getAcctNo(),
                     custName,
-                    1,                       // 거래 유형: 1 (입금)
-                    dto.getExchKrwAmount(),  // 금액: 원화 금액 (계산된 결과)
-                    dto.getExchFrgnAcctNo(), // 상대 계좌: 내 외화 계좌
-                    "외화 환전 입금"            // 적요
+                    1, // 입금
+                    dto.getExchKrwAmount(),
+                    dto.getExchFrgnAcctNo(),
+                    "외화 환전 입금"
             );
+
+            // 2-1. 원화 입금 로그 -> Redis 큐 전송
+            Map<String, Object> logDataKrw = new HashMap<>();
+            logDataKrw.put("acctNo", krwAcct.getAcctNo());
+            logDataKrw.put("custName", custName);
+            logDataKrw.put("tranType", 1);
+            logDataKrw.put("amount", dto.getExchKrwAmount());
+            logDataKrw.put("recAcctNo", dto.getExchFrgnAcctNo());
+            logDataKrw.put("memo", "외화 환전 입금");
+            logProducer.sendLog(logDataKrw);
         }
 
         /* =========================
@@ -218,6 +263,21 @@ public class OnlineExchangeService {
         dto.setExchReqDt(LocalDate.now());
 
         onlineExchangeMapper.insertOnlineExchange(dto);
+
+        // 2. [추가] Slave 동기화를 위해 Redis로 데이터 전송 (비동기)
+        try {
+            // DTO를 Map으로 변환 (직접 put 해도 되지만 이게 편함)
+            Map<String, Object> exchangeMap = objectMapper.convertValue(dto, Map.class);
+
+            // ★ 중요: Worker가 이게 "환전 내역"인지 "이체 내역"인지 알아야 함!
+            exchangeMap.put("log_type", "EXCHANGE");
+
+            logProducer.sendLog(exchangeMap); // 큐에 넣기
+
+        } catch (Exception e) {
+            log.error("Redis 전송 실패 (환전 내역): {}", e.getMessage());
+            // Redis 실패해도 환전 자체는 성공 처리 (로그만 남김)
+        }
     }
 
 

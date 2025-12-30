@@ -13,7 +13,6 @@ public interface OnlineExchangeMapper {
     // OnlineExchangeMapper.java
     String selectCustCodeByUserId(@Param("custId") String custId);
 
-    @CoreBanking
     int insertCustTranHist(
             @Param("acctNo") String acctNo,
             @Param("custName") String custName,
@@ -67,7 +66,6 @@ public interface OnlineExchangeMapper {
     /* =========================
        6. 온라인 환전 INSERT
        ========================= */
-    @CoreBanking
     int insertOnlineExchange(FrgnExchOnlineDTO dto);
 
 

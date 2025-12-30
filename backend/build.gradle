@@ -34,6 +34,9 @@ repositories {
 }
 
 dependencies {
+    // AOP 라이브러리
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
     // 1. HTTP 요청을 받기 위한 Web
     implementation 'org.springframework.boot:spring-boot-starter-web'
 

@@ -23,7 +23,14 @@ public class DashboardService {
 
     @PostConstruct
     public void init() {
-        refreshStats();
+        try {
+            // 원래 있던 통계 갱신 로직
+            refreshStats();
+            log.info(">>>> [Dashboard] 초기 통계 데이터 로드 완료");
+        } catch (Exception e) {
+            // ★ 핵심: 에러가 나도 앱을 죽이지 않고 로그만 남기고 넘어감
+            log.warn(">>>> [Dashboard] 초기 통계 로드 실패 (DB 연결 불가). 나중에 다시 시도합니다. 오류: {}", e.getMessage());
+        }
     }
 
     @Scheduled(fixedRate = 5 * 60 * 1000) // 5분마다 r갱신

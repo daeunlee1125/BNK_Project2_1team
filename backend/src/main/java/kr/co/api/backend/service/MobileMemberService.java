@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class MobileMemberService {
     final private MobileCustInfoMapper mobileCustInfo;
 
-    @Transactional(readOnly = true)
     public Boolean login(MobileMemberController.LoginRequest loginRequest){
         String deviceId = mobileCustInfo.selectDeviceIdByCustInfo(loginRequest.getUserid());
 
@@ -23,7 +22,6 @@ public class MobileMemberService {
         return false;
     }
 
-    @Transactional(readOnly = true)
     public CustInfoDTO getCustInfoByCustId(String custId){
         return mobileCustInfo.selectUserIdByCustInfo(custId);
     }
