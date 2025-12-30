@@ -69,9 +69,10 @@
             DPST_DRAFT_AUTO_TERMI_YN = #{dpstDraftAutoTermiYn},
             DPST_DRAFT_UPDATED_DT = SYSDATE,
             DPST_DRAFT_AMOUNT = #{dpstDraftAmount}
-        WHERE DPST_DRAFT_NO = #{dpstDraftNo}
+        WHERE TRIM(DPST_DRAFT_DPST_ID) = TRIM(#{dpstDraftDpstId})
           AND TRIM(DPST_DRAFT_CUST_CODE) = TRIM(#{dpstDraftCustCode})
     </update>
+
 
     <delete id="deleteDraft">
         DELETE FROM TB_DPST_ACCT_DRAFT
