@@ -146,14 +146,37 @@ class DepositService {
       body: jsonEncode(application.toJson()),
     );
 
-    if (response.statusCode != 200 &&
-        response.statusCode != 201) {
-      throw Exception('예금 가입 신청 실패 (${response.statusCode})');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception(_buildApplyErrorMessage(response));
     }
 
     final Map<String, dynamic> data =
     jsonDecode(utf8.decode(response.bodyBytes));
 
     return DepositSubmissionResult.fromJson(data);
+  }
+
+  String _buildApplyErrorMessage(http.Response response) {
+    final defaultMessage = '예금 가입 신청 실패 (${response.statusCode})';
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) {
+        final message = decoded['message']?.toString();
+        if (message != null && message.isNotEmpty) {
+          return '예금 가입 신청 실패: $message (${response.statusCode})';
+        }
+
+        final error = decoded['error']?.toString();
+        if (error != null && error.isNotEmpty) {
+          return '예금 가입 신청 실패: $error (${response.statusCode})';
+        }
+      } else if (decoded is String && decoded.isNotEmpty) {
+        return '예금 가입 신청 실패: $decoded (${response.statusCode})';
+      }
+    } catch (_) {
+      // ignore parsing errors and fall back to the default message
+    }
+
+    return defaultMessage;
   }
 }

@@ -453,8 +453,24 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     setState(() => _submitting = true);
 
     try {
+      print("===== FINAL APPLICATION BEFORE SUBMIT =====");
+      print(widget.application.toJson());
+
+      // 이어가기로 온 FX 상품인데 출금통화가 비어있으면 자동 세팅
+      if (widget.application.withdrawType == "fx" &&
+          (widget.application.fxWithdrawCurrency == null ||
+              widget.application.fxWithdrawCurrency!.isEmpty)) {
+        widget.application.fxWithdrawCurrency = widget.application.newCurrency;
+      }
+
+
+      // 이어가기 여부 / 어디서 온 신청인지 확인
+      //print("isResumeDraft = ${widget.application.applicationSource}");
+
       final result =
       await DepositService().submitApplication(widget.application);
+
+
 
       // 전자서명과 계좌 생성이 끝났으면 이어가기 임시 테이블(TB_DPST_ACCT_DRAFT)도 정리한다.
       // 서버/DB 삭제 요청은 실패해도 가입 완료 이동은 막지 않도록 best-effort 로 수행한다.
@@ -473,12 +489,13 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
           result: result,
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint("SUBMIT FAILED >>> $e");
+      debugPrintStack(stackTrace: stack);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('가입 완료 처리 중 오류가 발생했습니다. 다시 시도해 주세요. ($e)'),
-          ),
+          SnackBar(content: Text('가입 완료 처리 중 오류 발생: $e')),
         );
       }
     } finally {
