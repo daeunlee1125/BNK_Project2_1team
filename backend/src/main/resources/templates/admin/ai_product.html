@@ -967,14 +967,15 @@
                     }
                     const question = {
                         qNo: index + 1,
-                        qKey,
-                        qText,
-                        qType,
-                        isRequired,
+                        qKey: qKey,
+                        qText: qText,
+                        qType: qType,
+                        isRequired: isRequired,
                         maxSelect: maxSelectValue ? Number(maxSelectValue) : null,
-                        isActive,
+                        isActive: isActive,
                         options: []
                     };
+
 
                     if (qType !== 'TEXT') {
                         card.find('.option-row').each(function(optionIndex) {

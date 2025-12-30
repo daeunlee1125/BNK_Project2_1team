@@ -68,11 +68,19 @@ public class AdminAiProductController {
     @PostMapping("/ai-product/surveys")
     @ResponseBody
     public ResponseEntity<SurveyDetailDTO> createSurvey(@RequestBody SurveyRequestDTO request) {
+
+        System.out.println("==== CREATE SURVEY ====");
+        System.out.println("title = " + request.getTitle());
+        System.out.println("questions = " + request.getQuestions());
+        System.out.println("questions size = " +
+                (request.getQuestions() == null ? 0 : request.getQuestions().size()));
+
         SurveySaveDTO survey = buildSurveySaveDTO(request, null);
         List<SurveyQuestionDTO> questions = buildQuestionDTOs(request.getQuestions());
         SurveyDetailDTO saved = surveyAdminService.createSurveyWithQuestions(survey, questions);
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
+
 
     @PutMapping("/ai-product/surveys/{surveyId}")
     @ResponseBody
