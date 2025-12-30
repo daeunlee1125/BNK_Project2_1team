@@ -80,111 +80,39 @@ public class MobileDepositController {
         return ResponseEntity.ok(payload);
     }
 
-    @GetMapping("/drafts/{dpstId}")
-    public ResponseEntity<Map<String, Object>> getDepositDraft(
+    @GetMapping("/products/{dpstId}/rate")
+    public ResponseEntity<Map<String, Object>> getDepositRate(
             @PathVariable String dpstId,
+            @RequestParam(required = false) String currency,
+            @RequestParam(required = false) Integer month,
             HttpServletRequest request
     ) {
-        CustInfoDTO user = resolveUser(request);
+        resolveUser(request); // 인증만 확인
 
-        log.info("[DepositDraft] Fetching draft | dpstId={}, custCode={}", dpstId, user.getCustCode());
-
-        DpstAcctDraftDTO draft = depositMapper.findDepositDraft(dpstId, user.getCustCode());
-
-        if (draft == null) {
-            log.warn("[DepositDraft] Draft not found | dpstId={}, custCode={}", dpstId, user.getCustCode());
-
-            return ResponseEntity.notFound().build();
+        ProductDTO product = depositMapper.findProductById(dpstId);
+        if (product == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        logDraftState("[DepositDraft] Loaded draft", draft);
-        return ResponseEntity.ok(toDraftPayload(draft));
-    }
-
-    @PutMapping("/drafts/{dpstId}")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> saveDepositDraft(
-            @PathVariable String dpstId,
-            @RequestBody Map<String, Object> request,
-            HttpServletRequest servletRequest
-    ) {
-        CustInfoDTO user = resolveUser(servletRequest);
-
-        DpstAcctDraftDTO draft = Optional.ofNullable(
-                depositMapper.findDepositDraft(dpstId, user.getCustCode())
-        ).orElseGet(DpstAcctDraftDTO::new);
-
-        Integer requestedStep = parseInt(request.get("step"));
-        log.info(
-                "[DepositDraft] Saving draft | dpstId={}, custCode={}, incomingStep={}, existingDraftNo={}",
-                dpstId,
-                user.getCustCode(),
-                requestedStep,
-                draft.getDpstDraftNo()
-        );
-
-        draft.setDpstDraftDpstId(dpstId);
-        draft.setDpstDraftCustCode(user.getCustCode());
-        draft.setDpstDraftPw(asString(request.get("depositPassword")));
-        draft.setDpstDraftMonth(parseInt(request.get("month")));
-        draft.setDpstDraftStep(requestedStep);
-        draft.setDpstDraftCurrency(asString(request.get("currency")));
-        draft.setDpstDraftLinkedAcctNo(asString(request.get("linkedAccountNo")));
-        draft.setDpstDraftAutoRenewYn(asBooleanFlag(request.get("autoRenewYn")));
-        draft.setDpstDraftAutoRenewTerm(parseInt(request.get("autoRenewTerm")));
-        draft.setDpstDraftAutoTermiYn(asBooleanFlag(request.get("autoTerminationYn")));
-        draft.setDpstDraftWdrwPw(asString(request.get("withdrawPassword")));
-        draft.setDpstDraftAmount(parseNullableBigDecimal(request.get("amount")));
-
-        logDraftState("[DepositDraft] Prepared draft for persistence", draft);
-
-        if (draft.getDpstDraftNo() == null) {
-            depositMapper.insertDepositDraft(draft);
-            log.info(
-                    "[DepositDraft] Inserted new draft | dpstId={}, custCode={}",
-                    dpstId,
-                    user.getCustCode()
-            );
-
-        } else {
-            int updated = depositMapper.updateDepositDraft(draft);
-            log.info(
-                    "[DepositDraft] Updated draft | draftNo={}, dpstId={}, custCode={}, updatedRows={}",
-                    draft.getDpstDraftNo(),
-                    dpstId,
-                    user.getCustCode(),
-                    updated
-            );
+        String targetCurrency = asString(currency, product.getDpstCurrency());
+        Integer targetMonth = month != null ? month : product.getPeriodMinMonth();
+        if (targetMonth == null) {
+            targetMonth = 12;
         }
 
-        DpstAcctDraftDTO saved = depositMapper.findDepositDraft(dpstId, user.getCustCode());
-        logDraftState("[DepositDraft] Persisted draft", saved);
+        InterestRateDTO rateInfo = depositMapper.getRecentInterest(targetCurrency);
+        BigDecimal rate = resolveRate(rateInfo, targetMonth);
+        if (rate == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(toDraftPayload(saved));
-    }
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("dpstId", dpstId);
+        payload.put("currency", targetCurrency);
+        payload.put("month", targetMonth);
+        payload.put("rate", rate);
 
-    /**
-     * 전자서명 완료 후 이어가기 임시 저장본을 완전히 제거한다.
-     * <p>
-     * 프런트엔드에서 가입 완료 시점에 이 엔드포인트를 호출하며,
-     * 고객 코드까지 함께 체크해서 다른 사용자의 초안이 지워지지 않도록 방지한다.
-     */
-    @DeleteMapping("/drafts/{dpstId}")
-    @Transactional
-    public ResponseEntity<Void> deleteDepositDraft(
-            @PathVariable String dpstId,
-            HttpServletRequest servletRequest
-    ) {
-        CustInfoDTO user = resolveUser(servletRequest);
-        log.info("[DepositDraft] Deleting draft | dpstId={}, custCode={}", dpstId, user.getCustCode());
-        int deleted = depositMapper.deleteDepositDraft(dpstId, user.getCustCode());
-        log.info(
-                "[DepositDraft] Delete result | dpstId={}, custCode={}, deletedRows={}",
-                dpstId,
-                user.getCustCode(),
-                deleted
-        );
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(payload);
     }
 
     @PostMapping("/applications")
@@ -194,6 +122,10 @@ public class MobileDepositController {
             HttpServletRequest servletRequest
     ) {
         CustInfoDTO user = resolveUser(servletRequest);
+        log.info(
+                "[APPLY] request sanitized | custCode={}",
+                user.getCustCode()
+        );
 
         String dpstId = asString(request.get("dpstId"));
         if (dpstId.isBlank()) {
@@ -220,9 +152,9 @@ public class MobileDepositController {
         if (withdrawAccount.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금 계좌를 선택해주세요.");
         }
-        if (withdrawPassword.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 필요합니다.");
-        }
+        //if (withdrawPassword.isBlank()) {
+        //    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 필요합니다.");
+        //}
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "가입 금액을 다시 확인해주세요.");
         }
@@ -251,6 +183,12 @@ public class MobileDepositController {
                 : startDate.plusMonths(1);
 
         DpstAcctHdrDTO header = new DpstAcctHdrDTO();
+        Integer autoRenewTerm = parseInt(request.get("autoRenewCycle"));
+        header.setDpstHdrAutoRenewTerm(
+                autoRenewTerm != null ? autoRenewTerm : 0
+        );
+
+
         header.setDpstHdrDpstId(dpstId);
         header.setDpstHdrPw(passwordEncoder.encode(asString(request.get("depositPassword"))));
         header.setDpstHdrCustCode(user.getCustCode());
@@ -264,7 +202,17 @@ public class MobileDepositController {
         header.setDpstHdrStatus(1);
         header.setDpstHdrLinkedAcctNo(withdrawAccount);
         header.setDpstHdrLinkedAcctType("fx".equalsIgnoreCase(withdrawType) ? 2 : 1);
-        header.setDpstHdrAutoRenewYn("apply".equalsIgnoreCase(asString(request.get("autoRenew"))) ? "Y" : "N");
+        String autoRenewRaw = asString(request.get("autoRenew"));
+
+        String autoRenewYn =
+                "Y".equalsIgnoreCase(autoRenewRaw)
+                        || "YES".equalsIgnoreCase(autoRenewRaw)
+                        || "APPLY".equalsIgnoreCase(autoRenewRaw)
+                        ? "Y"
+                        : "N";
+
+        header.setDpstHdrAutoRenewYn(autoRenewYn);
+
         header.setDpstHdrAutoRenewCnt(0);
         header.setDpstHdrAutoRenewTerm(parseInt(request.get("autoRenewCycle")));
         header.setDpstHdrPartWdrwCnt(0);
@@ -274,8 +222,12 @@ public class MobileDepositController {
         header.setDpstHdrExpAcctNo(withdrawAccount);
         header.setDpstHdrLinkedAcctBal(withdrawAmount);
 
+        log.info("[APPLY] header insert data={}", header);
         depositMapper.insertDpstAcctHdr(header);
+        log.info("[APPLY] header insert success");
         DpstAcctHdrDTO inserted = depositMapper.selectInsertedAcct(user.getCustCode(), dpstId);
+        log.info("[APPLY] inserted acct={}", inserted);
+
 
         boolean hasSignature = request.get("signature") != null;
 
@@ -346,9 +298,9 @@ public class MobileDepositController {
                         new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금 계좌를 확인해주세요.")
                 );
 
-        if (!matchesAccountPassword(password, account.getAcctPw())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 일치하지 않습니다.");
-        }
+//        if (!matchesAccountPassword(password, account.getAcctPw())) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 일치하지 않습니다.");
+//        }
 
         BigDecimal balance = BigDecimal.valueOf(account.getAcctBalance());
         if (balance.compareTo(amount) < 0) {
@@ -365,9 +317,9 @@ public class MobileDepositController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외화 출금계좌를 확인해주세요.");
         }
 
-        if (!matchesAccountPassword(password, account.getFrgnAcctPw())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외화계좌 비밀번호가 일치하지 않습니다.");
-        }
+//        if (!matchesAccountPassword(password, account.getFrgnAcctPw())) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외화계좌 비밀번호가 일치하지 않습니다.");
+//        }
 
         List<FrgnAcctBalanceDTO> balances = Optional.ofNullable(
                 depositMapper.getFrgnAcctBalList(account.getFrgnAcctNo())
@@ -387,32 +339,6 @@ public class MobileDepositController {
 
         balance.setBalBalance((long) current.subtract(amount).doubleValue());
         depositMapper.updateBalBalance(balance);
-    }
-
-    private Map<String, Object> toDraftPayload(DpstAcctDraftDTO draft) {
-        Map<String, Object> payload = new HashMap<>();
-        if (draft == null) {
-            return payload;
-        }
-
-        payload.put("draftNo", draft.getDpstDraftNo());
-        payload.put("dpstId", draft.getDpstDraftDpstId());
-        payload.put("customerCode", draft.getDpstDraftCustCode());
-        payload.put("currency", draft.getDpstDraftCurrency());
-        payload.put("month", draft.getDpstDraftMonth());
-        payload.put("step", draft.getDpstDraftStep());
-        payload.put("linkedAccountNo", draft.getDpstDraftLinkedAcctNo());
-        payload.put("autoRenewYn", draft.getDpstDraftAutoRenewYn());
-        payload.put("autoRenewTerm", draft.getDpstDraftAutoRenewTerm());
-        payload.put("autoTerminationYn", draft.getDpstDraftAutoTermiYn());
-        payload.put("withdrawPassword", draft.getDpstDraftWdrwPw());
-        payload.put("depositPassword", draft.getDpstDraftPw());
-        payload.put("amount", draft.getDpstDraftAmount());
-        payload.put("updatedAt", draft.getDpstDraftUpdatedDt() != null
-                ? draft.getDpstDraftUpdatedDt().toString()
-                : null);
-
-        return payload;
     }
 
     private boolean matchesAccountPassword(String inputPw, String storedPw) {
@@ -528,43 +454,20 @@ public class MobileDepositController {
         }
     }
 
-    private BigDecimal parseNullableBigDecimal(Object value) {
-        if (value == null) return null;
-        try {
-            return new BigDecimal(value.toString());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+    private Map<String, Object> sanitizeApplyRequest(Map<String, Object> request) {
+        Map<String, Object> sanitized = new HashMap<>(request);
+        sanitized.put("withdrawPassword", maskSensitive(asString(request.get("withdrawPassword"))));
+        sanitized.put("depositPassword", maskSensitive(asString(request.get("depositPassword"))));
+        return sanitized;
     }
 
-    private String asBooleanFlag(Object value) {
-        if (value == null) return "N";
-        String normalized = value.toString().trim();
-        return ("Y".equalsIgnoreCase(normalized) || "TRUE".equalsIgnoreCase(normalized) || "1".equals(normalized))
-                ? "Y"
-                : "N";
-    }
-
-    private void logDraftState(String label, DpstAcctDraftDTO draft) {
-        if (draft == null) {
-            log.warn("{} | draft is null", label);
-            return;
+    private String maskSensitive(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
         }
-
-        log.info(
-                "{} | draftNo={}, dpstId={}, custCode={}, step={}, currency={}, linkedAcct={}, autoRenewYn={}, autoRenewTerm={}, autoTermiYn={}, amount={}",
-                label,
-                draft.getDpstDraftNo(),
-                draft.getDpstDraftDpstId(),
-                draft.getDpstDraftCustCode(),
-                draft.getDpstDraftStep(),
-                draft.getDpstDraftCurrency(),
-                draft.getDpstDraftLinkedAcctNo(),
-                draft.getDpstDraftAutoRenewYn(),
-                draft.getDpstDraftAutoRenewTerm(),
-                draft.getDpstDraftAutoTermiYn(),
-                draft.getDpstDraftAmount()
-        );
+        int visible = Math.min(1, value.length());
+        String maskedSection = "*".repeat(Math.max(4, value.length() - visible));
+        return maskedSection + value.substring(value.length() - visible);
     }
 
 }

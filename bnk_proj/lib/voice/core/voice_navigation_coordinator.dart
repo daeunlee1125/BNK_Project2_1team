@@ -5,6 +5,8 @@ import 'package:test_main/screens/deposit/view.dart';
 import 'package:test_main/voice/controller/voice_session_controller.dart';
 import 'package:test_main/voice/ui/voice_nav_command.dart';
 
+import '../../screens/deposit/signature.dart';
+
 class VoiceNavigationCoordinator {
   final GlobalKey<NavigatorState> navigatorKey;
   final VoiceSessionController controller;
@@ -23,6 +25,9 @@ class VoiceNavigationCoordinator {
   void _handle() {
     final cmd = controller.navCommand.value;
     if (cmd == null) return;
+    if (cmd.type == VoiceNavType.openSignature) {
+      return; // ❗ null로 만들지 말고 그대로 둔다
+    }
 
     controller.navCommand.value = null;
 
@@ -50,12 +55,12 @@ class VoiceNavigationCoordinator {
           arguments: cmd.productCode
         );
         break;
+      case VoiceNavType.openSignature:
+        break;
 
       case VoiceNavType.openDepositList:
-        // TODO: Handle this case.
         throw UnimplementedError();
       case VoiceNavType.selectDepositTab:
-        // TODO: Handle this case.
         throw UnimplementedError();
     }
   }

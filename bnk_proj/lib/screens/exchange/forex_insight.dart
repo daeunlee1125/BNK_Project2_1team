@@ -482,13 +482,7 @@ class _ExchangeNavigation extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         _NavChip(
-          label: '알림 설정',
-          selected: current == ExchangePage.alerts,
-          onTap: () => onSelected(ExchangePage.alerts),
-        ),
-        const SizedBox(width: 8),
-        _NavChip(
-          label: '리스크 지표',
+          label: '환율 기상청',
           selected: false,
           onTap: () {
             Navigator.push(

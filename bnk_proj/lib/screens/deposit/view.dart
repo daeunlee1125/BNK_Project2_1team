@@ -9,6 +9,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:test_main/screens/deposit/step_3.dart';
 import 'package:test_main/services/deposit_draft_service.dart';
 
+import '../../voice/controller/voice_session_controller.dart';
+import '../../voice/scope/voice_session_scope.dart';
+
 class DepositViewArgs {
   final String dpstId;
 
@@ -41,14 +44,82 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   late Future<List<TermsDocument>>? _futureTerms;
   final DepositDraftService _draftService = DepositDraftService();
   bool _canResume = false;
+  Uri? _depositImageUri;
 
   @override
   void initState() {
     super.initState();
     _futureProduct = _service.fetchProductDetail(widget.dpstId);
-    _futureTerms =  Future.value(<TermsDocument>[]);
+    // 약관 탭은 최초 진입 시점에만 요청하도록 null로 시작
+    _futureTerms = null;
     _checkDraftAvailability();
+    _loadDepositImage();
   }
+
+  Future<List<TermsDocument>> _requestTerms() {
+    return _termsService.fetchTerms(status: 4).catchError((_) => <TermsDocument>[]);
+  }
+
+  late VoiceSessionController _voiceController;
+
+  bool _voiceAttached = false;
+  bool _summarySpoken = false;
+
+  model.DepositProduct? _loadedProduct;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_voiceAttached) return;
+    _voiceAttached = true;
+
+    _voiceController = VoiceSessionScope.of(context);
+  }
+
+  String _buildProductViewVoice(model.DepositProduct product) {
+    final rawInfo = product.description.isNotEmpty
+        ? product.description
+        : product.info;
+    final info = rawInfo.replaceAll('FLOBANK', '플로뱅크');
+
+    final currencies = product.dpstCurrency.isNotEmpty
+        ? product.dpstCurrency
+        .split(',')
+        .map((c) => _currencyLabelKo(c.trim()))
+        .join(', ')
+        : '제한 없음';
+
+    return """
+$info
+가입 가능한 통화는 $currencies 입니다.
+""";
+  }
+
+  String _currencyLabelKo(String code) {
+    switch (code.toUpperCase()) {
+      case 'USD':
+        return '달러화';
+      case 'JPY':
+        return '엔화';
+      case 'EUR':
+        return '유로화';
+      case 'CNY':
+      case 'CNH':
+        return '위안화';
+      case 'GBP':
+        return '파운드화';
+      case 'AUD':
+        return '호주 달러화';
+      default:
+        return code;
+    }
+  }
+
+
+
+
+
 
   void _setTab(int idx) {
   setState(() {
@@ -56,9 +127,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
     // 🔥 약관 탭(2번)에 처음 진입할 때만 로딩
     if (idx == 2 && _futureTerms == null) {
-      _futureTerms = _termsService
-          .fetchTerms(status: 4)
-          .catchError((_) => <TermsDocument>[]);
+      _futureTerms = _requestTerms();
     }
   });
 }
@@ -70,14 +139,13 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
     setState(() {
       _futureProduct = _service.fetchProductDetail(widget.dpstId);
 
-      // 🔥 약관 탭을 이미 로딩한 적이 있을 때만 재요청
-      if (_futureTerms != null) {
-        _futureTerms = _termsService
-            .fetchTerms(status: 4)
-            .catchError((_) => <TermsDocument>[]);
+      // 🔥 약관 탭이 열려있거나 한번이라도 로딩된 경우 재요청
+      if (_currentTab == 2 || _futureTerms != null) {
+        _futureTerms = _requestTerms();
       }
     });
 
+    _loadDepositImage();
     _checkDraftAvailability();
   }
 
@@ -95,6 +163,25 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
 
     await Future.wait(futures);
   }
+
+
+  Future<void> _loadDepositImage() async {
+    try {
+      final TermsDocument? doc = await _termsService.fetchLatestDepositImage();
+
+      if (!mounted) return;
+
+      // 최신 이미지가 없다면 null로 두어 로컬 에셋/아이콘을 사용하도록 처리
+      setState(() {
+        _depositImageUri =
+        doc == null ? null : _buildTermsUri(doc);
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {});
+    }
+  }
+
 
 
   Future<void> _checkDraftAvailability() async {
@@ -150,6 +237,17 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
         }
 
         final product = snapshot.data!;
+        _loadedProduct ??= product;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (_summarySpoken) return;
+          if (_loadedProduct == null) return;
+          _summarySpoken = true;
+
+          if (_voiceController.isSessionActive) {
+            final script = _buildProductViewVoice(_loadedProduct!);
+            await _voiceController.speakClientGuide(script);
+          }
+        });
 
         return Scaffold(
           backgroundColor: AppColors.backgroundOffWhite,
@@ -358,6 +456,29 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
           ),
         ],
       ),
+    );
+  }
+
+
+  Widget _buildDepositInfoImage() {
+    if (_depositImageUri != null) {
+      return Image.network(
+        _depositImageUri.toString(),
+        width: 90,
+        height: 90,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => _fallbackDepositIcon(),
+      );
+    }
+
+    return _fallbackDepositIcon();
+  }
+
+  Widget _fallbackDepositIcon() {
+    return const Icon(
+      Icons.info_outline,
+      size: 22,
+      color: AppColors.pointDustyNavy,
     );
   }
 
@@ -611,17 +732,7 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
               // 아이콘 / 이미지
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Image.asset(
-                  "images/deposit.png",
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(
-                    Icons.info_outline,
-                    size: 22,
-                    color: AppColors.pointDustyNavy,
-                  ),
-                ),
+                child: _buildDepositInfoImage(),
               ),
 
               const SizedBox(width: 10),
@@ -1544,6 +1655,10 @@ class _DepositViewScreenState extends State<DepositViewScreen> {
   // [탭 3] 상품약관
   // ============================================================
   Widget _buildTermsTab(model.DepositProduct product) {
+
+    // 탭 상태 복원 등으로 _futureTerms가 비어있는 상황을 대비해 안전하게 한번 더 요청
+    _futureTerms ??= _requestTerms();
+
 
     if (_futureTerms == null) {
       return const Center(child: Text('약관을 불러오는 중입니다.'));

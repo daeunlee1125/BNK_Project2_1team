@@ -80,9 +80,33 @@ class DepositApplication {
   DateTime? signedAt;
 
   Map<String, dynamic> toJson() {
+    //  1️⃣ 출금 계좌 / 유형 매핑
+    String? withdrawAccountNo;
+    int? withdrawAccountType;
+
+    if (withdrawType == 'krw') {
+      // 원화 출금
+      withdrawAccountNo = selectedKrwAccount;
+      withdrawAccountType = 1; // 원화 계좌
+
+      // 원화 출금이면 외화 출금 통화 의미 없음 → 정리
+      fxWithdrawCurrency = null;
+    } else if (withdrawType == 'fx') {
+      // 외화 출금
+      withdrawAccountNo = selectedFxAccount;
+      withdrawAccountType = 2; // 외화 계좌
+
+      // 외화 출금인데 통화가 비었으면 예금통화로 채워줌
+      if (fxWithdrawCurrency == null || fxWithdrawCurrency!.isEmpty) {
+        fxWithdrawCurrency = newCurrency;
+      }
+    }
+
+    //  2️⃣ JSON 변환
     return {
       'dpstId': dpstId,
       'customerCode': customerCode,
+
       'agreements': {
         'agree1': agree1,
         'agree2': agree2,
@@ -95,33 +119,45 @@ class DepositApplication {
         'important3': important3,
         'finalAgree': finalAgree,
       },
+
+      // Step2 값은 그대로 유지
       'withdrawType': withdrawType,
       'selectedKrwAccount': selectedKrwAccount,
       'selectedFxAccount': selectedFxAccount,
       'fxWithdrawCurrency': fxWithdrawCurrency,
       'withdrawPassword': withdrawPassword,
+
       'newCurrency': newCurrency,
       'newAmount': newAmount,
       'newPeriodMonths': newPeriodMonths,
+
       'autoRenew': autoRenew,
       'autoRenewCycle': autoRenewCycle,
       'autoRenewCount': autoRenewCount,
-      'autoTerminateAtMaturity': autoTerminateAtMaturity,
+      'autoTerminateYn': autoTerminateAtMaturity ? 'Y' : 'N',
+
       'appliedRate': appliedRate,
       'appliedFxRate': appliedFxRate,
+
       'addPaymentEnabled': addPaymentEnabled,
       'addPaymentCount': addPaymentCount,
       'partialWithdrawEnabled': partialWithdrawEnabled,
       'partialWithdrawCount': partialWithdrawCount,
+
       'depositPassword': depositPassword,
+
       'dpstHdrStartDy': dpstHdrStartDy,
       'dpstHdrFinDy': dpstHdrFinDy,
       'dpstHdrCurrencyExp': dpstHdrCurrencyExp,
-      'dpstHdrLinkedAcctNo': dpstHdrLinkedAcctNo,
-      'dpstHdrLinkedAcctType': dpstHdrLinkedAcctType,
+
+      // 🔥 여기 두 줄이 진짜 핵심 (서버에서 사용하는 최종 출금 계좌값)
+      'dpstHdrLinkedAcctNo': withdrawAccountNo ?? dpstHdrLinkedAcctNo,
+      'dpstHdrLinkedAcctType': withdrawAccountType ?? dpstHdrLinkedAcctType,
+
       'dpstHdrAutoRenewYn': dpstHdrAutoRenewYn,
       'dpstHdrAutoRenewCnt': dpstHdrAutoRenewCnt,
       'dpstHdrAutoRenewTerm': dpstHdrAutoRenewTerm,
+
       'dpstHdrInfoAgreeYn': dpstHdrInfoAgreeYn,
       'dpstHdrInfoAgreeDt': dpstHdrInfoAgreeDt?.toIso8601String(),
       'dpstHdrContractDt': dpstHdrContractDt?.toIso8601String(),
@@ -129,17 +165,17 @@ class DepositApplication {
       'dpstHdrAddPayCnt': dpstHdrAddPayCnt,
       'dpstHdrPartWdrwCnt': dpstHdrPartWdrwCnt,
       'dpstHdrLinkedAcctBal': dpstHdrLinkedAcctBal,
+
       'dpstDtlType': dpstDtlType,
       'dpstDtlEsignYn': dpstDtlEsignYn,
       'dpstDtlEsignDt': dpstDtlEsignDt?.toIso8601String(),
-      'signature': signatureImage != null
-          ? base64Encode(signatureImage!)
-          : null,
+
+      'signature': signatureImage != null ? base64Encode(signatureImage!) : null,
       'signatureMethod': signatureMethod,
       'signedAt': signedAt?.toIso8601String(),
-
     };
   }
+
 
   factory DepositApplication.fromJson(Map<String, dynamic> json) {
     final agreements = json['agreements'] as Map<String, dynamic>? ?? {};
@@ -167,8 +203,10 @@ class DepositApplication {
       ..autoRenew = json['autoRenew']?.toString() ?? 'no'
       ..autoRenewCycle = json['autoRenewCycle'] as int?
       ..autoRenewCount = json['autoRenewCount'] as int?
-      ..autoTerminateAtMaturity = json['autoTerminateAtMaturity'] == true ||
-          json['autoTerminateAtMaturity']?.toString().toUpperCase() == 'Y'
+      ..autoTerminateAtMaturity =
+          json['autoTerminateAtMaturity'] == true ||
+              json['autoTerminateYn']?.toString().toUpperCase() == 'Y'
+
       ..appliedRate = _tryParseDouble(json['appliedRate'])
       ..appliedFxRate = _tryParseDouble(json['appliedFxRate'])
       ..addPaymentEnabled = json['addPaymentEnabled'] == true ||

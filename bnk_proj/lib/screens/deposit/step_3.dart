@@ -1,50 +1,155 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Intent;
+import 'package:test_main/models/deposit/application.dart';
 import 'package:test_main/screens/app_colors.dart';
 
 import 'package:test_main/models/deposit/application.dart';
 import 'package:intl/intl.dart';
 import 'package:test_main/services/deposit_draft_service.dart';
 
-class DepositStep3Screen extends StatelessWidget {
+import '../../voice/controller/voice_session_controller.dart';
+import 'package:test_main/voice/core/voice_intent.dart';
+
+import '../../voice/scope/voice_session_scope.dart';
+import '../../voice/ui/voice_nav_command.dart';
+
+
+class DepositStep3Screen extends StatefulWidget {
   static const routeName = "/deposit-step3";
 
   final DepositApplication application;
-  final DepositDraftService _draftService = DepositDraftService();
 
-   DepositStep3Screen({
+  const DepositStep3Screen({
     super.key,
     required this.application,
   });
 
+  @override
+  State<DepositStep3Screen> createState() => _DepositStep3ScreenState();
+}
+
+
+class _DepositStep3ScreenState extends State<DepositStep3Screen> {
+  late VoiceSessionController _voiceController;
+  bool _voiceAttached = false;
+  final DepositDraftService _draftService = DepositDraftService();
+
+  bool _summarySpoken = false;
+  bool _navAttached = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    _voiceController = VoiceSessionScope.of(context);
+
+    // 1️⃣ 요약 음성 안내 (한 번만)
+    if (!_voiceAttached) {
+      _voiceAttached = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (_summarySpoken) return;
+        _summarySpoken = true;
+
+        if (_voiceController.isSessionActive) {
+          final summary = _buildConfirmSummary(widget.application);
+          await _voiceController.speakClientGuide(summary);
+        }
+      });
+    }
+
+    // 2️⃣ 음성 confirm → 페이지 이동 리스너
+    if (!_navAttached) {
+      _navAttached = true;
+      _voiceController.navCommand.addListener(_onVoiceNav);
+    }
+  }
+  void _onVoiceNav() {
+    final cmd = _voiceController.navCommand.value;
+    if (cmd == null) return;
+
+    if (cmd.type == VoiceNavType.openSignature) {
+      _goToSignature(context);
+    }
+
+    _voiceController.navCommand.value = null;
+  }
+
+
+
+  String _buildConfirmSummary(DepositApplication app) {
+    final product = app.product?.name ?? "선택하신 상품";
+    final currency = _currencyLabelKo( app.newCurrency);
+    final amount = app.newAmount;
+    final period = app.newPeriodMonths;
+    final autoRenew =
+    app.autoRenew == "apply" ? "만기 자동연장을 신청하셨습니다." : "만기 자동연장은 신청하지 않으셨습니다.";
+
+    return """
+현재 가입하시는 상품은 $product입니다.
+신규 통화는 $currency,
+가입 금액은 ${amount} ${currency},
+가입 기간은 ${period}개월이며,
+$autoRenew
+이대로 가입을 진행할까요?
+""";
+  }
+
+  String _currencyLabelKo(String code) {
+    switch (code.toUpperCase()) {
+      case 'USD':
+        return '달러화';
+      case 'JPY':
+        return '엔화';
+      case 'EUR':
+        return '유로화';
+      case 'CNH':
+        return '위안화';
+      case 'CNY':
+        return '위안화';
+      case 'GBP':
+        return '파운드화';
+      case 'AUD':
+        return '호주 달러화';
+      case 'KRW':
+        return '원화';
+      default:
+        return code; // fallback
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_navAttached) {
+      _voiceController.navCommand.removeListener(_onVoiceNav);
+    }
+    super.dispose();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
-    final productName = application.product?.name ?? application.dpstId;
+    final productName = widget.application.product?.name ?? widget.application.dpstId;
     final formatter = NumberFormat.decimalPattern();
 
     final krwAmountLabel = _resolveKrwDepositAmountLabel(
-      application,
+      widget.application,
       formatter,
     );
 
-    final withdrawAccountLabel = application.withdrawType == "fx"
-        ? (application.selectedFxAccount ?? "미입력")
-        : (application.selectedKrwAccount ?? "미입력");
+    final withdrawAccountLabel = widget.application.withdrawType == "fx"
+        ? (widget.application.selectedFxAccount ?? "미입력")
+        : (widget.application.selectedKrwAccount ?? "미입력");
 
-    final withdrawCurrencyLabel = application.withdrawType == "fx"
-        ? (application.fxWithdrawCurrency ?? "미입력")
-        : "KRW";
-
-    final amountLabel = application.newAmount != null
-        ? "${application.newCurrency} ${formatter.format(application.newAmount)}"
+    final amountLabel = widget.application.newAmount != null
+        ? "${widget.application.newCurrency} ${formatter.format(widget.application.newAmount)}"
         : "미입력";
 
-    final periodLabel = application.newPeriodMonths != null
-        ? "${application.newPeriodMonths}개월"
+    final periodLabel = widget.application.newPeriodMonths != null
+        ? "${widget.application.newPeriodMonths}개월"
         : "미입력";
 
-    final rateLabel = _resolveRateLabel(application);
-    final maturityLabel = _resolveMaturityLabel(application);
+    final rateLabel = _resolveRateLabel(widget.application);
+    final maturityLabel = _resolveMaturityLabel(widget.application);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundOffWhite,
@@ -63,15 +168,14 @@ class DepositStep3Screen extends StatelessWidget {
             const SizedBox(height: 30),
             _sectionTitle("출금계좌정보"),
             _infoCard([
-              ["출금 구분", application.withdrawType == "fx" ? "외화출금계좌" : "원화출금계좌"],
+              ["출금 구분", widget.application.withdrawType == "fx" ? "외화출금계좌" : "원화출금계좌"],
 
               [
                 "출금계좌",
                 withdrawAccountLabel,
               ],
 
-              ["출금통화", withdrawCurrencyLabel],
-              ["비밀번호 입력 여부", application.withdrawPassword != null
+              ["비밀번호 입력 여부", widget.application.withdrawPassword != null
                   ? "입력완료"
                   : "미입력"],
             ]),
@@ -79,8 +183,8 @@ class DepositStep3Screen extends StatelessWidget {
             const SizedBox(height: 28),
             _sectionTitle("신규상품가입정보"),
             _infoCard([
-              ["신규 통화", application.newCurrency.isNotEmpty
-                  ? application.newCurrency
+              ["신규 통화", widget.application.newCurrency.isNotEmpty
+                  ? widget.application.newCurrency
                   : "미입력"],
               ["신규 금액", amountLabel],
               ["원화 환산 금액", krwAmountLabel],
@@ -93,11 +197,11 @@ class DepositStep3Screen extends StatelessWidget {
             const SizedBox(height: 28),
             _sectionTitle("만기자동연장"),
             _infoCard([
-              ["자동연장 여부", application.autoRenew == "apply" ? "신청" : "미신청"],
+              ["자동연장 여부", widget.application.autoRenew == "apply" ? "신청" : "미신청"],
 
               [
                 "만기 자동 해지",
-                application.autoTerminateAtMaturity
+                widget.application.autoTerminateAtMaturity
                     ? "예"
                     : "아니오",
               ],
@@ -108,7 +212,7 @@ class DepositStep3Screen extends StatelessWidget {
             const SizedBox(height: 28),
             _sectionTitle("비밀번호"),
             _infoCard([
-              ["정기예금 비밀번호", application.depositPassword.isNotEmpty
+              ["정기예금 비밀번호", widget.application.depositPassword.isNotEmpty
                   ? "입력완료"
                   : "미입력"],
             ]),
@@ -279,7 +383,10 @@ class DepositStep3Screen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () => _goToSignature(context),
+          onPressed: () async {
+            _voiceController.sendClientIntent(intent: Intent.confirm);
+            // _goToSignature(context);
+          },
           child: const Text(
             "가입하기",
             style: TextStyle(
@@ -294,22 +401,43 @@ class DepositStep3Screen extends StatelessWidget {
 
   Future<void> _goToSignature(BuildContext context) async {
     await _draftService.saveDraft(
-      application,
+      widget.application,
       step: 3,
-      customerCode: application.customerCode,
+      customerCode: widget.application.customerCode,
     );
 
     if (!context.mounted) return;
 
+    debugPrint('''
+Depositwidget.application {
+  dpstId: ${widget.application.dpstId}
+  customerCode: ${widget.application.customerCode}
+  withdrawType: ${widget.application.withdrawType}
+  selectedKrwAccount: ${widget.application.selectedKrwAccount}
+  selectedFxAccount: ${widget.application.selectedFxAccount}
+  fxWithdrawCurrency: ${widget.application.fxWithdrawCurrency}
+  newCurrency: ${widget.application.newCurrency}
+  newAmount: ${widget.application.newAmount}
+  newPeriodMonths: ${widget.application.newPeriodMonths}
+  appliedRate: ${widget.application.appliedRate}
+  appliedFxRate: ${widget.application.appliedFxRate}
+  depositPassword: ${widget.application.depositPassword}
+}
+''');
+
+    if (widget.application.appliedRate == null){
+      widget.application.appliedRate = 0;
+    }
+
     Navigator.pushNamed(
       context,
       "/deposit-signature",
-      arguments: application,
+      arguments: widget.application,
     );
   }
 
   String _resolveRateLabel(DepositApplication application) {
-    final rate = application.appliedRate;
+    final rate = widget.application.appliedRate ?? 0;
     if (rate != null) {
       return "${rate.toStringAsFixed(2)}%";
     }
@@ -318,7 +446,7 @@ class DepositStep3Screen extends StatelessWidget {
   }
 
   String _resolveMaturityLabel(DepositApplication application) {
-    final maturity = application.dpstHdrFinDy;
+    final maturity = widget.application.dpstHdrFinDy;
     if (maturity != null && maturity.isNotEmpty) {
       final parsedMaturity = DateTime.tryParse(maturity);
       if (parsedMaturity != null) {
@@ -328,11 +456,11 @@ class DepositStep3Screen extends StatelessWidget {
       return maturity.replaceAll('-', '.');
     }
 
-    if (application.newPeriodMonths != null) {
+    if (widget.application.newPeriodMonths != null) {
       final today = DateTime.now();
       final derived = DateTime(
         today.year,
-        today.month + application.newPeriodMonths!,
+        today.month + widget.application.newPeriodMonths!,
         today.day,
       );
 
@@ -346,15 +474,15 @@ class DepositStep3Screen extends StatelessWidget {
       DepositApplication application,
       NumberFormat formatter,
       ) {
-    final amount = application.newAmount?.toDouble();
+    final amount = widget.application.newAmount?.toDouble();
     if (amount == null) return "미입력";
 
-    final currency = application.newCurrency.toUpperCase();
+    final currency = widget.application.newCurrency.toUpperCase();
     if (currency == "KRW" || currency.isEmpty) {
       return "KRW ${formatter.format(amount)}";
     }
 
-    final rate = application.appliedFxRate;
+    final rate = widget.application.appliedFxRate;
     if (rate == null) return "미입력";
 
     final krwAmount = amount * rate;

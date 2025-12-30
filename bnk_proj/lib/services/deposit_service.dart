@@ -12,8 +12,16 @@ class DepositService {
   static const String baseUrl =
       'http://34.64.124.33:8080/backend/deposit';
 
+  static const String baseUrl2 =
+      'http://192.168.0.207:8080/backend/deposit';
+
   static const String mobileBaseUrl =
       'http://34.64.124.33:8080/backend/api/mobile/deposit';
+
+  static const String mobileBaseUrl2 =
+      'http://192.168.0.207:8080/backend/api/mobile/deposit';
+
+  static const String serverUrl = "https://flobank.kro.kr/backend/api/mobile/deposit";
 
   final http.Client _client = http.Client();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -73,14 +81,24 @@ class DepositService {
     required String currency,
     required int months,
   }) async {
-    final uri = Uri.parse('$baseUrl/products/$dpstId/rate').replace(
+    final token = await _storage.read(key: 'auth_token');
+    if (token == null) {
+      throw Exception('로그인이 필요합니다.');
+    }
+
+    final uri = Uri.parse('$serverUrl/products/$dpstId/rate').replace(
       queryParameters: {
         'currency': currency,
         'month': months.toString(),
       },
     );
 
-    final response = await _client.get(uri);
+    final response = await _client.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
     if (response.statusCode != 200) {
       throw Exception('금리 조회 실패 (${response.statusCode})');
@@ -103,7 +121,7 @@ class DepositService {
     }
 
     final response = await _client.get(
-      Uri.parse('$mobileBaseUrl/context'),
+      Uri.parse('$serverUrl/context'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -122,13 +140,18 @@ class DepositService {
   /// 예금 가입 신청
   Future<DepositSubmissionResult> submitApplication(
       DepositApplication application) async {
+
     final token = await _storage.read(key: 'auth_token');
+
+    print("===== SUBMIT TOKEN =====");
+    print(token);
+
     if (token == null) {
       throw Exception('로그인이 필요합니다.');
     }
 
     final response = await _client.post(
-      Uri.parse('$mobileBaseUrl/applications'),
+      Uri.parse('$serverUrl/applications'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -136,14 +159,39 @@ class DepositService {
       body: jsonEncode(application.toJson()),
     );
 
-    if (response.statusCode != 200 &&
-        response.statusCode != 201) {
-      throw Exception('예금 가입 신청 실패 (${response.statusCode})');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final body = utf8.decode(response.bodyBytes);
+      throw Exception('예금 가입 신청 실패: ${response.statusCode} $body');
     }
+
 
     final Map<String, dynamic> data =
     jsonDecode(utf8.decode(response.bodyBytes));
 
     return DepositSubmissionResult.fromJson(data);
+  }
+
+  String _buildApplyErrorMessage(http.Response response) {
+    final defaultMessage = '예금 가입 신청 실패 (${response.statusCode})';
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) {
+        final message = decoded['message']?.toString();
+        if (message != null && message.isNotEmpty) {
+          return '예금 가입 신청 실패: $message (${response.statusCode})';
+        }
+
+        final error = decoded['error']?.toString();
+        if (error != null && error.isNotEmpty) {
+          return '예금 가입 신청 실패: $error (${response.statusCode})';
+        }
+      } else if (decoded is String && decoded.isNotEmpty) {
+        return '예금 가입 신청 실패: $decoded (${response.statusCode})';
+      }
+    } catch (_) {
+      // ignore parsing errors and fall back to the default message
+    }
+
+    return defaultMessage;
   }
 }

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.api.backend.mapper.DpstAcctDraftMapper">
+
+    <resultMap id="DepositDraftMap" type="kr.co.api.backend.dto.DpstAcctDraftDTO" autoMapping="true">
+        <id property="dpstDraftNo" column="DPST_DRAFT_NO"/>
+        <result property="dpstDraftDpstId" column="DPST_DRAFT_DPST_ID"/>
+        <result property="dpstDraftCustCode" column="DPST_DRAFT_CUST_CODE"/>
+        <result property="dpstDraftMonth" column="DPST_DRAFT_MONTH"/>
+        <result property="dpstDraftStep" column="DPST_DRAFT_STEP"/>
+        <result property="dpstDraftCurrency" column="DPST_DRAFT_CURRENCY"/>
+        <result property="dpstDraftLinkedAcctNo" column="DPST_DRAFT_LINKED_ACCT_NO"/>
+        <result property="dpstDraftAutoRenewYn" column="DPST_DRAFT_AUTO_RENEW_YN"/>
+        <result property="dpstDraftAutoRenewTerm" column="DPST_DRAFT_AUTO_RENEW_TERM"/>
+        <result property="dpstDraftAutoTermiYn" column="DPST_DRAFT_AUTO_TERMI_YN"/>
+        <result property="dpstDraftUpdatedDt" column="DPST_DRAFT_UPDATED_DT"/>
+        <result property="dpstDraftAmount" column="DPST_DRAFT_AMOUNT"/>
+    </resultMap>
+
+    <select id="findLatestDraft" resultMap="DepositDraftMap">
+        SELECT *
+        FROM (
+            SELECT *
+            FROM TB_DPST_ACCT_DRAFT
+            WHERE TRIM(DPST_DRAFT_DPST_ID) = TRIM(#{dpstId})
+              AND TRIM(DPST_DRAFT_CUST_CODE) = TRIM(#{custCode})
+            ORDER BY DPST_DRAFT_UPDATED_DT DESC, DPST_DRAFT_NO DESC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <insert id="insertDraft" parameterType="kr.co.api.backend.dto.DpstAcctDraftDTO">
+        INSERT INTO TB_DPST_ACCT_DRAFT (
+            DPST_DRAFT_DPST_ID,
+            DPST_DRAFT_CUST_CODE,
+            DPST_DRAFT_MONTH,
+            DPST_DRAFT_STEP,
+            DPST_DRAFT_CURRENCY,
+            DPST_DRAFT_LINKED_ACCT_NO,
+            DPST_DRAFT_AUTO_RENEW_YN,
+            DPST_DRAFT_AUTO_RENEW_TERM,
+            DPST_DRAFT_AUTO_TERMI_YN,
+            DPST_DRAFT_UPDATED_DT,
+            DPST_DRAFT_AMOUNT
+        ) VALUES (
+            #{dpstDraftDpstId},
+            #{dpstDraftCustCode},
+            #{dpstDraftMonth},
+            #{dpstDraftStep},
+            #{dpstDraftCurrency},
+            #{dpstDraftLinkedAcctNo},
+            #{dpstDraftAutoRenewYn},
+            #{dpstDraftAutoRenewTerm},
+            #{dpstDraftAutoTermiYn},
+            SYSDATE,
+            #{dpstDraftAmount}
+        )
+    </insert>
+
+    <update id="updateDraft" parameterType="kr.co.api.backend.dto.DpstAcctDraftDTO">
+        UPDATE TB_DPST_ACCT_DRAFT
+        SET
+            DPST_DRAFT_MONTH = #{dpstDraftMonth},
+            DPST_DRAFT_STEP = #{dpstDraftStep},
+            DPST_DRAFT_CURRENCY = #{dpstDraftCurrency},
+            DPST_DRAFT_LINKED_ACCT_NO = #{dpstDraftLinkedAcctNo},
+            DPST_DRAFT_AUTO_RENEW_YN = #{dpstDraftAutoRenewYn},
+            DPST_DRAFT_AUTO_RENEW_TERM = #{dpstDraftAutoRenewTerm},
+            DPST_DRAFT_AUTO_TERMI_YN = #{dpstDraftAutoTermiYn},
+            DPST_DRAFT_UPDATED_DT = SYSDATE,
+            DPST_DRAFT_AMOUNT = #{dpstDraftAmount}
+        WHERE TRIM(DPST_DRAFT_DPST_ID) = TRIM(#{dpstDraftDpstId})
+          AND TRIM(DPST_DRAFT_CUST_CODE) = TRIM(#{dpstDraftCustCode})
+    </update>
+
+
+    <delete id="deleteDraft">
+        DELETE FROM TB_DPST_ACCT_DRAFT
+        WHERE TRIM(DPST_DRAFT_DPST_ID) = TRIM(#{dpstId})
+          AND TRIM(DPST_DRAFT_CUST_CODE) = TRIM(#{custCode})
+    </delete>
+</mapper>

@@ -239,6 +239,66 @@ class _ExchangeRiskScreenState extends State<ExchangeRiskScreen> {
             ),
           ),
 
+          Container(
+            margin: const EdgeInsets.fromLTRB(20, 20, 20, 5),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.insert_chart_outlined_sharp, size: 18, color: Colors.blueGrey),
+                    SizedBox(width: 8),
+                    Text(
+                      "환율 기상청 소개",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blueGrey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "본 서비스는 GARCH(시계열 변동성 예측) 모델을 활용하여 과거 데이터를 기반으로 미래 환율 변동 위험을 예측합니다.",
+                  style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
+                ),
+                const Divider(height: 20, thickness: 1),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      // [수정 포인트] Text.rich를 사용하여 문장 일부만 스타일 변경
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: "주의: 예측 값은 실제 시장 상황과 다를 수 있으며 참고용으로만 제공됩니다. ",
+                              style: TextStyle(color: Colors.black54), // 앞부분은 회색
+                            ),
+                            TextSpan(
+                              text: "최종 환전 결정 및 투자 책임은 사용자 본인에게 있습니다.",
+                              // 강조 부분: 빨간색 + 굵게
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                          style: const TextStyle(fontSize: 11, height: 1.3), // 공통 스타일
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
           // 2. 결과 리스트
           Expanded(
             child: _isLoading

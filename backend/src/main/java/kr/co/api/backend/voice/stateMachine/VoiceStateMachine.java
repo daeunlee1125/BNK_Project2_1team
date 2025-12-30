@@ -72,13 +72,13 @@ public class VoiceStateMachine {
 
             case S4_3_CONFIRM ->
                     switch (intent) {
-                        case CONFIRM -> VoiceState.S4_4_SIGNATURE;
+                        case CONFIRM, REQ_JOIN -> VoiceState.S4_4_SIGNATURE;
                         case REQ_BACK -> VoiceState.S4_2_INPUT;
                         default      -> current;
                     };
 
             case S4_4_SIGNATURE ->
-                // ✅ 클릭 성공 이벤트로 종료 (classifier 안 탐: req.intent=SUCCESS로 보내면 됨)
+                // 클릭 성공 이벤트로 종료 (classifier 안 탐: req.intent=SUCCESS로 보내면 됨)
                     (intent == VoiceIntent.SUCCESS)
                             ? VoiceState.S5_END
                             : current;

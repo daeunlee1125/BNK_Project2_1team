@@ -109,6 +109,237 @@
             .search-input-mini { width: 200px; height: 36px; border: 1px solid #ddd; border-radius: 4px; padding: 0 10px; }
             .btn-search-mini { height: 36px; padding: 0 15px; background: #22304e; color: #fff; border:none; border-radius: 4px; cursor: pointer; }
 
+            /* 설문 등록/수정 모달 */
+            :root {
+                --main-pale-blue: #B7C9E2;
+                --sub-ivory-beige: #F7F3EE;
+                --point-dusty-navy: #3C4F76;
+                --background-off-white: #FAFAFA;
+            }
+
+            .modal-overlay {
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(60, 79, 118, 0.35);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 2000;
+            }
+
+            .modal-overlay.is-visible { display: flex; }
+
+            .survey-modal {
+                width: min(900px, 92vw);
+                background: var(--background-off-white);
+                border-radius: 12px;
+                box-shadow: 0 20px 45px rgba(34, 48, 78, 0.25);
+                border: 1px solid rgba(60, 79, 118, 0.2);
+                overflow: hidden;
+            }
+
+            .survey-modal__header {
+                background: var(--main-pale-blue);
+                padding: 18px 24px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .survey-modal__title {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--point-dusty-navy);
+            }
+
+            .survey-modal__body {
+                padding: 24px;
+                background: var(--background-off-white);
+            }
+
+            .survey-modal__footer {
+                padding: 16px 24px 22px;
+                display: flex;
+                justify-content: flex-end;
+                gap: 10px;
+                background: var(--sub-ivory-beige);
+            }
+
+            .modal-close {
+                background: transparent;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: var(--point-dusty-navy);
+            }
+
+            .form-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px 20px;
+            }
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .form-group label {
+                font-size: 13px;
+                font-weight: 600;
+                color: #333;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                border: 1px solid #d5dbe6;
+                border-radius: 6px;
+                padding: 10px 12px;
+                font-size: 13px;
+                background: #fff;
+                color: #333;
+            }
+
+            .form-group textarea {
+                min-height: 90px;
+                resize: vertical;
+            }
+
+            .form-group.full {
+                grid-column: 1 / -1;
+            }
+
+            .question-builder {
+                margin-top: 20px;
+                border-top: 1px solid #e2e6ef;
+                padding-top: 16px;
+            }
+
+            .question-card {
+                border: 1px solid #dfe4ee;
+                border-radius: 10px;
+                background: #fff;
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .question-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .question-title {
+                font-weight: 700;
+                color: #22304e;
+            }
+
+            .question-actions {
+                display: flex;
+                gap: 6px;
+            }
+
+            .option-list {
+                margin-top: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .option-row {
+                display: grid;
+                grid-template-columns: 1fr 2fr 1fr 80px auto;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .option-row input {
+                width: 100%;
+            }
+
+            .question-meta-row {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .question-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 10px;
+            }
+
+            .btn-inline {
+                background: #f5f6f9;
+                border: 1px solid #ccd3df;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-size: 12px;
+                cursor: pointer;
+            }
+
+            .btn-inline.danger {
+                color: #b42318;
+                border-color: #f2c1bc;
+                background: #fff5f4;
+            }
+
+            .meta-list {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 12px;
+                margin-top: 8px;
+                padding: 12px;
+                border-radius: 8px;
+                background: #fff;
+                border: 1px solid #e2e6ef;
+                font-size: 12px;
+                color: #666;
+            }
+
+            .meta-item strong {
+                display: block;
+                font-size: 12px;
+                color: #22304e;
+                margin-bottom: 4px;
+            }
+
+            .btn-primary {
+                background: var(--point-dusty-navy);
+                color: #fff;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .btn-secondary {
+                background: #fff;
+                color: #333;
+                border: 1px solid #c8ced8;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .btn-disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .survey-table-actions {
+                display: flex;
+                gap: 6px;
+                justify-content: center;
+            }
         </style>
 
         <div class="board-admin">
@@ -227,7 +458,7 @@
                 <div class="board-header">
                     <h2>AI 설문지 콘텐츠 관리</h2>
                     <div class="header-controls">
-                        <button class="btn-create">
+                        <button class="btn-create" id="survey-create-btn" type="button">
                             <i class="fa-solid fa-plus"></i> 신규 설문 등록
                         </button>
                     </div>
@@ -236,77 +467,92 @@
                 <div class="board-table-wrapper">
                     <table class="ai-table">
                         <colgroup>
-                            <col style="width: 5%">  <col style="width: 12%"> <col style="width: 25%"> <col style="width: 8%">  <col style="width: 10%"> <col style="width: 12%"> <col style="width: 10%"> <col style="width: 18%"> </colgroup>
+                            <col style="width: 6%">
+                            <col style="width: 22%">
+                            <col style="width: 22%">
+                            <col style="width: 8%">
+                            <col style="width: 12%">
+                            <col style="width: 12%">
+                            <col style="width: 8%">
+                            <col style="width: 10%">
+                        </colgroup>
                         <thead>
                         <tr>
                             <th>No</th>
-                            <th>카테고리</th>
                             <th>설문지 제목 (클라이언트 노출)</th>
+                            <th>설문 설명</th>
                             <th>문항 수</th>
-                            <th>AI 가중치</th>
+                            <th>등록일</th>
                             <th>최종 수정일</th>
                             <th>상태</th>
                             <th>콘텐츠 관리</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>투자 성향</td>
-                            <td style="font-weight: bold; text-align: left !important; padding-left: 15px;">글로벌 시장 트렌드 및 위험 감수성 조사</td>
-                            <td>12문항</td>
-                            <td><span style="color:#d32f2f; font-weight:bold;">High</span></td>
-                            <td>2024-12-01</td>
-                            <td><span class="survey-active">사용중</span></td>
-                            <td>
-                                <button class="btn-detail">문항 수정</button>
-                                <button class="btn-detail" style="color:#666;">미리보기</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>소비/지출</td>
-                            <td style="font-weight: bold; text-align: left !important; padding-left: 15px;">환테크 입문자용 기초 설문</td>
-                            <td>8문항</td>
-                            <td><span style="color:#f57c00; font-weight:bold;">Medium</span></td>
-                            <td>2024-11-20</td>
-                            <td><span class="survey-active">사용중</span></td>
-                            <td>
-                                <button class="btn-detail">문항 수정</button>
-                                <button class="btn-detail" style="color:#666;">미리보기</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>목적 자금</td>
-                            <td style="font-weight: bold; text-align: left !important; padding-left: 15px;">해외 여행 및 유학 자금 계획</td>
-                            <td>10문항</td>
-                            <td><span style="color:#f57c00; font-weight:bold;">Medium</span></td>
-                            <td>2024-10-15</td>
-                            <td><span class="survey-inactive">미사용</span></td>
-                            <td>
-                                <button class="btn-detail">문항 수정</button>
-                                <button class="btn-detail" style="color:#666;">미리보기</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>자산 규모</td>
-                            <td style="font-weight: bold; text-align: left !important; padding-left: 15px;">고액 자산가 전용 포트폴리오 진단</td>
-                            <td>15문항</td>
-                            <td><span style="color:#d32f2f; font-weight:bold;">High</span></td>
-                            <td>2024-12-10</td>
-                            <td><span class="survey-active">사용중</span></td>
-                            <td>
-                                <button class="btn-detail">문항 수정</button>
-                                <button class="btn-detail" style="color:#666;">미리보기</button>
-                            </td>
-                        </tr>
-                        </tbody>
+                        <tbody id="survey-table-body"></tbody>
                     </table>
                 </div>
 
             </section>
+        </div>
+
+        <div class="modal-overlay" id="survey-modal-overlay" aria-hidden="true">
+            <div class="survey-modal" role="dialog" aria-modal="true" aria-labelledby="survey-modal-title">
+                <div class="survey-modal__header">
+                    <div class="survey-modal__title" id="survey-modal-title">설문 등록</div>
+                    <button class="modal-close" type="button" id="survey-modal-close" aria-label="닫기">✕</button>
+                </div>
+                <div class="survey-modal__body">
+                    <form id="survey-form">
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label for="survey-title">설문 제목</label>
+                                <input type="text" id="survey-title" name="title" placeholder="설문 제목을 입력하세요" required>
+                            </div>
+                            <div class="form-group full">
+                                <label for="survey-description">설문 설명</label>
+                                <textarea id="survey-description" name="description" placeholder="설문 설명을 입력하세요"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="survey-status">사용 여부</label>
+                                <select id="survey-status" name="isActive">
+                                    <option value="Y">사용중</option>
+                                    <option value="N">미사용</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="question-builder">
+                            <div class="question-header">
+                                <div class="question-title">설문 문항 구성</div>
+                                <button type="button" class="btn-inline" id="add-question-btn">문항 추가</button>
+                            </div>
+                            <div id="question-list"></div>
+                        </div>
+                        <div class="meta-list" id="survey-meta">
+                            <div class="meta-item">
+                                <strong>등록일</strong>
+                                <span id="survey-created-at">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>최근 수정일</strong>
+                                <span id="survey-updated-at">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>작성자</strong>
+                                <span id="survey-created-by">admin</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>수정자</strong>
+                                <span id="survey-updated-by">-</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="survey-modal__footer">
+                    <button type="button" class="btn-secondary" id="survey-modal-cancel">취소</button>
+                    <button type="button" class="btn-primary" id="survey-modal-save">저장</button>
+                </div>
+            </div>
         </div>
 
     </section>
@@ -323,9 +569,440 @@
                 alert('해당 고객에게 푸시 알림을 발송했습니다.');
             });
 
-            $('.btn-create').click(function() {
-                alert('새로운 설문지를 등록하는 팝업이 열립니다.');
+            const surveyModal = $('#survey-modal-overlay');
+            const surveyForm = $('#survey-form');
+            const surveyTableBody = $('#survey-table-body');
+            const surveyModalTitle = $('#survey-modal-title');
+            const surveySaveButton = $('#survey-modal-save');
+            const surveyMetaCreatedAt = $('#survey-created-at');
+            const surveyMetaUpdatedAt = $('#survey-updated-at');
+            const surveyMetaCreatedBy = $('#survey-created-by');
+            const surveyMetaUpdatedBy = $('#survey-updated-by');
+            const questionList = $('#question-list');
+            const addQuestionButton = $('#add-question-btn');
+
+            const CONTEXT_PATH = "/backend";
+            const SURVEY_API = `${CONTEXT_PATH}/admin/ai-product/surveys`;
+            let surveys = [];
+            let editingSurveyId = null;
+            let modalMode = 'create';
+
+            const formatDate = (value) => {
+                if (!value) return '-';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return value.toString().slice(0, 10);
+                }
+                return date.toISOString().slice(0, 10);
+            };
+
+            const formatStatusBadge = (isActive) => {
+                if (isActive === 'Y') {
+                    return '<span class="survey-active">사용중</span>';
+                }
+                return '<span class="survey-inactive">미사용</span>';
+            };
+
+            const renderSurveys = () => {
+                surveyTableBody.empty();
+                if (surveys.length === 0) {
+                    surveyTableBody.append('<tr><td colspan="8">등록된 설문이 없습니다.</td></tr>');
+                    return;
+                }
+                surveys.forEach((survey) => {
+                    const rowHtml = `
+                        <tr>
+                            <td>${survey.surveyId}</td>
+                            <td style="font-weight: bold; text-align: left !important; padding-left: 15px;">${survey.title}</td>
+                            <td style="text-align: left !important; padding-left: 15px;">${survey.description || '-'}</td>
+                            <td>${survey.questionCount || 0}문항</td>
+                            <td>${formatDate(survey.createdAt)}</td>
+                            <td>${formatDate(survey.updatedAt)}</td>
+                            <td>${formatStatusBadge(survey.isActive)}</td>
+                            <td>
+                                <div class="survey-table-actions">
+                                    <button class="btn-detail btn-edit" data-id="${survey.surveyId}">수정</button>
+                                    <button class="btn-detail btn-preview" data-id="${survey.surveyId}" style="color:#666;">미리보기</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    surveyTableBody.append(rowHtml);
+                });
+            };
+
+            const openModal = (mode, survey = null) => {
+                surveyModal.addClass('is-visible').attr('aria-hidden', 'false');
+                modalMode = mode;
+                const isPreview = mode === 'preview';
+                surveyForm.find('input, textarea, select').prop('disabled', isPreview);
+                surveySaveButton.toggle(mode !== 'preview');
+                addQuestionButton.toggleClass('btn-disabled', isPreview);
+                addQuestionButton.prop('disabled', isPreview);
+
+                if (mode === 'create') {
+                    surveyModalTitle.text('설문 등록');
+                    surveyForm.trigger('reset');
+                    $('#survey-status').val('Y');
+                    const today = new Date().toISOString().slice(0, 10);
+                    surveyMetaCreatedAt.text(today);
+                    surveyMetaUpdatedAt.text(today);
+                    surveyMetaCreatedBy.text('admin');
+                    surveyMetaUpdatedBy.text('admin');
+                    questionList.empty();
+                    addQuestionCard();
+                    editingSurveyId = null;
+                    return;
+                }
+
+                if (!survey) {
+                    return;
+                }
+
+                surveyModalTitle.text(mode === 'edit' ? '설문 수정' : '설문 미리보기');
+                $('#survey-title').val(survey.title);
+                $('#survey-description').val(survey.description);
+                $('#survey-status').val(survey.isActive);
+                surveyMetaCreatedAt.text(formatDate(survey.createdAt));
+                surveyMetaUpdatedAt.text(formatDate(survey.updatedAt));
+                surveyMetaCreatedBy.text(survey.createdBy || 'admin');
+                surveyMetaUpdatedBy.text(survey.updatedBy || '-');
+                questionList.empty();
+                if (survey.questions && survey.questions.length) {
+                    survey.questions.forEach((question) => addQuestionCard(question));
+                } else {
+                    addQuestionCard();
+                }
+                editingSurveyId = survey.surveyId;
+            };
+
+            const closeModal = () => {
+                surveyModal.removeClass('is-visible').attr('aria-hidden', 'true');
+            };
+
+            const findSurvey = (id) => surveys.find((survey) => survey.surveyId === id);
+
+            const fetchSurveys = async () => {
+                try {
+                    const res = await fetch(SURVEY_API);
+                    if (!res.ok) {
+                        throw new Error('설문 목록을 불러오지 못했습니다.');
+                    }
+                    surveys = await res.json();
+                    renderSurveys();
+                } catch (error) {
+                    console.error(error);
+                    alert(error.message || '설문 목록을 불러오는 중 오류가 발생했습니다.');
+                }
+            };
+
+            const fetchSurveyDetail = async (surveyId) => {
+                const res = await fetch(`${SURVEY_API}/${surveyId}`);
+                if (!res.ok) {
+                    const message = await res.text();
+                    throw new Error(message || '설문 상세를 불러오지 못했습니다.');
+                }
+                return res.json();
+            };
+
+            const handleSaveSurvey = async () => {
+                const formData = Object.fromEntries(new FormData(surveyForm[0]).entries());
+                if (!formData.title) {
+                    alert('설문 제목을 입력해주세요.');
+                    return;
+                }
+
+                const result = collectQuestionData();
+                if (!result.valid) {
+                    return;
+                }
+                const questions = result.questions;
+                if (questions.length === 0) {
+                    alert('설문 문항을 최소 1개 이상 등록해주세요.');
+                    return;
+                }
+
+                const payload = {
+                    title: formData.title,
+                    description: formData.description,
+                    isActive: formData.isActive,
+                    updatedBy: 'admin',
+                    createdBy: 'admin',
+                    questions
+                };
+
+                try {
+                    const url = editingSurveyId ? `${SURVEY_API}/${editingSurveyId}` : SURVEY_API;
+                    const method = editingSurveyId ? 'PUT' : 'POST';
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) {
+                        const message = await res.text();
+                        throw new Error(message || '설문 저장에 실패했습니다.');
+                    }
+                    await fetchSurveys();
+                    closeModal();
+                } catch (error) {
+                    console.error(error);
+                    alert(error.message || '설문 저장 중 오류가 발생했습니다.');
+                }
+            };
+
+            $('#survey-create-btn').on('click', () => openModal('create'));
+            $('#survey-modal-close, #survey-modal-cancel').on('click', closeModal);
+            surveySaveButton.on('click', handleSaveSurvey);
+            surveyModal.on('click', (event) => {
+                if ($(event.target).is('#survey-modal-overlay')) {
+                    closeModal();
+                }
             });
+
+            addQuestionButton.on('click', () => {
+                if (modalMode === 'preview') {
+                    return;
+                }
+                addQuestionCard();
+            });
+
+            questionList.on('click', '.remove-question-btn', function() {
+                if (modalMode === 'preview') {
+                    return;
+                }
+                $(this).closest('.question-card').remove();
+                refreshQuestionNumbers();
+            });
+
+            questionList.on('change', '.question-type', function() {
+                const card = $(this).closest('.question-card');
+                toggleOptionSection(card);
+            });
+
+            questionList.on('click', '.add-option-btn', function() {
+                if (modalMode === 'preview') {
+                    return;
+                }
+                const card = $(this).closest('.question-card');
+                addOptionRow(card);
+            });
+
+            questionList.on('click', '.remove-option-btn', function() {
+                if (modalMode === 'preview') {
+                    return;
+                }
+                const row = $(this).closest('.option-row');
+                const card = row.closest('.question-card');
+                row.remove();
+                refreshOptionOrders(card);
+            });
+
+            surveyTableBody.on('click', '.btn-edit', async function() {
+                const surveyId = Number($(this).data('id'));
+                try {
+                    const survey = await fetchSurveyDetail(surveyId);
+                    openModal('edit', survey);
+                } catch (error) {
+                    console.error(error);
+                    alert(error.message || '설문 상세를 불러오는 중 오류가 발생했습니다.');
+                }
+            });
+
+            surveyTableBody.on('click', '.btn-preview', async function() {
+                const surveyId = Number($(this).data('id'));
+                try {
+                    const survey = await fetchSurveyDetail(surveyId);
+                    openModal('preview', survey);
+                } catch (error) {
+                    console.error(error);
+                    alert(error.message || '설문 상세를 불러오는 중 오류가 발생했습니다.');
+                }
+            });
+
+            fetchSurveys();
+
+            function addQuestionCard(question = null) {
+                const questionIndex = questionList.children().length + 1;
+                const qType = question?.qType || 'SINGLE';
+                const required = question?.isRequired || 'Y';
+                const isActive = question?.isActive || 'Y';
+                const card = $(`
+                    <div class="question-card" data-question-index="${questionIndex}">
+                        <div class="question-header">
+                            <div class="question-title">문항 ${questionIndex}</div>
+                            <div class="question-actions">
+                                <button type="button" class="btn-inline danger remove-question-btn">문항 삭제</button>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label>문항 내용</label>
+                                <input type="text" class="question-text" placeholder="질문 내용을 입력하세요" value="${question?.qText || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>문항 키</label>
+                                <input type="text" class="question-key" placeholder="예) Q1_GOAL" value="${question?.qKey || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label>문항 유형</label>
+                                <select class="question-type">
+                                    <option value="SINGLE">SINGLE</option>
+                                    <option value="MULTI">MULTI</option>
+                                    <option value="TEXT">TEXT</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>필수 여부</label>
+                                <select class="question-required">
+                                    <option value="Y">필수</option>
+                                    <option value="N">선택</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>최대 선택 수</label>
+                                <input type="number" class="question-max-select" min="1" value="${question?.maxSelect || ''}" placeholder="MULTI 전용">
+                            </div>
+                            <div class="form-group">
+                                <label>사용 여부</label>
+                                <select class="question-active">
+                                    <option value="Y">사용중</option>
+                                    <option value="N">미사용</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="question-footer">
+                            <div class="question-title">선택지 구성</div>
+                            <button type="button" class="btn-inline add-option-btn">선택지 추가</button>
+                        </div>
+                        <div class="option-list"></div>
+                    </div>
+                `);
+
+                card.find('.question-type').val(qType);
+                card.find('.question-required').val(required);
+                card.find('.question-active').val(isActive);
+
+                questionList.append(card);
+
+                if (question?.options && question.options.length) {
+                    question.options.forEach((option) => addOptionRow(card, option));
+                } else if (qType !== 'TEXT') {
+                    addOptionRow(card);
+                }
+
+                toggleOptionSection(card);
+                refreshQuestionNumbers();
+            }
+
+            function addOptionRow(card, option = null) {
+                const optionList = card.find('.option-list');
+                const optionIndex = optionList.children().length + 1;
+                const row = $(`
+                    <div class="option-row">
+                        <input type="text" class="option-code" placeholder="코드" value="${option?.optCode || ''}">
+                        <input type="text" class="option-text" placeholder="선택지 문구" value="${option?.optText || ''}">
+                        <input type="text" class="option-value" placeholder="의미값" value="${option?.optValue || ''}">
+                        <input type="number" class="option-order" min="1" value="${option?.optOrder || optionIndex}">
+                        <button type="button" class="btn-inline danger remove-option-btn">삭제</button>
+                    </div>
+                `);
+                optionList.append(row);
+                refreshOptionOrders(card);
+            }
+
+            function toggleOptionSection(card) {
+                const type = card.find('.question-type').val();
+                const optionSection = card.find('.option-list');
+                const footer = card.find('.question-footer');
+                const maxSelect = card.find('.question-max-select');
+                if (type === 'TEXT') {
+                    optionSection.empty();
+                    footer.hide();
+                    maxSelect.val('');
+                    maxSelect.prop('disabled', true);
+                } else {
+                    footer.show();
+                    maxSelect.prop('disabled', type !== 'MULTI');
+                    if (optionSection.children().length === 0) {
+                        addOptionRow(card);
+                    }
+                }
+                if (modalMode === 'preview') {
+                    card.find('input, select, button').prop('disabled', true);
+                }
+            }
+
+            function refreshQuestionNumbers() {
+                questionList.children('.question-card').each(function(index) {
+                    $(this).attr('data-question-index', index + 1);
+                    $(this).find('.question-title').first().text(`문항 ${index + 1}`);
+                });
+            }
+
+            function refreshOptionOrders(card) {
+                card.find('.option-row').each(function(index) {
+                    const orderInput = $(this).find('.option-order');
+                    if (!orderInput.val()) {
+                        orderInput.val(index + 1);
+                    }
+                });
+            }
+
+            function collectQuestionData() {
+                const questions = [];
+                let isValid = true;
+                questionList.children('.question-card').each(function(index) {
+                    const card = $(this);
+                    const qText = card.find('.question-text').val().trim();
+                    const qKey = card.find('.question-key').val().trim();
+                    const qType = card.find('.question-type').val();
+                    const isRequired = card.find('.question-required').val();
+                    const isActive = card.find('.question-active').val();
+                    const maxSelectValue = card.find('.question-max-select').val();
+                    if (!qText || !qKey) {
+                        alert('모든 문항의 질문 내용과 문항 키를 입력해주세요.');
+                        isValid = false;
+                        return false;
+                    }
+                    const question = {
+                        qNo: index + 1,
+                        qKey: qKey,
+                        qText: qText,
+                        qType: qType,
+                        isRequired: isRequired,
+                        maxSelect: maxSelectValue ? Number(maxSelectValue) : null,
+                        isActive: isActive,
+                        options: []
+                    };
+
+
+                    if (qType !== 'TEXT') {
+                        card.find('.option-row').each(function(optionIndex) {
+                            const row = $(this);
+                            const optText = row.find('.option-text').val().trim();
+                            const optCode = row.find('.option-code').val().trim() || `OPT${optionIndex + 1}`;
+                            if (!optText) {
+                                return;
+                            }
+                            question.options.push({
+                                optCode,
+                                optText,
+                                optValue: row.find('.option-value').val().trim(),
+                                optOrder: Number(row.find('.option-order').val()) || optionIndex + 1,
+                                isActive: 'Y'
+                            });
+                        });
+                        if (question.options.length === 0) {
+                            alert('객관식 문항에는 최소 1개의 선택지를 등록해주세요.');
+                            isValid = false;
+                            return false;
+                        }
+                    }
+                    questions.push(question);
+                });
+                return { valid: isValid, questions };
+            }
         });
     </script>
 </th:block>

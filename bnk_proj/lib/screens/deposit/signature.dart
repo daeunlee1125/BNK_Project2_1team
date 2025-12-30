@@ -1,11 +1,14 @@
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Intent;
 import 'package:flutter/services.dart';
 import 'package:test_main/models/deposit/application.dart';
 import 'package:test_main/services/deposit_draft_service.dart';
 import 'package:test_main/services/deposit_service.dart';
 import 'package:test_main/screens/app_colors.dart';
+import '../../voice/controller/voice_session_controller.dart';
+import '../../voice/scope/voice_session_scope.dart';
 import '../deposit/step_4.dart';
+import 'package:test_main/voice/core/voice_intent.dart';
 
 /* =========================================================
    전자서명 단계
@@ -37,6 +40,7 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
 
   String? _selectedMethod;
   Uint8List? _certificateImage;
+  bool _inputInfoValid = false;
 
   final DepositDraftService _draftService =  DepositDraftService();
 
@@ -67,6 +71,43 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     _agreeAll = _allAgreed;
   }
 
+  late VoiceSessionController _voiceController;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _voiceController = VoiceSessionScope.of(context);
+  }
+
+  void _onInputInfoChanged() {
+    final filled = _nameController.text.trim().isNotEmpty &&
+        _rrnController.text.trim().isNotEmpty &&
+        _phoneController.text.trim().isNotEmpty;
+
+    if (filled != _inputInfoValid) {
+      setState(() {
+        _inputInfoValid = filled;
+      });
+    }
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_onInputInfoChanged);
+    _rrnController.addListener(_onInputInfoChanged);
+    _phoneController.addListener(_onInputInfoChanged);
+    _onInputInfoChanged();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _rrnController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,20 +203,28 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle("본인 확인"),
-        _InputField(_nameController, "이름", TextInputType.text),
         _InputField(
-          _rrnController,
-          "주민등록번호 앞 6자리",
-          TextInputType.number,
+          controller: _nameController,
+          hint: "이름",
+          keyboardType: TextInputType.text,
+          onChanged: (_) => _onInputInfoChanged(),
         ),
         _InputField(
-          _phoneController,
-          "휴대폰 번호",
-          TextInputType.phone,
+          controller: _rrnController,
+          hint: "주민등록번호 앞 6자리",
+          keyboardType: TextInputType.number,
+          onChanged: (_) => _onInputInfoChanged(),
+        ),
+        _InputField(
+          controller: _phoneController,
+          hint: "휴대폰 번호",
+          keyboardType: TextInputType.phone,
+          onChanged: (_) => _onInputInfoChanged(),
         ),
         const Spacer(),
         _PrimaryButton(
           text: "다음",
+          enabled: _inputInfoValid,
           onPressed: () => setState(() => _step = AuthStep.agreeTerms),
         ),
       ],
@@ -378,6 +427,7 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
         const Spacer(),
         _PrimaryButton(
           text: "가입 완료",
+          enabled: !_submitting,
           onPressed: _goToCompletion,
         ),
       ],
@@ -392,7 +442,7 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
 
     setState(() {
       _certificateImage = data.buffer.asUint8List();
-      widget.application.signatureImage = _certificateImage;
+      widget.application.signatureImage = null;
       widget.application.signatureMethod = _selectedMethod;
       widget.application.signedAt = DateTime.now();
       _step = AuthStep.completed;
@@ -404,13 +454,58 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     setState(() => _submitting = true);
 
     try {
+
+
+      // 이어가기로 온 FX 상품인데 출금통화가 비어있으면 자동 세팅
+      if (widget.application.withdrawType == "fx" &&
+          (widget.application.fxWithdrawCurrency == null ||
+              widget.application.fxWithdrawCurrency!.isEmpty)) {
+        widget.application.fxWithdrawCurrency = widget.application.newCurrency;
+      }
+
+      // ======================
+      //  Auto Renew / 만기 옵션 서버 맞춤 변환
+      // ======================
+
+      // autoRenew → Y / N 변환
+      if (widget.application.autoRenew == "apply") {
+        widget.application.autoRenew = "Y";
+      } else {
+        widget.application.autoRenew = "N";
+      }
+
+
+      // 🔥 KRW → 외화 예금 가입인데 withdrawType 이 fx 로 남아있으면 서버가 400 던짐
+      if (widget.application.withdrawType == "fx" &&
+          widget.application.newCurrency != "KRW") {
+        widget.application.withdrawType = "krw";
+        widget.application.selectedFxAccount = null;
+        widget.application.fxWithdrawCurrency = null;
+      }
+
+
+
+
+
+      print("===== FINAL APPLICATION BEFORE SUBMIT =====");
+      print(widget.application.toJson());
+
+
+      // 이어가기 여부 / 어디서 온 신청인지 확인
+      //print("isResumeDraft = ${widget.application.applicationSource}");
+
       final result =
       await DepositService().submitApplication(widget.application);
+
+
 
       // 전자서명과 계좌 생성이 끝났으면 이어가기 임시 테이블(TB_DPST_ACCT_DRAFT)도 정리한다.
       // 서버/DB 삭제 요청은 실패해도 가입 완료 이동은 막지 않도록 best-effort 로 수행한다.
       await _draftService.clearDraft(widget.application.dpstId);
-
+      _voiceController.sendClientIntent(
+        intent: Intent.success,
+        productCode: widget.application.dpstId,
+      );
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(
@@ -421,6 +516,15 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
           result: result,
         ),
       );
+    } catch (e, stack) {
+      debugPrint("SUBMIT FAILED >>> $e");
+      debugPrintStack(stackTrace: stack);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('가입 완료 처리 중 오류 발생: $e')),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -613,8 +717,14 @@ class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final TextInputType keyboardType;
+  final ValueChanged<String>? onChanged;
 
-  const _InputField(this.controller, this.hint, this.keyboardType);
+  const _InputField({
+    required this.controller,
+    required this.hint,
+    required this.keyboardType,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -623,6 +733,7 @@ class _InputField extends StatelessWidget {
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
           filled: true,

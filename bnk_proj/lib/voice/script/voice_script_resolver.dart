@@ -36,10 +36,7 @@ class VoiceScriptResolver {
         return "원하시는 예금을 추천해 드릴게요.";
 
       case VoiceState.s2ProductExplain:
-        return productName != null
-            ? "$productName 상품에 대해 설명드릴게요."
-            : "선택하신 상품을 설명해 드릴게요.";
-
+        return "";
       case VoiceState.s3JoinConfirm:
         return "이 상품에 정말로 가입하시겠어요?";
 
@@ -47,16 +44,16 @@ class VoiceScriptResolver {
         return "가입을 위해 약관 동의가 필요해요.";
 
       case VoiceState.s4Input:
-        return "가입 금액과 기간을 말씀해 주세요.";
+        return "";
 
       case VoiceState.s4Confirm:
-        return "입력하신 내용을 확인해 주세요.";
+        return "";
 
       case VoiceState.s4Signature:
-        return "전자서명을 진행할게요.";
+        return "전자서명 단계입니다. 화면에서 직접 서명을 진행해 주세요.";
 
       case VoiceState.s5End:
-        return "이용해 주셔서 감사합니다.";
+        return "예금 가입이 완료되었습니다! 이용해 주셔서 감사합니다.";
 
       default:
         return null;

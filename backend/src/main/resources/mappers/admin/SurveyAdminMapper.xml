@@ -1,0 +1,182 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.api.backend.mapper.admin.SurveyAdminMapper">
+
+    <select id="selectSurveyList"
+            resultType="kr.co.api.backend.dto.admin.survey.SurveySummaryDTO">
+        SELECT
+            s.survey_id AS surveyId,
+            s.title AS title,
+            s.description AS description,
+            s.is_active AS isActive,
+            s.created_at AS createdAt,
+            s.created_by AS createdBy,
+            s.updated_at AS updatedAt,
+            s.updated_by AS updatedBy,
+            (
+                SELECT COUNT(*)
+                FROM TB_SURVEY_Q q
+                WHERE q.survey_id = s.survey_id
+            ) AS questionCount
+        FROM TB_SURVEY s
+        ORDER BY s.survey_id DESC
+    </select>
+
+    <select id="selectSurveyById"
+            resultType="kr.co.api.backend.dto.admin.survey.SurveySummaryDTO">
+        SELECT
+            s.survey_id AS surveyId,
+            s.title AS title,
+            s.description AS description,
+            s.is_active AS isActive,
+            s.created_at AS createdAt,
+            s.created_by AS createdBy,
+            s.updated_at AS updatedAt,
+            s.updated_by AS updatedBy,
+            (
+                SELECT COUNT(*)
+                FROM TB_SURVEY_Q q
+                WHERE q.survey_id = s.survey_id
+            ) AS questionCount
+        FROM TB_SURVEY s
+        WHERE s.survey_id = #{surveyId}
+    </select>
+
+    <insert id="insertSurvey"
+            parameterType="kr.co.api.backend.dto.admin.survey.SurveySaveDTO"
+            useGeneratedKeys="true"
+            keyProperty="surveyId"
+            keyColumn="survey_id">
+        INSERT INTO TB_SURVEY (
+            title,
+            description,
+            is_active,
+            created_by,
+            updated_by
+        ) VALUES (
+            #{title},
+            #{description},
+            #{isActive},
+            #{createdBy},
+            #{updatedBy}
+        )
+    </insert>
+
+    <update id="updateSurvey"
+            parameterType="kr.co.api.backend.dto.admin.survey.SurveySaveDTO">
+        UPDATE TB_SURVEY
+        SET
+            title = #{title},
+            description = #{description},
+            is_active = #{isActive},
+            updated_by = #{updatedBy}
+        WHERE survey_id = #{surveyId}
+    </update>
+
+    <select id="selectSurveyQuestions"
+            resultType="kr.co.api.backend.dto.admin.survey.SurveyQuestionDTO">
+        SELECT
+            q.q_id AS qId,
+            q.survey_id AS surveyId,
+            q.q_no AS qNo,
+            q.q_key AS qKey,
+            q.q_text AS qText,
+            q.q_type AS qType,
+            q.is_required AS isRequired,
+            q.max_select AS maxSelect,
+            q.is_active AS isActive
+        FROM TB_SURVEY_Q q
+        WHERE q.survey_id = #{surveyId}
+        ORDER BY q.q_no ASC
+    </select>
+
+    <select id="selectQuestionOptions"
+            resultType="kr.co.api.backend.dto.admin.survey.SurveyOptionDTO">
+        SELECT
+            o.opt_id AS optId,
+            o.q_id AS qId,
+            o.opt_code AS optCode,
+            o.opt_text AS optText,
+            o.opt_value AS optValue,
+            o.opt_order AS optOrder,
+            o.is_active AS isActive
+        FROM TB_SURVEY_OPT o
+        WHERE o.q_id = #{qId}
+        ORDER BY o.opt_order ASC
+    </select>
+
+    <insert id="insertSurveyQuestion"
+            parameterType="kr.co.api.backend.dto.admin.survey.SurveyQuestionDTO"
+            useGeneratedKeys="true"
+            keyProperty="qId"
+            keyColumn="q_id">
+        INSERT INTO TB_SURVEY_Q (
+            survey_id,
+            q_no,
+            q_key,
+            q_text,
+            q_type,
+            is_required,
+            max_select,
+            is_active,
+            created_by,
+            updated_by
+        ) VALUES (
+                     #{surveyId,   jdbcType=NUMERIC},
+                     #{qNo,        jdbcType=NUMERIC},
+                     #{qKey,       jdbcType=VARCHAR},
+                     #{qText,      jdbcType=VARCHAR},
+                     #{qType,      jdbcType=VARCHAR},
+                     #{isRequired, jdbcType=CHAR},
+                     #{maxSelect,  jdbcType=NUMERIC},
+                     #{isActive,   jdbcType=CHAR},
+                     #{createdBy,  jdbcType=VARCHAR},
+                     #{updatedBy,  jdbcType=VARCHAR}
+                 )
+    </insert>
+
+
+
+    <insert id="insertSurveyOption"
+            parameterType="kr.co.api.backend.dto.admin.survey.SurveyOptionDTO"
+            useGeneratedKeys="true"
+            keyProperty="optId"
+            keyColumn="opt_id">
+        INSERT INTO TB_SURVEY_OPT (
+            q_id,
+            opt_code,
+            opt_text,
+            opt_value,
+            opt_order,
+            is_active,
+            created_by,
+            updated_by
+        ) VALUES (
+            #{qId},
+            #{optCode},
+            #{optText},
+            #{optValue},
+            #{optOrder},
+            #{isActive},
+            #{createdBy},
+            #{updatedBy}
+        )
+    </insert>
+
+    <delete id="deleteSurveyOptionsBySurveyId">
+        DELETE FROM TB_SURVEY_OPT
+        WHERE q_id IN (
+            SELECT q_id
+            FROM TB_SURVEY_Q
+            WHERE survey_id = #{surveyId}
+        )
+    </delete>
+
+    <delete id="deleteSurveyQuestionsBySurveyId">
+        DELETE FROM TB_SURVEY_Q
+        WHERE survey_id = #{surveyId}
+    </delete>
+
+</mapper>
