@@ -140,8 +140,8 @@ $autoRenew
         ? (widget.application.selectedFxAccount ?? "미입력")
         : (widget.application.selectedKrwAccount ?? "미입력");
 
-    final amountLabel = application.newAmount != null
-        ? "${application.newCurrency} ${formatter.format(application.newAmount)}"
+    final amountLabel = widget.application.newAmount != null
+        ? "${widget.application.newCurrency} ${formatter.format(widget.application.newAmount)}"
         : "미입력";
 
     final periodLabel = widget.application.newPeriodMonths != null
@@ -175,7 +175,7 @@ $autoRenew
                 withdrawAccountLabel,
               ],
 
-              ["비밀번호 입력 여부", application.withdrawPassword != null
+              ["비밀번호 입력 여부", widget.application.withdrawPassword != null
                   ? "입력완료"
                   : "미입력"],
             ]),
