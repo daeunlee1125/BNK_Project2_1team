@@ -140,7 +140,12 @@ class DepositService {
   /// 예금 가입 신청
   Future<DepositSubmissionResult> submitApplication(
       DepositApplication application) async {
+
     final token = await _storage.read(key: 'auth_token');
+
+    print("===== SUBMIT TOKEN =====");
+    print(token);
+
     if (token == null) {
       throw Exception('로그인이 필요합니다.');
     }
@@ -155,8 +160,10 @@ class DepositService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(_buildApplyErrorMessage(response));
+      final body = utf8.decode(response.bodyBytes);
+      throw Exception('예금 가입 신청 실패: ${response.statusCode} $body');
     }
+
 
     final Map<String, dynamic> data =
     jsonDecode(utf8.decode(response.bodyBytes));

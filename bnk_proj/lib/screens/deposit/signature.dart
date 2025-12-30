@@ -454,8 +454,7 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
     setState(() => _submitting = true);
 
     try {
-      print("===== FINAL APPLICATION BEFORE SUBMIT =====");
-      print(widget.application.toJson());
+
 
       // 이어가기로 온 FX 상품인데 출금통화가 비어있으면 자동 세팅
       if (widget.application.withdrawType == "fx" &&
@@ -463,6 +462,33 @@ class _DepositSignatureScreenState extends State<DepositSignatureScreen> {
               widget.application.fxWithdrawCurrency!.isEmpty)) {
         widget.application.fxWithdrawCurrency = widget.application.newCurrency;
       }
+
+      // ======================
+      //  Auto Renew / 만기 옵션 서버 맞춤 변환
+      // ======================
+
+      // autoRenew → Y / N 변환
+      if (widget.application.autoRenew == "apply") {
+        widget.application.autoRenew = "Y";
+      } else {
+        widget.application.autoRenew = "N";
+      }
+
+
+      // 🔥 KRW → 외화 예금 가입인데 withdrawType 이 fx 로 남아있으면 서버가 400 던짐
+      if (widget.application.withdrawType == "fx" &&
+          widget.application.newCurrency != "KRW") {
+        widget.application.withdrawType = "krw";
+        widget.application.selectedFxAccount = null;
+        widget.application.fxWithdrawCurrency = null;
+      }
+
+
+
+
+
+      print("===== FINAL APPLICATION BEFORE SUBMIT =====");
+      print(widget.application.toJson());
 
 
       // 이어가기 여부 / 어디서 온 신청인지 확인

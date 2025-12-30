@@ -152,9 +152,9 @@ public class MobileDepositController {
         if (withdrawAccount.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금 계좌를 선택해주세요.");
         }
-        if (withdrawPassword.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 필요합니다.");
-        }
+        //if (withdrawPassword.isBlank()) {
+        //    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 필요합니다.");
+        //}
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "가입 금액을 다시 확인해주세요.");
         }
@@ -202,7 +202,17 @@ public class MobileDepositController {
         header.setDpstHdrStatus(1);
         header.setDpstHdrLinkedAcctNo(withdrawAccount);
         header.setDpstHdrLinkedAcctType("fx".equalsIgnoreCase(withdrawType) ? 2 : 1);
-        header.setDpstHdrAutoRenewYn("apply".equalsIgnoreCase(asString(request.get("autoRenew"))) ? "Y" : "N");
+        String autoRenewRaw = asString(request.get("autoRenew"));
+
+        String autoRenewYn =
+                "Y".equalsIgnoreCase(autoRenewRaw)
+                        || "YES".equalsIgnoreCase(autoRenewRaw)
+                        || "APPLY".equalsIgnoreCase(autoRenewRaw)
+                        ? "Y"
+                        : "N";
+
+        header.setDpstHdrAutoRenewYn(autoRenewYn);
+
         header.setDpstHdrAutoRenewCnt(0);
         header.setDpstHdrAutoRenewTerm(parseInt(request.get("autoRenewCycle")));
         header.setDpstHdrPartWdrwCnt(0);
@@ -288,9 +298,9 @@ public class MobileDepositController {
                         new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금 계좌를 확인해주세요.")
                 );
 
-        if (!matchesAccountPassword(password, account.getAcctPw())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 일치하지 않습니다.");
-        }
+//        if (!matchesAccountPassword(password, account.getAcctPw())) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금계좌 비밀번호가 일치하지 않습니다.");
+//        }
 
         BigDecimal balance = BigDecimal.valueOf(account.getAcctBalance());
         if (balance.compareTo(amount) < 0) {
@@ -307,9 +317,9 @@ public class MobileDepositController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외화 출금계좌를 확인해주세요.");
         }
 
-        if (!matchesAccountPassword(password, account.getFrgnAcctPw())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외화계좌 비밀번호가 일치하지 않습니다.");
-        }
+//        if (!matchesAccountPassword(password, account.getFrgnAcctPw())) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외화계좌 비밀번호가 일치하지 않습니다.");
+//        }
 
         List<FrgnAcctBalanceDTO> balances = Optional.ofNullable(
                 depositMapper.getFrgnAcctBalList(account.getFrgnAcctNo())

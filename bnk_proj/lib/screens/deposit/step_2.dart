@@ -262,7 +262,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     setState(() {
       switch (field) {
         case InputField.withdrawAccount:
-          withdrawType = value;   // ⭐ 핵심
+          withdrawType = value;   //  핵심
           if (value == 'krw') {
             selectedFxAccount = null;
             fxWithdrawCurrency = null;
@@ -1635,9 +1635,9 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
       newCurrency = _currencyOptions.first;
     }
 
-    if (withdrawType == 'krw' && newCurrency != 'KRW') {
-      withdrawType = 'fx';
-    }
+   // if (withdrawType == 'krw' && newCurrency != 'KRW') {
+   //   withdrawType = 'fx';
+    // }
 
     if (newPeriod == null && _periodOptions.isNotEmpty) {
       newPeriod = _periodOptions.first.toString();
