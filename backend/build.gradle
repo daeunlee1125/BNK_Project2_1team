@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'kr.co.api'
-version = '0.0.7-SNAPSHOT'
+version = '1.0.0-RELEASE'
 description = 'backend'
 
 java {
