@@ -130,11 +130,8 @@ class VoiceSessionController {
   Future<void> _handleServerResponse(VoiceResDTO res) async {
     _state = res.currentState;
 
-    if (res.intent == Intent.reset) {
-      uiState.value = VoiceUiState.idle;
+    if (res.currentState == VoiceState.s0Idle) {
       navCommand.value = null;
-      lastResponse.value = res;
-      return;
     }
 
     final nav = _resolveNav(res);

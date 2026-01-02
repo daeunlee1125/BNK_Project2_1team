@@ -131,13 +131,14 @@ class _BankHomePageState extends State<BankHomePage> {
 
 
   Future<void> _openVoiceOverlay() async {
-    await _voiceController.resetSession();
-    _voiceController.attachOverlay(); // 최초 1회만 START
 
     VoiceOverlayManager.show(
       context,
       _voiceController,
     );
+
+    await _voiceController.resetSession();
+    _voiceController.attachOverlay(); // 최초 1회만 START
   }
 
 
