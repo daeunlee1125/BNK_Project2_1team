@@ -16,6 +16,8 @@ class VoiceScriptResolver {
     // 1️⃣ noticeCode 우선 (가드/에러/재요청)
     if (noticeCode != null) {
       switch (noticeCode) {
+        case 'START':
+          return VoiceSsmlTemplates.greeting();
         case 'RETRY_UNKNOWN':
           return "잘 못 알아들었어요. 다시 말씀해 주세요.";
         case 'NEED_PRODUCT':
