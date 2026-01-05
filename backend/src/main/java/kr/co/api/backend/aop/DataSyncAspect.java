@@ -23,7 +23,6 @@ import java.util.Map;
 @Aspect
 @Component
 @Slf4j
-// @RequiredArgsConstructor  <-- ❌ 롬복 제거 (이게 범인이었음)
 public class DataSyncAspect {
 
     private final SqlSessionTemplate primarySqlSession;
@@ -32,7 +31,6 @@ public class DataSyncAspect {
     private final DataSource slaveDataSource;
     private final DbStatusManager dbStatusManager;
 
-    // ★ [수정] 생성자를 직접 만들어서 @Qualifier를 확실하게 먹입니다.
     @Autowired
     public DataSyncAspect(
             SqlSessionTemplate primarySqlSession,
@@ -69,11 +67,6 @@ public class DataSyncAspect {
         TransactionStatus status = null;
         try {
             if (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) return result;
-
-            // [디버깅] 이제 진짜 Slave URL(116.127)이 찍힐 겁니다.
-            try (Connection conn = slaveDataSource.getConnection()) {
-                log.warn(">>>> [DB CHECK] 현재 Slave 접속 정보: URL={}", conn.getMetaData().getURL());
-            }
 
             String mapperId = getMapperId(joinPoint);
             Object[] args = joinPoint.getArgs();

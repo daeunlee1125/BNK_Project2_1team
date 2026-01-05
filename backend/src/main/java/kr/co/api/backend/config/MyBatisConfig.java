@@ -77,13 +77,11 @@ public class MyBatisConfig {
     public DataSource realSlaveDataSource() {
         HikariDataSource dataSource = new HikariDataSource();
 
-        // ★ [강제 하드코딩]
         dataSource.setJdbcUrl("jdbc:oracle:thin:@34.64.116.127:1521/XE");
         dataSource.setUsername("FLOBANK");
         dataSource.setPassword("1234");
         dataSource.setDriverClassName("oracle.jdbc.OracleDriver");
 
-        // ★ [이름표] 로그에 이게 떠야 성공입니다.
         dataSource.setPoolName("Slave-HikariCP");
 
         dataSource.setMaximumPoolSize(10);
@@ -98,12 +96,15 @@ public class MyBatisConfig {
     @Bean(name = "routingDataSource")
     public DataSource routingDataSource(
             @Qualifier("masterDataSource") DataSource masterDataSource,
-            @Qualifier("realSlaveDataSource") DataSource realSlaveDataSource) { // ★ 여기 중요!
+            @Qualifier("realSlaveDataSource") DataSource realSlaveDataSource) {
 
         ReplicationRoutingDataSource routingDataSource = new ReplicationRoutingDataSource(dbStatusManager);
         Map<Object, Object> dataSourceMap = new HashMap<>();
+
+        // 매핑
         dataSourceMap.put("master", masterDataSource);
         dataSourceMap.put("slave", realSlaveDataSource);
+
         routingDataSource.setTargetDataSources(dataSourceMap);
         routingDataSource.setDefaultTargetDataSource(masterDataSource);
         return routingDataSource;

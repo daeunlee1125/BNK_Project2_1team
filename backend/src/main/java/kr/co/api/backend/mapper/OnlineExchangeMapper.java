@@ -43,19 +43,14 @@ public interface OnlineExchangeMapper {
     );
 
 
-    /* =========================
-       4. 원화 계좌 잔액 UPDATE
-       ========================= */
+    // 원화 계좌 잔액 UPDATE
     @CoreBanking
     int updateKrwAcctBalance(
             @Param("acctNo") String acctNo,
             @Param("balance") Long balance
     );
 
-
-    /* =========================
-       5. 외화 자식 계좌 잔액 UPDATE
-       ========================= */
+    // 외화 자식 계좌 잔액 UPDATE
     @CoreBanking
     int updateFrgnBalance(
             @Param("balNo") String balNo,

@@ -12,7 +12,7 @@ class ApiService {
   static const String baseUrl2 = "http://192.168.0.207:8080/backend/api/mobile";  // 케이블 연결 했을 때 로컬 테스트(본인 컴퓨터 IP로 바꿔야함)
 
   // 현재 테스트 환경에 맞춰 선택하세요
-  static const String currentUrl = _prodUrl;
+  static const String currentUrl = base2Url;
 
   static const _storage = FlutterSecureStorage();
   static Future<Map<String, String>> getAuthHeaders() async {
@@ -239,13 +239,12 @@ class ApiService {
   static Future<Map<String, dynamic>> getUserInfo(String userid) async {
     final url = Uri.parse('$currentUrl/member/info');
 
-    // ★ 여기서 헤더를 가져옵니다!
     final headers = await getAuthHeaders();
 
     try {
-      final response = await http.post( // 또는 GET
+      final response = await http.post(
         url,
-        headers: headers, // ★ 만든 헤더를 여기에 넣습니다.
+        headers: headers,
         body: jsonEncode({"userid": userid}),
       );
 
@@ -259,7 +258,7 @@ class ApiService {
     }
   }
 
-  /// [STEP 5] 생체인증 사용 여부 설정 (통합 수정본)
+  /// [STEP 5] 생체인증 사용 여부 설정
   static Future<bool> toggleBioAuth(String userid, bool useBio) async {
     final url = Uri.parse('$currentUrl/member/auth/toggle-bio');
 
@@ -269,19 +268,17 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "userid": userid,
-          // JSON 표준인 true/false로 보냅니다. (백엔드에서 Boolean으로 받음)
           "useBio": useBio,
         }),
       );
 
       // 응답 코드와 내용을 모두 확인하여 안정성 확보
       if (response.statusCode == 200) {
-        // 혹시 백엔드가 { "status": "SUCCESS" } 형태를 준다면 파싱, 아니면 그냥 true
         if (response.body.isNotEmpty) {
           final result = jsonDecode(utf8.decode(response.bodyBytes));
           return result['status'] == 'SUCCESS';
         }
-        return true; // 내용 없이 200 OK만 오는 경우
+        return true;
       }
       return false;
     } catch (e) {
@@ -301,7 +298,6 @@ class ApiService {
         body: jsonEncode({
           "userid": userid,
           "pin": pin,
-          // 기기 고유 ID도 함께 보내서 검증하면 더욱 안전합니다.
           "deviceId": await DeviceManager.getDeviceId(),
         }),
       );

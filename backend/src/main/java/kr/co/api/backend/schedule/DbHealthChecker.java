@@ -1,4 +1,4 @@
-package kr.co.api.backend.schedule; // 패키지명 확인 (scheduler 인지 schedule 인지)
+package kr.co.api.backend.schedule;
 
 import kr.co.api.backend.config.DbStatusManager;
 import lombok.extern.slf4j.Slf4j;
@@ -15,14 +15,14 @@ import java.sql.Statement;
 @Component
 public class DbHealthChecker {
 
-    private final DataSource masterPingDataSource; // 이름 변경 (명확하게)
-    private final DataSource slavePingDataSource;  // 이름 변경
+    private final DataSource masterPingDataSource;
+    private final DataSource slavePingDataSource;
     private final DbStatusManager dbStatusManager;
 
     @Autowired
     public DbHealthChecker(
-            @Qualifier("masterPingDataSource") DataSource masterPingDataSource, // ★ [수정] 핑 전용 주입
-            @Qualifier("slavePingDataSource") DataSource slavePingDataSource,   // ★ [수정] 핑 전용 주입
+            @Qualifier("masterPingDataSource") DataSource masterPingDataSource, // 핑 전용 주입
+            @Qualifier("slavePingDataSource") DataSource slavePingDataSource,   // 핑 전용 주입
             DbStatusManager dbStatusManager) {
         this.masterPingDataSource = masterPingDataSource;
         this.slavePingDataSource = slavePingDataSource;
@@ -31,7 +31,7 @@ public class DbHealthChecker {
 
     // 1초마다 실행
     @Scheduled(fixedDelay = 1000)
-    public void checkDbHealth() { // 메서드 이름 변경 (Master만 하는 게 아니니까)
+    public void checkDbHealth() {
 
         // 1. Master 체크 (Ping용 DS 사용)
         boolean masterAlive = checkConnection(masterPingDataSource);

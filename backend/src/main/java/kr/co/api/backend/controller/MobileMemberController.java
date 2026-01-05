@@ -54,7 +54,7 @@ public class MobileMemberController {
         String userId = request.get("userid");
         String deviceId = request.get("deviceId");
 
-        CustInfoDTO user = mobileMemberService.getCustInfoByCustId(userId);
+        CustInfoDTO user = mobileMemberService.getCustIdByCustInfo(userId);
 
         if (user != null && deviceId.equals(user.getCustDeviceId())) {
             // 성공 시 상세 정보(Flags) 함께 반환
@@ -77,8 +77,6 @@ public class MobileMemberController {
 
     @PostMapping("/login")
     public ResponseEntity<?> mobileLogin(@RequestBody LoginRequest request) {
-        log.info("모바일 로그인 요청 - ID: {}, DeviceID: {}", request.getUserid(), request.getDeviceId());
-
         CustInfoDTO custInfoDTO = custInfoService.login(request.getUserid(), request.getPassword());
 
         if (custInfoDTO != null) {
@@ -90,7 +88,6 @@ public class MobileMemberController {
 
             if(checkId){
                 // [Case 1] 기존 기기 (로그인 성공)
-                log.info("인증 성공. 토큰 생성 중...");
                 String token = jwtTokenProvider.createToken(custInfoDTO.getCustCode(), "USER", custInfoDTO.getCustName());
 
                 response.put("status", "SUCCESS");
@@ -98,14 +95,13 @@ public class MobileMemberController {
                 response.put("custName", custInfoDTO.getCustName());
                 response.put("message", "로그인 성공");
 
-                // 성공 시에도 PIN이 있는지 알려줘야 함!
+                // 성공 시에도 PIN이 있는지 알려줘야 함
                 response.put("hasPin", hasPin);
 
                 custInfoService.saveLastLogin(custInfoDTO.getCustId());
                 return ResponseEntity.ok(response);
             } else {
                 // [Case 2] 새로운 기기
-                // ... (기존 코드와 동일)
                 response.put("status", "NEW_DEVICE");
                 response.put("hasPin", hasPin); // 여기는 이미 있음
                 return ResponseEntity.ok(response);
@@ -137,7 +133,6 @@ public class MobileMemberController {
     public ResponseEntity<?> sendAuthCodeWithHp(@RequestBody Map<String, String> request) {
         String phone = request.get("phone");
 
-
         if (phone == null || phone.isEmpty()) {
             return ResponseEntity.status(400).body(Map.of("message", "전화번호가 없습니다."));
         }
@@ -149,6 +144,7 @@ public class MobileMemberController {
             // 4. SMS 발송
             smsService.sendVerificationCode(phone, code);
 
+            // 결과 발송
             authCodeStore.put(phone, code);
             return ResponseEntity.ok(Map.of(
                     "status", "SUCCESS",
@@ -164,9 +160,9 @@ public class MobileMemberController {
     /*
      * [STEP 2] 인증번호 검증 및 확인
      * * 동작 방식:
-     * 1. 사용자가 문자로 온 번호를 앱에 입력합니다.
-     * 2. 앱은 아이디(userId)와 입력한 번호(code)를 서버로 보냅니다.
-     * 3. 서버는 아까 저장해둔(authCodeStore) 값과 비교합니다.
+     * 1. 사용자가 문자로 온 번호를 앱에 입력
+     * 2. 앱은 아이디(userId)와 입력한 번호(code)를 서버로 보냄
+     * 3. 서버는 아까 저장해둔(authCodeStore) 값과 비교
      */
     @PostMapping("/auth/verify-code-hp")
     public ResponseEntity<?> verifyAuthCodeHp(@RequestBody Map<String, String> request) {
@@ -181,13 +177,13 @@ public class MobileMemberController {
         // savedCode.equals(inputCode) : 저장된 값과 입력값이 같아야 함
         if (savedCode != null && savedCode.equals(inputCode)) {
 
-            // 3. 인증 성공!
-            // 보안을 위해 사용한 인증번호는 즉시 삭제합니다. (재사용 방지)
+            // 3. 인증 성공
+            // 보안을 위해 사용한 인증번호는 즉시 삭제 (재사용 방지)
             authCodeStore.remove(phone);
 
             return ResponseEntity.ok(Map.of("status", "SUCCESS"));
         } else {
-            // 4. 인증 실패 (번호가 틀렸거나, 만료되었거나, 발송 요청을 안 했거나)
+            // 4. 인증 실패 (번호가 틀렸거나, 만료되었거나)
             return ResponseEntity.ok(Map.of("status", "FAIL", "message", "인증번호가 일치하지 않습니다."));
         }
     }
@@ -214,17 +210,14 @@ public class MobileMemberController {
      */
     @PostMapping("/register-device")
     public ResponseEntity<?> registerDevice(@RequestBody LoginRequest request) {
-        log.info("기기 등록 요청 - ID: {}, DeviceID: {}", request.getUserid(), request.getDeviceId());
-
         CustInfoDTO user = custInfoService.login(request.getUserid(), request.getPassword());
-        log.info("dto 출력: {}", user);
-        log.info("아이디: {}, 기기ID: {}", request.getUserid(), request.getDeviceId());
 
         if (user == null) {
             return ResponseEntity.status(401).body("인증 실패");
         }
 
-        mobileMemberService.modifyCustInfoByDeviceId(user.getCustId(), request.getDeviceId());
+        // 기기 등록
+        mobileMemberService.modifyDeviceIdByCustInfo(user.getCustId(), request.getDeviceId());
         String token = jwtTokenProvider.createToken(user.getCustCode(), "USER", user.getCustName());
 
         Map<String, Object> response = new HashMap<>();
@@ -233,7 +226,7 @@ public class MobileMemberController {
         response.put("custName", user.getCustName());
         response.put("message", "기기 등록 및 로그인 완료");
 
-        custInfoService.saveLastLogin(user.getCustId());
+        custInfoService.saveLastLogin(user.getCustId()); // 로그인 로그 남기기
 
         return ResponseEntity.ok(response);
     }
@@ -266,8 +259,6 @@ public class MobileMemberController {
             Boolean useBio = (Boolean) request.get("useBio");
             String useYn = (useBio != null && useBio) ? "Y" : "N";
 
-            log.info("생체인증 설정 변경 요청: User={}, Status={}", userId, useYn);
-
             // 서비스 호출하여 DB 업데이트
             mobileMemberService.updateBioAuth(userId, useYn);
 
@@ -292,12 +283,12 @@ public class MobileMemberController {
         String inputPin = request.get("pin");
         String deviceId = request.get("deviceId");
 
-        // 1. PIN 번호 검증 (MobileAuthService 활용)
+        // 1. PIN 번호 검증
         boolean isPinValid = mobileAuthService.verifyPin(userId, inputPin);
 
         if (isPinValid) {
             // 2. 기기 ID 검사
-            CustInfoDTO user = mobileMemberService.getCustInfoByCustId(userId);
+            CustInfoDTO user = mobileMemberService.getCustIdByCustInfo(userId);
             if (!user.getCustDeviceId().equals(deviceId)) {
                 return ResponseEntity.status(401).body(Map.of("message", "등록되지 않은 기기입니다."));
             }

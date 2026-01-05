@@ -23,10 +23,7 @@ public class OnlineExchangeService {
     private final LogProducer logProducer; // Redis Producer
     private final ObjectMapper objectMapper; // Spring Boot에 기본 내장됨
 
-    /**
-     * 온라인 환전 처리
-     * (로그인 사용자 기준, 트랜잭션 보장)
-     */
+    // 온라인 환전 처리
     @Transactional
     public void processOnlineExchange(FrgnExchOnlineDTO dto, String custCode) {
         if (custCode == null) {
@@ -185,6 +182,7 @@ public class OnlineExchangeService {
 
             // 1-1. 원화 출금 로그 -> Redis 큐 전송 (Slave 동기화용)
             Map<String, Object> logDataKrw = new HashMap<>();
+            logDataKrw.put("log_type", "TRANSFER");
             logDataKrw.put("acctNo", krwAcct.getAcctNo());
             logDataKrw.put("custName", custName);
             logDataKrw.put("tranType", 2);
@@ -193,18 +191,13 @@ public class OnlineExchangeService {
             logDataKrw.put("memo", "외화 환전 출금");
             logProducer.sendLog(logDataKrw);
 
-            // 2. 외화 입금 (Master DB 즉시 저장)
-            onlineExchangeMapper.insertCustTranHist(
-                    dto.getExchFrgnAcctNo(),
-                    custName,
-                    1, // 입금
-                    dto.getExchFrgnAmount(),
-                    krwAcct.getAcctNo(),
-                    "외화 환전 입금"
+            // 외화 입금 (Master DB 즉시 저장)
+            onlineExchangeMapper.insertCustTranHist(dto.getExchFrgnAcctNo(), custName, 1, dto.getExchFrgnAmount(), krwAcct.getAcctNo(), "외화 환전 입금"
             );
 
-            // 2-1. 외화 입금 로그 -> Redis 큐 전송
+            // 외화 입금 로그 -> Redis 큐 전송
             Map<String, Object> logDataFrgn = new HashMap<>();
+            logDataFrgn.put("log_type", "TRANSFER");
             logDataFrgn.put("acctNo", dto.getExchFrgnAcctNo());
             logDataFrgn.put("custName", custName);
             logDataFrgn.put("tranType", 1);
@@ -227,6 +220,7 @@ public class OnlineExchangeService {
 
             // 1-1. 외화 출금 로그 -> Redis 큐 전송
             Map<String, Object> logDataFrgn = new HashMap<>();
+            logDataFrgn.put("log_type", "TRANSFER");
             logDataFrgn.put("acctNo", dto.getExchFrgnAcctNo());
             logDataFrgn.put("custName", custName);
             logDataFrgn.put("tranType", 2);
@@ -247,6 +241,7 @@ public class OnlineExchangeService {
 
             // 2-1. 원화 입금 로그 -> Redis 큐 전송
             Map<String, Object> logDataKrw = new HashMap<>();
+            logDataKrw.put("log_type", "TRANSFER");
             logDataKrw.put("acctNo", krwAcct.getAcctNo());
             logDataKrw.put("custName", custName);
             logDataKrw.put("tranType", 1);
@@ -264,7 +259,7 @@ public class OnlineExchangeService {
 
         onlineExchangeMapper.insertOnlineExchange(dto);
 
-        // 2. [추가] Slave 동기화를 위해 Redis로 데이터 전송 (비동기)
+        // Slave 동기화를 위해 Redis로 데이터 전송 (비동기)
         try {
             // DTO를 Map으로 변환 (직접 put 해도 되지만 이게 편함)
             Map<String, Object> exchangeMap = objectMapper.convertValue(dto, Map.class);
@@ -296,7 +291,6 @@ public class OnlineExchangeService {
                 : 0L;
 
         long frgnBalanceAmount = 0L;
-        log.info("@@@@@@@@@@@@@@@@{}",frgnAcct.getFrgnAcctNo());
 
         if (frgnAcct != null && frgnAcct.getFrgnAcctNo() != null) {
             FrgnAcctBalanceDTO frgnBalance = onlineExchangeMapper.selectMyFrgnBalance(

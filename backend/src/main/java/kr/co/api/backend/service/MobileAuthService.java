@@ -33,7 +33,7 @@ public class MobileAuthService {
     // [STEP 1] 인증번호 발송 (일일 제한 추가)
     public Map<String, Object> sendAuthCode(String userId) {
 
-        // ★ 1. 일일 발송 횟수 확인 로직 추가
+        // 일일 발송 횟수 확인 로직 추가
         String limitKey = "SMS_LIMIT:" + userId; // 키 예시: SMS_LIMIT:testUser
         String currentCountStr = redisUtil.getData(limitKey);
 
@@ -46,8 +46,7 @@ public class MobileAuthService {
             throw new IllegalArgumentException("일일 인증번호 전송 한도(5회)를 초과했습니다. 내일 다시 시도해주세요.");
         }
 
-        // --- 기존 로직 시작 ---
-        CustInfoDTO user = mobileMemberService.getCustInfoByCustId(userId);
+        CustInfoDTO user = mobileMemberService.getCustIdByCustInfo(userId);
         if (user == null) throw new IllegalArgumentException("사용자 정보를 찾을 수 없습니다.");
 
         String phoneNumber = AesUtil.decrypt(user.getCustHp());
@@ -140,7 +139,7 @@ public class MobileAuthService {
 
     // 간편번호(PIN) 검증
     public boolean verifyPin(String userId, String inputPin) {
-        CustInfoDTO user = mobileMemberService.getCustInfoByCustId(userId);
+        CustInfoDTO user = mobileMemberService.getCustIdByCustInfo(userId);
         if (user == null || user.getCustPin() == null) return false;
 
         // DB에 저장된 해시값과 사용자가 입력한 평문 비교

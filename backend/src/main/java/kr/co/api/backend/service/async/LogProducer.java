@@ -21,3 +21,4 @@ public class LogProducer {
         redisTemplate.opsForList().rightPush(QUEUE_NAME, logData);
     }
 }
+

@@ -71,10 +71,10 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     }
   }
 
-  // 스위치 토글 시 실행되는 함수
+  // 생체 인증 동의
   void _toggleBio(bool value) async {
     if (value) {
-      // 🟢 켜려고 할 때: 기기가 지문을 지원하는지 + 실제 지문 인식 테스트
+      // 켜려고 할 때: 기기가 지문을 지원하는지 + 실제 지문 인식 테스트
       bool canCheckBiometrics = await auth.canCheckBiometrics;
       if (!canCheckBiometrics) {
         _showMsg("이 기기는 생체 인식을 지원하지 않습니다.");
@@ -88,7 +88,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
 
           authMessages: const <AuthMessages>[
             AndroidAuthMessages(
-              signInTitle: '본인 확인', // 상황에 맞게 문구를 다르게 설정하면 더 좋습니다.
+              signInTitle: '본인 확인',
               cancelButton: '취소',
             ),
           ],

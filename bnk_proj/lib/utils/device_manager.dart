@@ -21,11 +21,9 @@ class DeviceManager {
 
       // 3. 보안 저장소에 암호화하여 저장
       await _storage.write(key: _keyDeviceId, value: deviceId);
-      print("새로운 Device ID 생성됨: $deviceId");
-    } else {
-      print("기존 Device ID 로드됨: $deviceId");
     }
 
     return deviceId;
   }
 }
+

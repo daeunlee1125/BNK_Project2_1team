@@ -46,17 +46,22 @@ public class LogWorker {
                 status = slaveTransactionManager.getTransaction(new DefaultTransactionDefinition());
                 map = (Map<String, Object>) data;
 
-                // ★ [구분 로직] 데이터 타입에 따라 다른 테이블에 저장
+                // 데이터 타입에 따라 다른 테이블에 저장
                 String logType = (String) map.get("log_type");
 
                 if ("EXCHANGE".equals(logType)) {
-                    // [케이스 1] 환전 내역 저장
+                    // 1. 환전 내역
                     log.info(">>>> [Async Worker] 환전 내역 저장 시도...");
                     slaveSqlSession.insert("kr.co.api.backend.mapper.OnlineExchangeMapper.insertOnlineExchange", map);
-                } else {
-                    // [케이스 2] 일반 이체 내역 저장 (기존 로직 - log_type 없으면 기본값)
+
+                } else if ("TRANSFER".equals(logType)) {
+                    // 2. 이체 내역
                     log.info(">>>> [Async Worker] 이체 내역 저장 시도...");
                     slaveSqlSession.insert("kr.co.api.backend.mapper.OnlineExchangeMapper.insertCustTranHist", map);
+
+                } else {
+                    // 3. 알 수 없는 타입 (예외 처리 또는 로깅)
+                    log.warn(">>>> [Async Worker] 알 수 없는 로그 타입입니다: {}", logType);
                 }
 
                 slaveTransactionManager.commit(status);
