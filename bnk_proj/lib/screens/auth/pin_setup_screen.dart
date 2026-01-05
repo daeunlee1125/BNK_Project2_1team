@@ -13,7 +13,7 @@ class PinSetupScreen extends StatefulWidget {
 }
 
 class _PinSetupScreenState extends State<PinSetupScreen> {
-  // ★ 2. 보안 저장소 인스턴스 생성
+  // 2. 보안 저장소 인스턴스 생성
   final _storage = const FlutterSecureStorage();
 
   String _firstPin = "";  // 첫 번째 입력한 비번
@@ -55,7 +55,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       if (!mounted) return;
 
       if (result != null && result['status'] == 'SUCCESS') {
-        // ★ 3. 등록 성공 시, 내부 저장소에 PIN과 ID 저장 (생체인증용)
+        // 3. 등록 성공 시, 내부 저장소에 PIN과 ID 저장 (생체인증용)
         await _storage.write(key: 'user_pin', value: _firstPin);
         await _storage.write(key: 'user_id', value: widget.userId);
 

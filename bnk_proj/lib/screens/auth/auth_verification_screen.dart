@@ -126,7 +126,9 @@ class _AuthVerificationScreenState extends State<AuthVerificationScreen> {
 
     if (isVerified) {
       // 2. 검증 성공 -> 기기 등록 요청
+      // 휴대폰 저장소에 기기 등록
       String deviceId = await DeviceManager.getDeviceId();
+      // 서버에 기기 등록
       bool registerSuccess = await ApiService.registerDevice(
           widget.userId,
           widget.userPassword,
@@ -148,7 +150,6 @@ class _AuthVerificationScreenState extends State<AuthVerificationScreen> {
           );
         } else {
           // [Case 2] PIN이 없는 경우 -> 설정(등록) 화면으로 이동
-          // (PinSetupScreen이 아직 없다면 일단 BankHomePage로 보내셔도 됩니다)
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => PinSetupScreen(userId: widget.userId)),
@@ -257,14 +258,14 @@ class _AuthVerificationScreenState extends State<AuthVerificationScreen> {
                       TextField(
                         controller: _codeController,
                         keyboardType: TextInputType.number,
-                        // ★ 시간이 만료되면 입력 불가하게 막음
+                        // 시간이 만료되면 입력 불가하게 막음
                         enabled: !_isTimeExpired,
                         decoration: InputDecoration(
                           hintText: '인증번호 6자리',
                           hintStyle: TextStyle(color: Colors.grey[400]),
                           border: const OutlineInputBorder(),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          // ★ 타이머 UI
+                          // 타이머 UI
                           suffixIcon: Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: Text(

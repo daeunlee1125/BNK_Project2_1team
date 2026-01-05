@@ -22,11 +22,11 @@ public class MobileMemberService {
         return false;
     }
 
-    public CustInfoDTO getCustInfoByCustId(String custId){
+    public CustInfoDTO getCustIdByCustInfo(String custId){
         return mobileCustInfo.selectUserIdByCustInfo(custId);
     }
 
-    public void modifyCustInfoByDeviceId(String userId, String deviceId){
+    public void modifyDeviceIdByCustInfo(String userId, String deviceId){
         mobileCustInfo.updateDeviceIdByCustInfo(deviceId, userId);
     }
 

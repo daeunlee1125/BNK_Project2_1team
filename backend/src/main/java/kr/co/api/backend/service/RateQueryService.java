@@ -14,17 +14,13 @@ public class RateQueryService {
 
     private final RateMapper rateMapper;
 
-    /**
-     * 통화별 최신 환율 조회
-     */
+    // 통화별 최신 환율 조회
     @Transactional(readOnly = true)
     public List<RateDTO> getLatestRates() {
         return rateMapper.selectLatestRates();
     }
 
-    /**
-     * 특정 통화 환율 히스토리 조회
-     */
+    // 특정 통화 환율 히스토리 조회
     @Transactional(readOnly = true)
     public List<RateDTO> getRateHistory(String currency) {
         return rateMapper.selectRateHistory(currency);

@@ -11,7 +11,7 @@ import 'package:local_auth_android/local_auth_android.dart';
 class PinLoginScreen extends StatefulWidget {
   final String userId;
   final bool autoBioAuth;
-  final bool isAuthMode; // [추가] true면 거래 인증용, false면 로그인용
+  final bool isAuthMode; // true면 거래 인증용, false면 로그인용
 
   const PinLoginScreen({
     super.key,
@@ -25,7 +25,7 @@ class PinLoginScreen extends StatefulWidget {
 }
 
 class _PinLoginScreenState extends State<PinLoginScreen> {
-  final LocalAuthentication auth = LocalAuthentication(); // ★ 인증 객체 생성
+  final LocalAuthentication auth = LocalAuthentication();
   String _pin = "";
   bool _isLoading = false;
 
@@ -41,17 +41,14 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
   Future<void> _authenticateBio() async {
     bool authenticated = false;
     try {
-      // 1. 기기가 생체인증을 지원하는지 확인 (선택 사항)
-      // bool canCheckBiometrics = await auth.canCheckBiometrics;
-
-      // 2. 인증 시도 (시스템 팝업)
+      // 인증 시도 (시스템 팝업)
       authenticated = await auth.authenticate(
         localizedReason: '로그인하려면 지문 또는 Face ID로 인증해주세요.',
 
         // 생체 인증 문구
         authMessages: const <AuthMessages>[
           AndroidAuthMessages(
-            signInTitle: '생체 인증', // 'Authentication required' 대신 나올 문구
+            signInTitle: '생체 인증',
             cancelButton: '취소',
           ),
         ],
@@ -63,17 +60,15 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
       );
     } on PlatformException catch (e) {
       print("생체 인증 오류: $e");
-      // 오류 나면 그냥 조용히 PIN 입력 모드로 둠
       return;
     }
 
     if (!mounted) return;
 
-    // 3. 인증 성공 시 메인 화면으로 이동
+    // 인증 성공 시 메인 화면으로 이동
     if (authenticated) {
       print("✅ 생체 인증 성공!");
 
-      // [핵심 수정] 인증 성공 시 -> 서버에 로그인 요청을 보내 '새 토큰'을 받아옵니다.
       await _loginWithStoredPin();
     } else {
       print("❌ 생체 인증 실패 또는 취소됨 (PIN 입력 대기)");
@@ -94,7 +89,6 @@ class _PinLoginScreenState extends State<PinLoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("최초 1회는 간편비밀번호 입력이 필요합니다.")),
       );
-      // 여기서 함수 종료 -> 사용자는 자연스럽게 키패드로 PIN을 입력하게 됨
       return;
     }
 

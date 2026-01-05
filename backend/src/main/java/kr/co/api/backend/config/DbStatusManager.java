@@ -39,3 +39,4 @@ public class DbStatusManager {
         this.isSlaveAlive = alive;
     }
 }
+
