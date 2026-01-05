@@ -1,3 +1,13 @@
+int _toInt(dynamic value, {int fallback = 0}) {
+  if (value == null) return fallback;
+  return int.tryParse(value.toString()) ?? fallback;
+}
+
+int? _toNullableInt(dynamic value) {
+  if (value == null) return null;
+  return int.tryParse(value.toString());
+}
+
 class SurveyOption {
   final int optId;
   final String optCode;
@@ -15,11 +25,11 @@ class SurveyOption {
 
   factory SurveyOption.fromJson(Map<String, dynamic> json) {
     return SurveyOption(
-      optId: int.parse(json['optId'].toString()),
+      optId: _toInt(json['optId']),
       optCode: json['optCode']?.toString() ?? '',
       optText: json['optText']?.toString() ?? '',
       optValue: json['optValue']?.toString(),
-      optOrder: int.tryParse(json['optOrder']?.toString() ?? '') ?? 0,
+      optOrder: _toInt(json['optOrder']),
     );
   }
 }
@@ -48,15 +58,13 @@ class SurveyQuestion {
   factory SurveyQuestion.fromJson(Map<String, dynamic> json) {
     final rawOptions = (json['options'] as List<dynamic>? ?? []);
     return SurveyQuestion(
-      qId: int.parse(json['qId'].toString()),
-      qNo: int.tryParse(json['qNo']?.toString() ?? '') ?? 0,
+      qId: _toInt(json['qId']),
+      qNo: _toInt(json['qNo']),
       qKey: json['qKey']?.toString() ?? '',
       qText: json['qText']?.toString() ?? '',
       qType: json['qType']?.toString() ?? '',
       isRequired: json['isRequired']?.toString() ?? 'N',
-      maxSelect: json['maxSelect'] == null
-          ? null
-          : int.tryParse(json['maxSelect'].toString()),
+      maxSelect: _toNullableInt(json['maxSelect']),
       options: rawOptions
           .map((e) => SurveyOption.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -80,7 +88,7 @@ class SurveyDetail {
   factory SurveyDetail.fromJson(Map<String, dynamic> json) {
     final rawQuestions = (json['questions'] as List<dynamic>? ?? []);
     return SurveyDetail(
-      surveyId: int.parse(json['surveyId'].toString()),
+      surveyId: _toInt(json['surveyId']),
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString(),
       questions: rawQuestions
