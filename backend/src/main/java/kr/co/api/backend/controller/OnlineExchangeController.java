@@ -57,9 +57,6 @@ public class OnlineExchangeController {
         // 1. ID 추출 통일
         String custCode = authentication.getName();
 
-        // 2. 로그 찍어서 확인해보기 (디버깅용)
-        System.out.println(">>> 환전 요청 userId: " + custCode);
-        log.info("컨트롤러 dto" + dto.toString());
         onlineExchangeService.processOnlineExchange(dto, custCode);
 
         return ResponseEntity.ok("온라인 환전이 정상적으로 처리되었습니다.");

@@ -33,8 +33,6 @@ public class OnlineExchangeService {
         // DTO에 고객 코드 세팅
         dto.setExchCustCode(custCode);
 
-        log.info("환전 요청: " + dto.toString());
-
         String custName = onlineExchangeMapper.selectCustNameByCustCode(custCode);
 
         if (custName == null) {
@@ -276,7 +274,6 @@ public class OnlineExchangeService {
     }
 
 
-    @Transactional(readOnly = true)
     public Map<String, Object> getMyExchangeAccounts(String custCode, String currency) {
 
         if (custCode == null) {

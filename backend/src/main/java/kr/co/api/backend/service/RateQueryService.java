@@ -15,18 +15,15 @@ public class RateQueryService {
     private final RateMapper rateMapper;
 
     // 통화별 최신 환율 조회
-    @Transactional(readOnly = true)
     public List<RateDTO> getLatestRates() {
         return rateMapper.selectLatestRates();
     }
 
     // 특정 통화 환율 히스토리 조회
-    @Transactional(readOnly = true)
     public List<RateDTO> getRateHistory(String currency) {
         return rateMapper.selectRateHistory(currency);
     }
 
-    @Transactional(readOnly = true)
     public List<RateDTO> getLatestRatesWithChange() {
         return rateMapper.selectLatestRatesWithChange();
     }
@@ -36,7 +33,6 @@ public class RateQueryService {
      * 단일 통화의 최신 환율 1건 조회
      * TB_EXCH_RATE_HIST 에 저장된 가장 최근 고시일 데이터를 사용한다.
      */
-    @Transactional(readOnly = true)
     public RateDTO getLatestRateForCurrency(String currency) {
         if (currency == null || currency.isBlank()) {
             return null;

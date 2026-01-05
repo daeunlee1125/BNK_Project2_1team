@@ -22,7 +22,6 @@ public class FullDataSyncRunner implements ApplicationRunner {
     private final ElasticsearchOperations elasticsearchOperations;
 
     @Override
-    @Transactional(readOnly = true)
     public void run(ApplicationArguments args) throws Exception {
 
 
