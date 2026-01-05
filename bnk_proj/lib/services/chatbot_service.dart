@@ -16,7 +16,7 @@ class ChatbotService {
     try {
       final res = await http
           .post(
-        Uri.parse('$serverUrl/api/mypage/chatbot'),
+        Uri.parse('$serverUrl/api/mobile/mypage/chatbot'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'question': question}),
       )

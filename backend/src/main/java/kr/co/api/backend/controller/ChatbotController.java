@@ -52,7 +52,7 @@ public class ChatbotController {
 
     private final ChatbotRuleService chatbotRuleService;
 
-    @PostMapping("/api/mypage/chatbot")
+    @PostMapping("/api/mobile/mypage/chatbot")
     @ResponseBody
     public Map<String, Object> chatbotApi(
             @RequestBody Map<String, String> req
