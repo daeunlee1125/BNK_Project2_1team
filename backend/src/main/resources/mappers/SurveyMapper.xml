@@ -59,36 +59,36 @@
             cust_code,
             status
         ) VALUES (
-            #{surveyId},
-            #{custCode},
-            #{status}
-        )
+                     #{surveyId, jdbcType=NUMERIC},
+                     #{custCode, jdbcType=VARCHAR},
+                     #{status, jdbcType=VARCHAR}
+                 )
     </insert>
 
     <update id="updateResponseHeaderStatus">
         UPDATE TB_SURVEY_RESP_HDR
-        SET status = #{status}
-        WHERE resp_id = #{respId}
+        SET status = #{status, jdbcType=VARCHAR}
+        WHERE resp_id = #{respId, jdbcType=NUMERIC}
     </update>
 
     <delete id="deleteResponseDetails">
         DELETE FROM TB_SURVEY_RESP_DTL
-        WHERE resp_id = #{respId}
+        WHERE resp_id = #{respId, jdbcType=NUMERIC}
     </delete>
 
     <insert id="insertResponseDetails">
         INSERT ALL
         <foreach collection="details" item="detail">
             INTO TB_SURVEY_RESP_DTL (
-                resp_id,
-                q_id,
-                opt_id,
-                answer_text
+            resp_id,
+            q_id,
+            opt_id,
+            answer_text
             ) VALUES (
-                #{detail.respId},
-                #{detail.qId},
-                #{detail.optId},
-                #{detail.answerText}
+            #{detail.respId, jdbcType=NUMERIC},
+            #{detail.qId, jdbcType=NUMERIC},
+            #{detail.optId, jdbcType=NUMERIC},
+            #{detail.answerText, jdbcType=VARCHAR}
             )
         </foreach>
         SELECT 1 FROM DUAL
@@ -97,13 +97,13 @@
     <select id="selectOptionValues"
             resultType="kr.co.api.backend.dto.survey.SurveyOptionValueDTO">
         SELECT
-            o.opt_id AS optId,
-            o.q_id AS qId,
-            o.opt_value AS optValue
+        o.opt_id AS optId,
+        o.q_id AS qId,
+        o.opt_value AS optValue
         FROM TB_SURVEY_OPT o
         WHERE o.opt_id IN
         <foreach collection="optIds" item="optId" open="(" separator="," close=")">
-            #{optId}
+            #{optId, jdbcType=NUMERIC}
         </foreach>
     </select>
 

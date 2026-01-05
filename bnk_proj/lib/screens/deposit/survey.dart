@@ -404,6 +404,13 @@ class _DepositSurveyScreenState extends State<DepositSurveyScreen> {
         }
       }
 
+      //final echoed = await _surveyService.submitSurveyResponseDebug(
+      //  surveyId: surveyId,
+      //  custCode: custCode,
+      //  answers: answers,
+      //);
+      //print('✅ SERVER ECHO = $echoed');
+
       await _surveyService.submitSurveyResponse(
         surveyId: surveyId,
         custCode: custCode,

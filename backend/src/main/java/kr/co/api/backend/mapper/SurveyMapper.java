@@ -13,6 +13,7 @@ import java.util.List;
 
 @Mapper
 public interface SurveyMapper {
+
     SurveyDetailResponseDTO selectSurveyById(@Param("surveyId") Long surveyId);
 
     List<SurveyQuestionResponseDTO> selectSurveyQuestions(@Param("surveyId") Long surveyId);
