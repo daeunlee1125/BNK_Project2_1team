@@ -93,7 +93,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/", "/member/**", "/css/**", "/js/**", "/images/**",
-                                "/uploads/**", "/api/register","/api/risk/**"
+                                "/uploads/**", "/api/register","/api/risk/**",
+                                "/api/surveys/**"
                         ).permitAll()
                         .requestMatchers("/admin/**").permitAll() // 개발용
                         .anyRequest().authenticated()
