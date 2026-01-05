@@ -14,7 +14,7 @@ import java.io.InputStream;
 
 public class FirebaseConfig {
 
-    /*@Bean
+    @Bean
     public FirebaseApp firebaseApp(@Value("${firebase.service-account-path:}") String path) throws Exception {
 
         if (FirebaseApp.getApps() != null && !FirebaseApp.getApps().isEmpty()) {
@@ -37,6 +37,6 @@ public class FirebaseConfig {
                 .build();
 
         return FirebaseApp.initializeApp(options);
-    }*/
+    }
 
 }
