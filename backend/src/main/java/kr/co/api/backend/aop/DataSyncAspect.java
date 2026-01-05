@@ -67,8 +67,6 @@ public class DataSyncAspect {
         // Slave 전용 트랜잭션 시작
         TransactionStatus status = null;
         try {
-            // (기존 readOnly 체크 로직 삭제함)
-
             String mapperId = getMapperId(joinPoint);
             Object[] args = joinPoint.getArgs();
             String methodName = joinPoint.getSignature().getName();

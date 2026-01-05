@@ -76,5 +76,33 @@ class ExchangeService {
       throw Exception("환전(팔기) 실패: ${response.statusCode} ${response.body}");
     }
   }
+
+  // 환전 시, 약관 동의 확인
+  static Future<bool> checkTermsAgreed() async {
+    final url = Uri.parse("${ApiService.baseUrl}/exchange/check-terms");
+    try {
+      final response = await http.get(url, headers: await ApiService.getAuthHeaders());
+      print("서버 응답 상태코드: ${response.statusCode}"); // 👈 여기를 확인하세요
+      print("서버 응답 본문: ${response.body}");
+
+      // 만약 서버 에러가 나면 false를 반환하여 일단 동의창을 띄우게 하거나 에러 처리를 해야 합니다.
+      return response.statusCode == 200 && response.body == 'true';
+    } catch (e) {
+      print("네트워크 또는 서버 연결 실패: $e");
+      return false; // 에러 시 일단 동의가 안 된 것으로 처리
+    }
+  }
+
+  // 약관 동의 내역 저장 (최초 1회)
+  static Future<void> submitTermsAgreement() async {
+    final url = Uri.parse("${ApiService.baseUrl}/exchange/agree-terms");
+    final headers = await ApiService.getAuthHeaders();
+
+    final response = await http.post(url, headers: headers);
+
+    if (response.statusCode != 200) {
+      throw Exception("약관 동의 처리에 실패했습니다.");
+    }
+  }
 }
 

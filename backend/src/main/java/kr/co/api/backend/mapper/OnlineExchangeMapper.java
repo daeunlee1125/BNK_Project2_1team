@@ -4,8 +4,16 @@ import kr.co.api.backend.dto.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Map;
+
 @Mapper
 public interface OnlineExchangeMapper {
+    // 환전시 약관 동의가 되어있는지 확인
+    int checkExchangeTermsAgreed(String custCode);
+
+    // 환전 약관 동의 삽입
+    void insertExchangeTermsAgree(Map<String, Object> params);
+
 
     String selectCustNameByCustCode(@Param("custCode") String custCode);
 

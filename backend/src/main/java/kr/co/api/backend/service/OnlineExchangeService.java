@@ -23,6 +23,20 @@ public class OnlineExchangeService {
     private final LogProducer logProducer; // Redis Producer
     private final ObjectMapper objectMapper; // Spring Boot에 기본 내장됨
 
+    // 환전 시, 약관 동의 여부 확인
+    public boolean isTermsAgreed(String custCode) {
+        return onlineExchangeMapper.checkExchangeTermsAgreed(custCode) > 0;
+    }
+
+    // 환전 전, 약관 동의 삽입
+    @Transactional
+    public void saveTermsAgreement(String custCode) {
+        log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        Map<String, Object> params = new HashMap<>();
+        params.put("custCode", custCode);
+        onlineExchangeMapper.insertExchangeTermsAgree(params);
+    }
+
     // 온라인 환전 처리
     @Transactional
     public void processOnlineExchange(FrgnExchOnlineDTO dto, String custCode) {

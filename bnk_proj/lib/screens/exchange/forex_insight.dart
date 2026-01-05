@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/exchange_api.dart';
+import '../../services/exchange_service.dart';
 import '../app_colors.dart';
 import 'exchange_buy.dart';
 import 'exchange_risk.dart';
@@ -106,10 +107,101 @@ String _flagFromCode(String code) {
   }
 }
 
-
-
-class ForexInsightScreen extends StatelessWidget {
+class ForexInsightScreen extends StatefulWidget {
   const ForexInsightScreen({super.key});
+
+  @override
+  State<ForexInsightScreen> createState() => _ForexInsightScreenState();
+}
+
+class _ForexInsightScreenState extends State<ForexInsightScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    print("🚩 ForexInsightScreen initState 실행됨"); // 로그 추가 1
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print("🚩 화면 렌더링 후 콜백 실행됨"); // 로그 추가 2
+      _checkExchangeTerms();
+    });
+  }
+
+  /// 약관 동의 상태 확인 및 모달 표시 로직
+  Future<void> _checkExchangeTerms() async {
+    print("🚩 _checkExchangeTerms 함수 진입"); // 로그 추가 3
+    try {
+      bool isAgreed = await ExchangeService.checkTermsAgreed();
+      print("🚩 서버 응답 결과 (동의여부): $isAgreed"); // 로그 추가 4 (true면 이미 동의해서 안 뜨는 것)
+
+      if (!isAgreed) {
+        if (!mounted) return;
+        print("🚩 바텀시트 호출 시도"); // 로그 추가 5
+        _showTermsBottomSheet();
+      }
+    } catch (e) {
+      debugPrint("약관 확인 중 오류 발생: $e");
+    }
+  }
+
+  /// 약관 동의 바텀시트
+  void _showTermsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false, // 동의 전에는 닫지 못하게 설정 (선택 사항)
+      enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "환전 서비스 이용 동의",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.pointDustyNavy),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "빠르고 안전한 외화 거래를 위해\n아래의 약관에 동의가 필요합니다.",
+              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            // 약관 항목 리스트 (추후 필요 시 추가)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.check_circle_outline, color: AppColors.pointDustyNavy),
+              title: const Text("외화 거래 유의사항 및 약관 동의 (필수)"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () { /* 상세 약관 보기 로직 */ },
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () async {
+                  // DB에 동의 이력 저장 (AGREE_TERM_CATE = 3)
+                  await ExchangeService.submitTermsAgreement();
+                  if (context.mounted) Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.pointDustyNavy,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text(
+                  "동의하고 시작하기",
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1077,7 +1169,8 @@ void _goTo(BuildContext context, ExchangePage page) {
 
   switch (page) {
     case ExchangePage.rates:
-      target = const ExchangeRateScreen();
+    // [수정] 약관 체크 로직이 있는 Wrapper 위젯으로 이동
+      target = const ForexInsightScreen();
       break;
     case ExchangePage.alerts:
       target = const ExchangeAlertScreen();

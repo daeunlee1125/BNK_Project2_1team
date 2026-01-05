@@ -58,13 +58,38 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
     });
   }
 
-  // [추가] 통합 인증 및 환전 실행 로직
+  // 통합 인증 및 환전 실행 로직
   Future<void> _handleAuthAndSell() async {
     // 0. 금액 검증
     if (usdAmount.isEmpty || double.parse(usdAmount) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("판매할 금액을 입력해주세요.")),
       );
+      return;
+    }
+
+    // ====================================================
+    // [추가] 0.5. 약관 동의 여부 확인 (최초 1회)
+    // ====================================================
+    try {
+      bool isAgreed = await ExchangeService.checkTermsAgreed();
+
+      if (!isAgreed) {
+        if (!mounted) return;
+        // 동의가 안 되어 있다면 약관 팝업 띄우기
+        bool? agreeResult = await _showTermsDialog();
+
+        if (agreeResult == true) {
+          // 동의했으면 서버에 저장하고 진행
+          await ExchangeService.submitTermsAgreement();
+        } else {
+          // 동의 거부 시 중단
+          return;
+        }
+      }
+    } catch (e) {
+      print("약관 확인 중 오류: $e");
+      // 오류 발생 시 안전을 위해 진행 막거나, 스킵 정책에 따라 결정
       return;
     }
 
@@ -194,7 +219,6 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
 
           const SizedBox(height: 4),
 
-
           Text(
             '(${widget.rate.regDt} 기준)',
             style: const TextStyle(
@@ -203,8 +227,7 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
             ),
           ),
 
-          const SizedBox(height: 20), // ✅ 이거 추가
-
+          const SizedBox(height: 20),
 
           // USD 카드 (보유 달러)
           _currencyCard(
@@ -233,10 +256,28 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
 
           const Spacer(),
 
+          // 1. 키패드 표시
           _keypad(),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16), // 간격 조절
 
+          // 2. [추가] 법적 고지 문구 (Toss 스타일)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              "확인을 누르면 환전 유의사항에 동의한 것으로 간주합니다.",
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black54, // 기존 코드의 다른 텍스트와 통일감 있는 색상
+                letterSpacing: -0.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+          const SizedBox(height: 12), // 문구와 버튼 사이 간격
+
+          // 3. 확인 버튼 호출
           _confirmButton(),
 
           const SizedBox(height: 16),
@@ -290,6 +331,43 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
     );
   }
 
+  // [추가] 약관 동의 다이얼로그
+  Future<bool?> _showTermsDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // 바깥 클릭해서 닫기 방지
+      builder: (context) => AlertDialog(
+        title: const Text("환전 서비스 약관 동의"),
+        content: const SingleChildScrollView(
+          child: ListBody(
+            children: [
+              Text("비대면 외화 환전 서비스를 이용하기 위해 최초 1회 약관 동의가 필요합니다."),
+              SizedBox(height: 10),
+              Text(
+                "제1조 (목적)\n본 약관은 고객이 모바일 앱을 통해 외화를 환전함에 있어...",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              // 필요한 약관 내용을 더 추가하세요
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), // 거부
+            child: const Text("취소"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true), // 동의
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3F5073),
+            ),
+            child: const Text("동의합니다", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _swapIcon() {
     return Container(
       width: 36,
@@ -335,6 +413,8 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
       "7","8","9",
       ".", "0", "back",
     ];
+
+
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

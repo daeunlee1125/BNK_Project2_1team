@@ -37,13 +37,38 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
     _loadMyAccounts();
   }
 
-  // [추가] 통합 인증 및 환전 실행 로직 (사기)
+  // 통합 인증 및 환전 실행 로직 (사기)
   Future<void> _handleAuthAndBuy() async {
     // 0. 금액 검증
     if (foreignAmount.isEmpty || double.parse(foreignAmount) <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("구매할 금액을 입력해주세요.")),
       );
+      return;
+    }
+
+    // ====================================================
+    // [추가] 0.5. 약관 동의 여부 확인 (최초 1회)
+    // ====================================================
+    try {
+      bool isAgreed = await ExchangeService.checkTermsAgreed();
+
+      if (!isAgreed) {
+        if (!mounted) return;
+        // 동의가 안 되어 있다면 약관 팝업 띄우기
+        bool? agreeResult = await _showTermsDialog();
+
+        if (agreeResult == true) {
+          // 동의했으면 서버에 저장하고 진행
+          await ExchangeService.submitTermsAgreement();
+        } else {
+          // 동의 거부 시 중단
+          return;
+        }
+      }
+    } catch (e) {
+      print("약관 확인 중 오류: $e");
+      // 오류 발생 시 안전을 위해 진행 막거나, 스킵 정책에 따라 결정
       return;
     }
 
@@ -79,6 +104,7 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
     try {
       bool canCheckBiometrics = await auth.canCheckBiometrics;
       if (canCheckBiometrics) {
+        print("👆 생체 인증 시도..."); // [디버깅 추가]
         authenticated = await auth.authenticate(
           localizedReason: '환전을 진행하려면 인증해주세요.',
           options: const AuthenticationOptions(
@@ -86,14 +112,16 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
             stickyAuth: true,
           ),
         );
+        print("👆 생체 인증 결과: $authenticated"); // [디버깅 추가]
       }
     } catch (e) {
-      print("생체 인증 실패 또는 미지원: $e");
+      print("❌ 생체 인증 에러: $e");
     }
 
     // 3. 생체 인증 실패 시 -> PIN 인증 화면으로 이동
     if (!authenticated) {
       if (!mounted) return;
+      print("🔑 PIN 인증 화면 이동"); // [디버깅 추가]
       final bool? pinResult = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -104,24 +132,33 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
         ),
       );
 
-      if (pinResult != true) return; // 취소/실패 시 중단
+      if (pinResult != true) {
+        print("❌ PIN 인증 실패 또는 취소"); // [디버깅 추가]
+        return;
+      }
     }
 
     // 4. 인증 성공 -> 환전 실행
-    _executeBuy();
+    print("💰 인증 성공! 환전 실행 함수 호출"); // [디버깅 추가]
+    await _executeBuy(); // await 추가 권장
   }
 
   // [추가] 실제 환전 API 호출 함수
   Future<void> _executeBuy() async {
+    print("💸 _executeBuy 함수 진입"); // [디버깅 추가]
     try {
       final double foreign = double.tryParse(foreignAmount) ?? 0;
       final int krwAmount = (foreign * widget.rate.rate).round();
+
+      print("📡 서버 환전 요청 시작: $foreign ${widget.rate.code}"); // [디버깅 추가]
 
       // 1️⃣ 서버 환전 요청
       await ExchangeService.buyForeignCurrency(
         toCurrency: widget.rate.code,
         krwAmount: krwAmount,
       );
+
+      print("✅ 서버 환전 요청 성공!"); // [디버깅 추가]
 
       if (!mounted) return;
 
@@ -139,6 +176,7 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
       );
 
     } catch (e) {
+      print("🔥 환전 처리 중 오류 발생: $e"); // [디버깅 추가]
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("환전 실패: $e")),
@@ -225,20 +263,13 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
 
           const SizedBox(height: 4),
 
-
           Text(
             '기준일: ${widget.rate.regDt}',
             style: const TextStyle(
               fontSize: 12,
               color: Colors.black38,
             ),
-
-
           ),
-
-          const SizedBox(height: 20), // ✅ 이거 추가
-
-
 
           const SizedBox(height: 20),
 
@@ -283,27 +314,44 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
 
           const Spacer(),
 
+          // 1. 키패드 표시
           _keypad(),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16), // 간격 조절
 
+          // 2. [추가] 법적 고지 문구 (Toss 스타일)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              "확인을 누르면 환전 유의사항에 동의한 것으로 간주합니다.",
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black54, // 기존 코드의 다른 텍스트와 통일감 있는 색상
+                letterSpacing: -0.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
+          const SizedBox(height: 12), // 문구와 버튼 사이 간격
+
+          // 3. 확인 버튼
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _handleAuthAndBuy,
-
+                onPressed: _handleAuthAndBuy, // 버튼 클릭 시 생체인증 로직 바로 실행
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3F5073),
+                  backgroundColor: const Color(0xFF3F5073), // 기존 네이비 색상 유지
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 child: const Text(
                   "확인",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -352,6 +400,43 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
               fontWeight: FontWeight.bold,
               color: isActive ? Colors.blue : Colors.black54,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 약관 동의 다이얼로그
+  Future<bool?> _showTermsDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // 바깥 클릭해서 닫기 방지
+      builder: (context) => AlertDialog(
+        title: const Text("환전 서비스 약관 동의"),
+        content: const SingleChildScrollView(
+          child: ListBody(
+            children: [
+              Text("비대면 외화 환전 서비스를 이용하기 위해 최초 1회 약관 동의가 필요합니다."),
+              SizedBox(height: 10),
+              Text(
+                "제1조 (목적)\n본 약관은 고객이 모바일 앱을 통해 외화를 환전함에 있어...",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              // 필요한 약관 내용을 더 추가하세요
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), // 거부
+            child: const Text("취소"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true), // 동의
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3F5073),
+            ),
+            child: const Text("동의합니다", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

@@ -24,6 +24,21 @@ public class OnlineExchangeController {
     private final OnlineExchangeService onlineExchangeService;
     private final RateQueryService rateQueryService;
 
+    // 환전 시, 약관 동의 여부 확인
+    @GetMapping("/check-terms")
+    public ResponseEntity<Boolean> checkTerms(Authentication authentication) {
+        String custCode = authentication.getName(); // custCode
+        return ResponseEntity.ok(onlineExchangeService.isTermsAgreed(custCode));
+    }
+
+    // 환전 전, 약관 동의 삽입
+    @PostMapping("/agree-terms")
+    public ResponseEntity<String> agreeTerms(Authentication authentication) {
+        String custCode = authentication.getName(); // custCode
+        onlineExchangeService.saveTermsAgreement(custCode);
+        return ResponseEntity.ok("Success");
+    }
+
     /**
      * 환율 목록 (통화별 최신 1건)
      */
