@@ -247,7 +247,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
                       ),
                     ),
                     child: const Text(
-                      "외화예금 성향 테스트 다시하기",
+                      "외화예금 성향 테스트 하기",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,

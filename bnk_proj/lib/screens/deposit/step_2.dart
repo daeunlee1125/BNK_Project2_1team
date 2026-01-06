@@ -1621,6 +1621,7 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
     _periodOptions = _buildPeriodOptions(product);
 
     _loadFromApplication(product);
+    newCurrency = _resolveCurrencySelection(newCurrency, _currencyOptions) ?? '';
     _applyProductRules(product);
 
     if (selectedKrwAccount == null && context.krwAccounts.isNotEmpty) {
@@ -1659,6 +1660,40 @@ class _DepositStep2ScreenState extends State<DepositStep2Screen> {
 
     return _Step2Data(product: product, context: context);
   }
+
+  String? _resolveCurrencySelection(
+      String? savedCurrency, List<String> options) {
+    if (savedCurrency == null) return null;
+    final trimmed = savedCurrency.trim();
+    if (trimmed.isEmpty || options.isEmpty) return null;
+    if (options.contains(trimmed)) return trimmed;
+
+    final normalized = trimmed.toUpperCase();
+    final directMatch = options.firstWhere(
+          (option) => option.toUpperCase() == normalized,
+      orElse: () => '',
+    );
+    if (directMatch.isNotEmpty) return directMatch;
+
+    if (trimmed.contains(',')) {
+      final candidates = trimmed
+          .split(',')
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
+      for (final candidate in candidates) {
+        if (options.contains(candidate)) return candidate;
+        final match = options.firstWhere(
+              (option) => option.toUpperCase() == candidate.toUpperCase(),
+          orElse: () => '',
+        );
+        if (match.isNotEmpty) return match;
+      }
+    }
+
+    return null;
+  }
+
 
   void _loadFromApplication(DepositProduct product) {
     withdrawType = application.withdrawType;
