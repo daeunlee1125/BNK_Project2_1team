@@ -26,10 +26,8 @@ class ExchangeService {
     required String toCurrency,
     required int krwAmount,
   }) async {
-    final url = Uri.parse("$baseUrl/online");
+    final url = Uri.parse("$baseUrl/onlineExchange");
     final headers = await ApiService.getAuthHeaders();
-
-    print(">>> 전송하는 헤더: $headers");
 
     final response = await http.post(
       url,
@@ -52,10 +50,8 @@ class ExchangeService {
     required String fromCurrency, // 팔려고 하는 외화 (예: USD)
     required int frgnAmount,      // 팔려고 하는 외화 금액
   }) async {
-    final url = Uri.parse("$baseUrl/online");
+    final url = Uri.parse("$baseUrl/onlineExchange");
     final headers = await ApiService.getAuthHeaders();
-
-    print(">>> [Sell] 전송하는 헤더: $headers");
 
     // 백엔드 OnlineExchangeService 로직에 맞춰 파라미터 전송
     final body = jsonEncode({
