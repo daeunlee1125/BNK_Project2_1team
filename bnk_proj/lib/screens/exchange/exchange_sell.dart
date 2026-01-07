@@ -194,7 +194,7 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 팔기: USD → KRW
+    // 팔기: USD → KRW
     final int krwAmount =
     ((double.tryParse(usdAmount) ?? 0) * widget.rate.rate).round();
 
@@ -235,7 +235,7 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
             title: widget.rate.name,
             amount: "$usdAmount ${widget.rate.code}",
             isActive: true,
-            balance: "잔액 120 USD", // 👉 나중에 실제 데이터로 교체
+            balance: "잔액 120 USD",
           ),
 
           const SizedBox(height: 12),
@@ -261,14 +261,14 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
 
           const SizedBox(height: 16), // 간격 조절
 
-          // 2. [추가] 법적 고지 문구 (Toss 스타일)
+          // 2. 법적 고지 문구
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               "확인을 누르면 환전 유의사항에 동의한 것으로 간주합니다.",
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black54, // 기존 코드의 다른 텍스트와 통일감 있는 색상
+                color: Colors.black54,
                 letterSpacing: -0.2,
               ),
               textAlign: TextAlign.center,
@@ -331,7 +331,7 @@ class _ExchangeSellPageState extends State<ExchangeSellPage> {
     );
   }
 
-  // [추가] 약관 동의 다이얼로그
+  // 약관 동의 다이얼로그
   Future<bool?> _showTermsDialog() {
     return showDialog<bool>(
       context: context,

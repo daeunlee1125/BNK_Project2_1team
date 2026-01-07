@@ -104,7 +104,6 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
     try {
       bool canCheckBiometrics = await auth.canCheckBiometrics;
       if (canCheckBiometrics) {
-        print("👆 생체 인증 시도..."); // [디버깅 추가]
         authenticated = await auth.authenticate(
           localizedReason: '환전을 진행하려면 인증해주세요.',
           options: const AuthenticationOptions(
@@ -112,16 +111,13 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
             stickyAuth: true,
           ),
         );
-        print("👆 생체 인증 결과: $authenticated"); // [디버깅 추가]
       }
     } catch (e) {
-      print("❌ 생체 인증 에러: $e");
     }
 
     // 3. 생체 인증 실패 시 -> PIN 인증 화면으로 이동
     if (!authenticated) {
       if (!mounted) return;
-      print("🔑 PIN 인증 화면 이동"); // [디버깅 추가]
       final bool? pinResult = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -133,36 +129,29 @@ class _ExchangeBuyPageState extends State<ExchangeBuyPage> {
       );
 
       if (pinResult != true) {
-        print("❌ PIN 인증 실패 또는 취소"); // [디버깅 추가]
         return;
       }
     }
 
     // 4. 인증 성공 -> 환전 실행
-    print("💰 인증 성공! 환전 실행 함수 호출"); // [디버깅 추가]
-    await _executeBuy(); // await 추가 권장
+    await _executeBuy();
   }
 
-  // [추가] 실제 환전 API 호출 함수
+  // 환전 API 호출 함수
   Future<void> _executeBuy() async {
-    print("💸 _executeBuy 함수 진입"); // [디버깅 추가]
     try {
       final double foreign = double.tryParse(foreignAmount) ?? 0;
       final int krwAmount = (foreign * widget.rate.rate).round();
 
-      print("📡 서버 환전 요청 시작: $foreign ${widget.rate.code}"); // [디버깅 추가]
-
-      // 1️⃣ 서버 환전 요청
+      // 서버 환전 요청
       await ExchangeService.buyForeignCurrency(
         toCurrency: widget.rate.code,
         krwAmount: krwAmount,
       );
 
-      print("✅ 서버 환전 요청 성공!"); // [디버깅 추가]
-
       if (!mounted) return;
 
-      // 2️⃣ 환전 완료 화면으로 이동
+      // 환전 완료 화면으로 이동
       Navigator.push(
         context,
         MaterialPageRoute(

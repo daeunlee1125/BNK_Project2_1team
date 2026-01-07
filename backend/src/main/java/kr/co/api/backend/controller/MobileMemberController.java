@@ -197,7 +197,6 @@ public class MobileMemberController {
         String inputCode = request.get("code");
 
         boolean isVerified = mobileAuthService.verifyAuthCode(userId, inputCode);
-
         if (isVerified) {
             return ResponseEntity.ok(Map.of("status", "SUCCESS"));
         } else {

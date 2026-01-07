@@ -57,10 +57,8 @@ public class OnlineExchangeController {
         return rateQueryService.getRateHistory(currency);
     }
 
-    /**
-     * 온라인 환전 요청
-     */
-    @PostMapping("/online")
+    // 온라인 환전 요청
+    @PostMapping("/onlineExchange")
     public ResponseEntity<?> onlineExchange(
             @RequestBody FrgnExchOnlineDTO dto,
             Authentication authentication
@@ -97,10 +95,5 @@ public class OnlineExchangeController {
 
         return ResponseEntity.ok(result);
     }
-
-
-
-
-
 
 }

@@ -31,7 +31,6 @@ public class OnlineExchangeService {
     // 환전 전, 약관 동의 삽입
     @Transactional
     public void saveTermsAgreement(String custCode) {
-        log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         Map<String, Object> params = new HashMap<>();
         params.put("custCode", custCode);
         onlineExchangeMapper.insertExchangeTermsAgree(params);
@@ -44,14 +43,13 @@ public class OnlineExchangeService {
             throw new IllegalStateException("고객 정보를 찾을 수 없습니다.");
         }
 
-        // 2. 약관 동의 여부 백엔드 더블 체크
+        // 2. 약관 동의 여부 여기서도 더블 체크
         boolean isAgreed = onlineExchangeMapper.checkExchangeTermsAgreed(custCode) > 0;
         if (!isAgreed) {
             throw new IllegalStateException("환전 서비스 약관에 동의하지 않았습니다. 약관 동의 후 진행해주세요.");
         }
 
-        // DTO에 고객 코드 세팅
-        dto.setExchCustCode(custCode);
+        dto.setExchCustCode(custCode); // 고객 정보 확실히
 
         String custName = onlineExchangeMapper.selectCustNameByCustCode(custCode);
 
@@ -60,7 +58,6 @@ public class OnlineExchangeService {
         }
 
         /* =======================================================
-           기준 통화(외화) 결정 로직을 최상단으로 이동
            - 사기(B): 원화 -> 외화(To) => 외화 코드는 To
            - 팔기(S): 외화(From) -> 원화 => 외화 코드는 From
            ======================================================= */
@@ -79,7 +76,7 @@ public class OnlineExchangeService {
         }
 
         /* =========================
-           2. 원화 계좌 잠금 조회
+           2. 원화 계좌 정보 조회
            ========================= */
         CustAcctDTO krwAcct = onlineExchangeMapper.selectKrwAcctForUpdate(custCode);
 
@@ -87,11 +84,11 @@ public class OnlineExchangeService {
             throw new IllegalStateException("원화 계좌를 찾을 수 없습니다.");
         }
 
-        // 원화 계좌번호 DTO에 세팅 (이거 없으면 에러남)
+        // 원화 계좌번호 DTO에 세팅
         dto.setExchKrwAcctNo(krwAcct.getAcctNo());
 
         /* =========================
-           3. 외화 자식 계좌 잠금 조회
+           3. 외화 계좌 정보 조회(부모 외화 계좌)
            ========================= */
         FrgnAcctDTO frgnAcctDTO = onlineExchangeMapper.selectMyFrgnAccount(custCode);
 
@@ -99,14 +96,12 @@ public class OnlineExchangeService {
         dto.setExchFrgnBalNo(frgnAcctDTO.getFrgnAcctNo());
         dto.setExchFrgnAcctNo(frgnAcctDTO.getFrgnAcctNo());
 
-        // 위에서 결정한 targetCurrency 사용
+        // 위에서 결정한 targetCurrency 사용하여 자식 계좌 조회
         FrgnAcctBalanceDTO frgnBalance = onlineExchangeMapper.selectFrgnBalanceForUpdate(
                 dto.getExchFrgnBalNo(),
                 targetCurrency
         );
 
-        // 팔기일 때는 외화 잔액이 필수이므로 체크, 사기일 때는 없을 수도 있음(개설 전 등)을 고려해야 하나
-        // 현재 로직상 잔액 테이블 로우(row) 자체는 있어야 한다고 가정함.
         if (frgnBalance == null) {
             throw new IllegalStateException("외화 지갑 정보를 찾을 수 없습니다.");
         }
@@ -144,34 +139,28 @@ public class OnlineExchangeService {
             dto.setExchAppliedRate(rateValue);
 
         } else if ("S".equals(dto.getExchType())) {
-            // 1. 사용자 입력값: 얼마를 팔 것인가? (외화 기준)
             Long foreignAmount = dto.getExchFrgnAmount();
             Long currentForeignBalance = frgnBalance.getBalBalance();
 
-            // 2. 잔액 검사: 외화가 충분한가?
             if (currentForeignBalance < foreignAmount) {
                 throw new IllegalStateException("외화 잔액이 부족합니다.");
             }
 
-            // 3. 환율 적용 계산: 외화 * 환율 = 원화
-            // 실제 은행은 '전신환 매도율(받으실 때)'을 적용하여 BaseRate보다 낮게 쳐줍니다.
-            // 현재는 BaseRate를 쓰고 있는데, 학습용으론 괜찮지만 "은행은 싸게 사서 비싸게 판다"는 원리는 기억해두세요.
             double rateValue = rate.getRhistBaseRate();
             long krwAmount = (long) (foreignAmount * rateValue); // 소수점 버림 처리됨
 
-            // 4. 외화 계좌 차감 (내 돈 나감) -> 순서 중요 (출금 먼저)
+            // 외화 계좌 차감
             onlineExchangeMapper.updateFrgnBalance(
                     frgnBalance.getBalNo(),
                     currentForeignBalance - foreignAmount
             );
 
-            // 5. 원화 계좌 증가 (돈 들어옴)
+            // 원화 계좌 증가
             onlineExchangeMapper.updateKrwAcctBalance(
                     krwAcct.getAcctNo(),
                     krwAcct.getAcctBalance() + krwAmount
             );
 
-            // 6. 결과값 DTO에 세팅 (이력이 저장될 때 필요)
             dto.setExchKrwAmount(krwAmount);
             dto.setExchAppliedRate(rateValue);
 
@@ -187,8 +176,7 @@ public class OnlineExchangeService {
         // 4-1. 계좌이체 이력 저장 (Master DB 저장 & Slave 비동기 전송)
         // =========================
         if ("B".equals(dto.getExchType())) {
-            // [CASE 1] 외화 매수 (Buy)
-            // 1. 원화 출금 (Master DB 즉시 저장)
+            // 1. 원화 출금
             onlineExchangeMapper.insertCustTranHist(
                     krwAcct.getAcctNo(),
                     custName,
@@ -209,8 +197,14 @@ public class OnlineExchangeService {
             logDataKrw.put("memo", "외화 환전 출금");
             logProducer.sendLog(logDataKrw);
 
-            // 외화 입금 (Master DB 즉시 저장)
-            onlineExchangeMapper.insertCustTranHist(dto.getExchFrgnAcctNo(), custName, 1, dto.getExchFrgnAmount(), krwAcct.getAcctNo(), "외화 환전 입금"
+            // 외화 입금
+            onlineExchangeMapper.insertCustTranHist(
+                    dto.getExchFrgnAcctNo(),
+                    custName,
+                    1,
+                    dto.getExchFrgnAmount(),
+                    krwAcct.getAcctNo(),
+                    "외화 환전 입금"
             );
 
             // 외화 입금 로그 -> Redis 큐 전송
@@ -225,8 +219,7 @@ public class OnlineExchangeService {
             logProducer.sendLog(logDataFrgn);
 
         } else if ("S".equals(dto.getExchType())) {
-            // [CASE 2] 외화 매도 (Sell)
-            // 1. 외화 출금 (Master DB 즉시 저장)
+            // 1. 외화 출금
             onlineExchangeMapper.insertCustTranHist(
                     dto.getExchFrgnAcctNo(),
                     custName,
@@ -247,7 +240,7 @@ public class OnlineExchangeService {
             logDataFrgn.put("memo", "외화 환전 출금");
             logProducer.sendLog(logDataFrgn);
 
-            // 2. 원화 입금 (Master DB 즉시 저장)
+            // 2. 원화 입금
             onlineExchangeMapper.insertCustTranHist(
                     krwAcct.getAcctNo(),
                     custName,
@@ -279,21 +272,21 @@ public class OnlineExchangeService {
 
         // Slave 동기화를 위해 Redis로 데이터 전송 (비동기)
         try {
-            // DTO를 Map으로 변환 (직접 put 해도 되지만 이게 편함)
+            // DTO를 Map으로 변환
             Map<String, Object> exchangeMap = objectMapper.convertValue(dto, Map.class);
 
-            // ★ 중요: Worker가 이게 "환전 내역"인지 "이체 내역"인지 알아야 함!
+            // Worker가 처리할 수 있도록 "환전 내역"인지 "이체 내역"인지 구분
             exchangeMap.put("log_type", "EXCHANGE");
 
             logProducer.sendLog(exchangeMap); // 큐에 넣기
 
         } catch (Exception e) {
             log.error("Redis 전송 실패 (환전 내역): {}", e.getMessage());
-            // Redis 실패해도 환전 자체는 성공 처리 (로그만 남김)
         }
     }
 
 
+    @Transactional
     public Map<String, Object> getMyExchangeAccounts(String custCode, String currency) {
 
         if (custCode == null) {
@@ -323,14 +316,11 @@ public class OnlineExchangeService {
         Map<String, Object> result = new HashMap<>();
         result.put("krwBalance", krwBalance);
         result.put("frgnBalance", frgnBalanceAmount);
-        // 필요하면 계좌번호도 같이
+
         result.put("krwAcctNo", krwAcct != null ? krwAcct.getAcctNo() : null);
         result.put("frgnAcctNo", frgnAcct != null ? frgnAcct.getFrgnAcctNo() : null);
 
         return result;
     }
-
-
-
 
 }
