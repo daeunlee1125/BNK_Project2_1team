@@ -13,12 +13,12 @@ AI와 음성 비서를 결합한 사용자 중심의 외환 특화 뱅킹 서비
 
 | 이름 | 역할 | 주요 구현 내용 |
 | --- | --- | --- |
-| **이민준(조장)** | **Backend / Team Leader** | 아키텍처 설계, 고가용성 DB 이중화 및 장애 복구 로직 구현, 서버 사이드 음성 비서 상태 머신 구축 |
-| **이지민** | **Frontend / Flutter** | Flutter 전역 오버레이 기반 음성 UI 및 실시간 환율 스캐너(OCR) 개발, UX/UI 디자인 |
-| **이다은** | **AI / Data** | GARCH 기반 환율 변동성 예측 모델 개발, 오픈 API 데이터 정제 및 리스크 분석 시스템 구축 |
-| **전용준** | **Backend / Infra** | Redis 비동기 로그 처리 시스템 개발, CI/CD 파이프라인 구축(Docker, GCP) |
-| **김대현** | **AI / Search** | Elasticsearch 기반 통합 검색 시스템, RAG 기반 AI 금융 챗봇 연동 및 고도화 |
-| **서현우** | **Backend / Admin** | 대시보드 통계 분석 시스템, 관리자용 상품 및 설문 관리 백오피스 개발 |
+| **이민준(조장)** | **Backend / Team Leader** | 고가용성 DB 이중화 및 장애 복구 로직 구현, 간편 환전 구현 |
+| **이지민** | **Frontend / Flutter** | GARCH 기반 환율 변동성 예측 모델 개발, 실시간 환율 스캐너(OCR) 개발 |
+| **이다은** | **AI / Data** | 회원가입 구현, RAG 기반 AI 금융 챗봇 연동, 음성 가입 비서 상태 머신 구축 |
+| **전용준** | **Backend / Infra** | Firebase 기반 앱 푸쉬 구현 |
+| **김대현** | **AI / Search** | 예금 가입, 예금 가입 이어가기 구현 |
+| **서현우** | **Backend / Admin** | 관리자용 설문 관리 및 상품 추천 백오피스 개발 |
 
 ### 시스템 아키텍처
 <img width="1209" height="430" alt="image" src="https://github.com/user-attachments/assets/34545baa-f13e-4d61-9ef2-cd762135b546" />
